@@ -21,9 +21,19 @@
         </button>
     </div>
 
-    <!-- Display total number of schemas -->
+    <!-- Display total number of schemas and disk space information -->
     <div class="alert alert-info mb-3">
-        Total number of Schemas: {{ databases|length }} (Total Size: {{ total_size }})
+        <div class="row">
+            <div class="col-md-4">
+                Total number of Schemas: {{ databases|length }}
+            </div>
+            <div class="col-md-4">
+                Total Database Size: {{ total_size }}
+            </div>
+            <div class="col-md-4">
+                Available Disk Space: {{ available_space }}
+            </div>
+        </div>
     </div>
 
     <!-- Merge Folders Modal -->

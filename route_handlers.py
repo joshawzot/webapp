@@ -36,6 +36,8 @@ import h5py
 import numpy as np
 from io import BytesIO
 import scipy.io
+import shutil
+
 # Create a lock for thread-safe plotting
 #plot_lock = threading.Lock()
 
@@ -65,9 +67,12 @@ def home():
                 _, total_size = get_total_database_size()
                 cache.set('total_db_size', total_size, timeout=3600)  # Cache for 1 hr
                 
+            # Get available disk space
+            available_space = get_disk_space()
+                
             cursor.close()
             conn.close()
-            return render_template('home_page.html', databases=databases, username=username, total_size=total_size)
+            return render_template('home_page.html', databases=databases, username=username, total_size=total_size, available_space=available_space)
         except mysql.connector.Error as err:
             return str(err), 500
     else:
@@ -1526,3 +1531,27 @@ def is_nan_filter(value):
         return np.isnan(value)
     except:
         return False
+
+def get_disk_space():
+    """Get the disk space information for the MySQL data directory."""
+    try:
+        # Get MySQL data directory path (you may need to adjust this path)
+        mysql_path = "/var/lib/mysql"  # Default MySQL data directory on Linux
+        
+        # Get disk usage statistics
+        disk_stats = shutil.disk_usage(mysql_path)
+        
+        # Convert to human readable format
+        def format_size(size):
+            units = ['B', 'KB', 'MB', 'GB', 'TB']
+            size = float(size)
+            unit_index = 0
+            while size >= 1024 and unit_index < len(units) - 1:
+                size /= 1024
+                unit_index += 1
+            return f"{size:.2f} {units[unit_index]}"
+        
+        return format_size(disk_stats.free)
+    except Exception as e:
+        print(f"Error getting disk space: {e}")
+        return "Unknown"

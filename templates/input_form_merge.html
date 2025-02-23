@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+    <h3>Input Form</h3>
+    <p></p>
+    <form action="/mergeTablesProcess" method="POST">
+        <input type="hidden" name="database" value="{{ database }}">
+        {% for table_name in table_names %}
+            <input type="hidden" name="tableNames" value="{{ table_name }}">
+        {% endfor %}
+        
+        <div class="form-group">
+            <label for="newTableName">New Table Name:</label>
+            <input type="text" class="form-control" id="newTableName" name="newTableName" required>
+        </div>
+
+        <div class="form-group">
+            <label for="state_pattern">Select a State Pattern:</label>
+            <select class="form-control" name="state_pattern" id="state_pattern" required>
+                <option value="" disabled selected>Select a pattern</option>
+                <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
+                <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
+                <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
+                <option value="248x248_1state">248x248_1state</option>
+                <option value="1296x64_1state">1296x64_1state</option>
+                <option value="248x248_16states">248x248_16states</option>
+                <option value="248x1_1state">248x1_1state</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+{% endblock %}

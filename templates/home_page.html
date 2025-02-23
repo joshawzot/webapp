@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Display a welcome message if the user is logged in -->
+    {% if username %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5>Current user, {{ username }}</h5>
+        <!-- Logout button -->
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+        <a href="/create-db" class="btn btn-info">Create New Folder</a>
+        <!-- New Button to Run Forming Progress Script -->
+        <a href="{{ url_for('run_forming_progress') }}" class="btn btn-secondary">Run Forming Progress</a>
+        <!-- Add Merge Folders button -->
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#mergeFoldersModal">
+            Merge Folders
+        </button>
+    </div>
+
+    <!-- Display total number of schemas -->
+    <div class="alert alert-info mb-3">
+        Total number of Schemas: {{ databases|length }} (Total Size: {{ total_size }})
+    </div>
+
+    <!-- Merge Folders Modal -->
+    <div class="modal fade" id="mergeFoldersModal" tabindex="-1" role="dialog" aria-labelledby="mergeFoldersModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mergeFoldersModalLabel">Merge Folders</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="newSchemaName">New Folder Name:</label>
+                        <input type="text" class="form-control" id="newSchemaName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Folders to Merge:</label>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            {% for db in databases %}
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input schema-checkbox" id="schema_{{ loop.index }}" value="{{ db }}">
+                                <label class="custom-control-label" for="schema_{{ loop.index }}">{{ db }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="mergeFoldersBtn">Merge</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="border p-3 mb-4">
+        <!-- Multiple Search inputs for filtering databases -->
+        <div id="filterFields">
+            <div class="form-row">
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="User Name...">
+                </div>
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="Device info...">
+                </div>
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="Chip info...">
+                </div>
+                <!-- Uncomment if needed -->
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="Macro info...">
+                </div>
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="Commit info...">
+                </div>
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="Test Description...">
+                </div>
+                <div class="col-sm-2">
+                    <input type="text" class="form-control mb-1 filterInput" placeholder="Date...">
+                </div>
+            </div>
+
+            <!-- New filter inputs -->
+            <!-- Filter field -->
+            <div class="row custom-row">
+                <div class="col">
+                    <p></p>
+                    <input type="text" id="databaseFilter" class="form-control" placeholder="Filter database names on the fly">
+                </div>
+            </div>
+            <!-- First set of filter fields with "AND" logic -->
+            <div class="row custom-row">
+                <div class="col">
+                    <p></p>
+                    <input type="text" id="andFilters" class="form-control" placeholder="Enter comma-separated substrings for AND filtering">
+                </div>
+            </div>
+            <!-- New row of OR filter fields with "OR" logic -->
+            <div class="row custom-row">
+                <div class="col">
+                    <p></p>
+                    <input type="text" id="orFilters" class="form-control" placeholder="Enter comma-separated substrings for OR filtering">
+                </div>
+            </div>
+        </div>
+
+        <form action="/list-tables" method="post" id="databaseForm">
+            <fieldset class="form-group">
+                <!-- Adjusted databaseList structure for Clusterize.js -->
+                <div id="scrollArea" class="clusterize-scroll">
+                    <div id="contentArea" class="clusterize-content">
+                        <!-- Content will be generated dynamically -->
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>
+
+<!-- Include Clusterize.js before your scripts -->
+<script src="https://unpkg.com/clusterize.js@0.18.1/clusterize.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Cache selectors
+    const filterInputs = Array.from(document.querySelectorAll('.filterInput'));
+    const databaseFilterInput = document.getElementById('databaseFilter');
+    const andFiltersInput = document.getElementById('andFilters');
+    const orFiltersInput = document.getElementById('orFilters');
+
+    const allFilterInputs = [...filterInputs, databaseFilterInput, andFiltersInput, orFiltersInput];
+
+    // Store the database data
+    const databaseData = [
+        {% for db in databases %}
+        {
+            dbName: "{{ db }}",
+            dbNameLower: "{{ db|lower }}",
+            dbNameSegments: "{{ db|lower }}".split('_')
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Initialize Clusterize.js with empty no_data_text
+    var clusterize = new Clusterize({
+        scrollElem: document.getElementById('scrollArea'),
+        contentElem: document.getElementById('contentArea'),
+        rows: [],
+        no_data_text: '' // Set the no_data_text to empty string
+    });
+
+    // Function to generate HTML for database options
+    function generateDatabaseOptionsHTML(data) {
+        return data.map(item => {
+            return `<div class="database-option" data-db="${item.dbName}">
+                        ${item.dbName}
+                    </div>`;
+        });
+    }
+
+    // Function to render database options using Clusterize.js
+    function renderDatabaseOptions(data) {
+        const rows = generateDatabaseOptionsHTML(data);
+        clusterize.update(rows);
+
+        // Re-attach event listeners to new elements
+        const databaseOptions = document.querySelectorAll('.database-option');
+        databaseOptions.forEach(item => {
+            item.addEventListener('dblclick', function() {
+                var form = document.getElementById('databaseForm');
+
+                // Remove any existing 'database' hidden inputs
+                var existingInput = form.querySelector('input[name="database"]');
+                if (existingInput) {
+                    existingInput.value = item.getAttribute('data-db');
+                } else {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'database';
+                    input.value = item.getAttribute('data-db');
+                    form.appendChild(input);
+                }
+                form.submit();
+            });
+        });
+    }
+
+    // Debounce function
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Updated filter function
+    function filterDatabasesImmediate() {
+        const filters = filterInputs.map(input => input.value.toLowerCase().trim());
+        const databaseFilter = databaseFilterInput.value.toLowerCase().trim();
+        const andFiltersText = andFiltersInput.value.toLowerCase();
+        const orFiltersText = orFiltersInput.value.toLowerCase();
+
+        // Split the comma-separated substrings into arrays
+        const andFilters = andFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+        const orFilters = orFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+        const anyOrFiltersAreNonEmpty = orFilters.length > 0;
+
+        // Check if any filter field has input
+        const anyFilterHasInput = filters.some(filter => filter) || databaseFilter || andFilters.length > 0 || orFilters.length > 0;
+
+        if (!anyFilterHasInput) {
+            // If no filters have input, clear the list
+            clusterize.update([]);
+            return;
+        }
+
+        // Filter the data
+        const filteredData = databaseData.filter(data => {
+            const { dbNameLower, dbNameSegments } = data;
+
+            // Check prefix filters
+            let passesPrefixFilters = filters.every((filter, index) => {
+                return !filter || (dbNameSegments[index] && dbNameSegments[index].startsWith(filter));
+            });
+
+            // Check database name filter
+            let passesDatabaseFilter = !databaseFilter || dbNameLower.startsWith(databaseFilter);
+
+            // Check AND filters
+            let passesAndFilters = andFilters.every(substring => dbNameLower.includes(substring));
+
+            // Check OR filters
+            let passesOrFilters = !anyOrFiltersAreNonEmpty || orFilters.some(substring => dbNameLower.includes(substring));
+
+            return passesPrefixFilters && passesDatabaseFilter && passesAndFilters && passesOrFilters;
+        });
+
+        if (filteredData.length === 0) {
+            // Display custom message when no data matches filters
+            clusterize.update(['<div class="no-results">No folders match your search criteria.</div>']);
+        } else {
+            // Render the filtered list
+            renderDatabaseOptions(filteredData);
+        }
+    }
+
+    // Optimized filter function (debounced)
+    const filterDatabases = debounce(filterDatabasesImmediate, 200);
+
+    // Add event listeners to input fields
+    allFilterInputs.forEach(input => {
+        input.addEventListener('input', filterDatabases);
+    });
+
+    // Apply filters on page load if any filter fields have values
+    filterDatabasesImmediate();
+
+    // Add handler for merge folders button
+    document.getElementById('mergeFoldersBtn').addEventListener('click', function() {
+        const newSchemaName = document.getElementById('newSchemaName').value;
+        const selectedSchemas = Array.from(document.querySelectorAll('.schema-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (!newSchemaName) {
+            alert('Please enter a name for the new folder');
+            return;
+        }
+
+        if (selectedSchemas.length < 2) {
+            alert('Please select at least two folders to merge');
+            return;
+        }
+
+        // Send merge request to server
+        fetch('/merge-schemas', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                newSchemaName: newSchemaName,
+                selectedSchemas: selectedSchemas
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Folders merged successfully!');
+                window.location.reload(); // Reload the page to show the new schema
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while merging folders');
+        });
+    });
+});
+
+// Ensure page reload on back navigation to prevent stale data
+window.onpageshow = function(event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+};
+</script>
+
+<style>
+.clusterize-scroll {
+    max-height: 400px; /* Adjust as needed */
+    overflow-y: auto;
+}
+
+.database-option {
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.database-option:hover {
+    background-color: #f8f9fa;
+}
+
+.filterInput,
+.filterSubstringInput {
+    margin-bottom: 5px;
+}
+
+.form-row .col {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+.no-results {
+    text-align: center;
+    margin-top: 10px;
+    color: #888;
+}
+</style>
+
+{% endblock %}

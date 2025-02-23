@@ -1,0 +1,22 @@
+.table-container {
+    position: relative;
+}
+
+.top-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 16px; /* Adjust based on scrollbar height */
+}
+
+.top-scroll .scroll-content {
+    width: max-content;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.table-wrapper table {
+    width: max-content;
+    min-width: 100%;
+} 

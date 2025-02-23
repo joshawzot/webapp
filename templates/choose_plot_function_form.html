@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <!-- Add a Return to Home Page button -->
+    <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+    <h3>Choose Plot Function</h3>
+    <!-- Description for choosing the plot function -->
+    <p></p>
+    <form action="" method="POST">
+        <div class="form-group">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="plot_choice" value="generate_plot">
+                    Default
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="plot_choice" value="generate_plot_read_stability">
+                    Read Stability
+                </label>
+            </div>
+        </div>
+        <!-- <div class="form-group">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="plot_choice" value="generate_plot_ber_by_bls">
+                    BER by BLs
+                </label>
+            </div>
+        </div> -->
+        <!-- <div class="form-group">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="plot_choice" value="generate_plot_separate">
+                    fitting plots separated
+                </label>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="radio">
+                <label>
+                    <input type="radio" name="plot_choice" value="generate_plot_normal_combined">
+                    normal analysis combined
+                </label>
+            </div>
+        </div> -->
+        <button type="submit" class="btn btn-primary">Choose and Continue</button>
+    </form>
+</div>
+
+{% endblock %}

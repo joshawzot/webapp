@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+    <h3>Input Form</h3>
+    <p></p>
+    <form action="/view-plot/{{ database }}/{{ table_name }}/{{ plot_function }}" method="POST" autocomplete="off" id="plotForm">
+        <div class="form-group">
+            <label for="state_pattern_type">State Pattern Type</label>
+            <select class="form-control" name="state_pattern_type" id="state_pattern_type" onchange="toggleStatePatternType()">
+                <option value="predefined">Predefined State Pattern</option>
+                <option value="1D">Reshaped and Combined Pattern</option>
+            </select>
+        </div>
+
+        <div id="1D-fields" style="display:none;">
+            <div class="form-group">
+                <label for="number_of_states">Number of States:</label>
+                <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states">
+            </div>
+            <div class="form-group">
+                <label for="selected_groups_1D">Selected States:</label>
+                <select class="form-control" name="selected_groups_1D" id="selected_groups_1D" onchange="updateCustomInput(this, 'custom_selected_groups_1D')">
+                    <option value="0,1,2,3">0,1,2,3</option>
+                    <option value="0,3">0,3</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_selected_groups_1D" id="custom_selected_groups_1D" placeholder="Enter custom values" style="display:none;" />
+            </div>
+            <div class="form-group">
+                <label for="pass_range_1D">Pass Range for Selected States:</label>
+                <select class="form-control" name="pass_range_1D" id="pass_range_1D" onchange="updateCustomInput(this, 'custom_pass_range_1D')">
+                    <option value="">None</option>
+                    <option value="40,68.88,70.88,131.88,133.88,169.88,171.88,183">40,68.88,70.88,131.88,133.88,169.88,171.88,183</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_pass_range_1D" id="custom_pass_range_1D" placeholder="Enter custom values" style="display:none;" />
+            </div>
+        </div>
+
+        <div id="predefined-fields" style="display:none;">
+            <div class="form-group">
+                <label for="state_pattern">Select a State Pattern:</label>
+                <select class="form-control" name="state_pattern" id="state_pattern">
+                    <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
+                    <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
+                    <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
+                    <option value="248x248_1state">248x248_1state</option>
+                    <option value="1296x64_1state">1296x64_1state</option>
+                    <option value="248x1_1state">248x1_1state</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="selected_groups_predefined">Selected States:</label>
+                <select class="form-control" name="selected_groups_predefined" id="selected_groups_predefined" onchange="updateCustomInput(this, 'custom_selected_groups_predefined')">
+                    <option value="0,1,2,3">0,1,2,3</option>
+                    <option value="0,3">0,3</option>
+                    <option value="0">0</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_selected_groups_predefined" id="custom_selected_groups_predefined" placeholder="Enter custom values" style="display:none;" />
+            </div>
+            <div class="form-group">
+                <label for="pass_range_predefined">Pass Range for Selected States:</label>
+                <select class="form-control" name="pass_range_predefined" id="pass_range_predefined" onchange="updateCustomInput(this, 'custom_pass_range_predefined')">
+                    <option value="">None</option>
+                    <option value="40,68.88,70.88,131.88,133.88,169.88,171.88,183">40,68.88,70.88,131.88,133.88,169.88,171.88,183</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_pass_range_predefined" id="custom_pass_range_predefined" placeholder="Enter custom values" style="display:none;" />
+            </div>
+
+            <div class="form-group">
+                <label for="outlier_analysis_flag">Enable last level Outlier Analysis:</label>
+                <input type="checkbox" name="outlier_analysis_flag" id="outlier_analysis_flag" value="True">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="color_map_flag">Enable Color Map:</label>
+            <input type="checkbox" name="color_map_flag" id="color_map_flag" value="True">
+        </div>
+
+        <!-- Add the new target values input field -->
+        <div class="form-group">
+            <label for="target_values">Target Values (not required):</label>
+            <input type="text" class="form-control" name="target_values" id="target_values" placeholder="Enter target values (e.g., 1,50,100,150)">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<script>
+    function initializeForm() {
+        // Reset the entire form first
+        document.getElementById('plotForm').reset();
+        
+        // Force select the default option "Predefined State Pattern" and trigger change event
+        var statePatternType = document.getElementById('state_pattern_type');
+        statePatternType.value = 'predefined';
+        
+        // Reset all form fields to their default states
+        var fields1D = document.getElementById('1D-fields');
+        var fieldsPredefined = document.getElementById('predefined-fields');
+        var numberOfStates = document.getElementById('number_of_states');
+        var outlierAnalysis = document.getElementById('outlier_analysis_flag');
+        
+        // Reset custom inputs
+        document.getElementById('custom_selected_groups_1D').style.display = 'none';
+        document.getElementById('custom_selected_groups_1D').value = '';
+        document.getElementById('custom_pass_range_1D').style.display = 'none';
+        document.getElementById('custom_pass_range_1D').value = '';
+        document.getElementById('custom_selected_groups_predefined').style.display = 'none';
+        document.getElementById('custom_selected_groups_predefined').value = '';
+        document.getElementById('custom_pass_range_predefined').style.display = 'none';
+        document.getElementById('custom_pass_range_predefined').value = '';
+        
+        // Reset dropdowns to their first options
+        document.getElementById('selected_groups_1D').value = '0,1,2,3';
+        document.getElementById('pass_range_1D').value = '';
+        document.getElementById('selected_groups_predefined').value = '0,1,2,3';
+        document.getElementById('pass_range_predefined').value = '';
+        document.getElementById('state_pattern').selectedIndex = 0;
+        
+        // Reset checkboxes
+        outlierAnalysis.checked = false;
+        document.getElementById('color_map_flag').checked = false;
+        
+        // Call toggleStatePatternType to set proper visibility
+        toggleStatePatternType();
+    }
+
+    // Handle both initial page load and back/forward navigation
+    window.addEventListener('pageshow', function(event) {
+        // Always initialize the form, whether it's a fresh load or back-forward navigation
+        initializeForm();
+    });
+
+    // Prevent form data persistence
+    window.addEventListener('unload', function() {
+        // This helps prevent form data persistence in some browsers
+    });
+
+    window.onload = function() {
+        initializeForm();
+    };
+
+    function updateCustomInput(select, inputId) {
+        var customInput = document.getElementById(inputId);
+        if (select.value === 'custom') {
+            customInput.style.display = 'block';
+        } else {
+            customInput.style.display = 'none';
+        }
+    }
+
+    function toggleStatePatternType() {
+        var patternType = document.getElementById('state_pattern_type').value;
+        var fields1D = document.getElementById('1D-fields');
+        var fieldsPredefined = document.getElementById('predefined-fields');
+        var numberOfStates = document.getElementById('number_of_states');
+        var outlierAnalysis = document.getElementById('outlier_analysis_flag');
+
+        if (patternType === '1D') {
+            fields1D.style.display = 'block';
+            fieldsPredefined.style.display = 'none';
+            numberOfStates.value = '4';  // Set default value when 1D is selected
+            outlierAnalysis.checked = false;  // Uncheck the outlier analysis checkbox
+        } else {
+            fields1D.style.display = 'none';
+            fieldsPredefined.style.display = 'block';
+        }
+    }
+</script>
+
+{% endblock %}

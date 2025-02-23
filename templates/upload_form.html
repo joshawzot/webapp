@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Files</title>
+    <style>
+        .container {
+            width: 50%;
+            margin: auto;
+        }
+        .flash-messages {
+            color: green;
+        }
+        .error-messages {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload Files</h1>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flash-messages">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('upload_files') }}" method="post" enctype="multipart/form-data">
+            <label for="files">Select files to upload:</label><br><br>
+            <input type="file" name="files[]" id="files" multiple><br><br>
+            <input type="submit" value="Upload">
+        </form>
+    </div>
+</body>
+</html> 

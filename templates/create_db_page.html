@@ -1,0 +1,84 @@
+<div class="container">
+    <div class="border p-3 mb-4">
+        <h3>Create New Folder:</h3>
+        <form action="/create-database" method="post" class="mb-3" id="createFolderForm">
+            <div class="form-group">
+                <label for="userName">User Name:</label>
+                <input type="text" name="userName" id="userName" class="form-control" placeholder="Enter user name" onkeydown="return noUnderscoresAndSpaces(event)">
+            </div>
+            <div class="form-group">
+                <label for="deviceInfo">Device Info:</label>
+                <select name="deviceInfo" id="deviceInfo" class="form-control">
+                    <option value="Cullinan">Cullinan</option>
+                    <option value="Slate">Slate</option>
+                    <option value="Flint">Flint</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="chipInfo">Chip Info:</label>
+                <input type="text" name="chipInfo" id="chipInfo" class="form-control" placeholder="Enter chip info" onkeydown="return noUnderscoresAndSpaces(event)">
+            </div>
+            <div class="form-group"></div>
+                <label for="branchInfo">Macro Info:</label>
+                <input type="text" name="macroInfo" id="macroInfo" class="form-control" placeholder="Enter Macro info" onkeydown="return noUnderscoresAndSpaces(event)">
+            </div>
+            <div class="form-group">
+                <label for="commitInfo">Commit Info:</label>
+                <input type="text" name="commitInfo" id="commitInfo" class="form-control" placeholder="Enter commit info" onkeydown="return noUnderscoresAndSpaces(event)">
+            </div>
+            <div class="form-group">
+                <label for="descriptionOfTest">Description of Test:</label>
+                <input type="text" name="descriptionOfTest" id="descriptionOfTest" class="form-control" placeholder="Enter description of test" onkeydown="return noUnderscoresAndSpaces(event)">
+            </div>
+            <button type="submit" class="btn btn-primary">Create Folder</button>
+        </form>
+        <div class="mt-4">
+            <h4>About Commit Info</h4>
+            <img src="/static/pics/push_example.png" class="img-fluid" style="max-width: 500px;">
+            <img src="/static/pics/commit_example.png" alt="Commit Info" class="img-fluid" style="max-width: 500px;">
+            <p>After a successful <code>git push</code>, it returns your commit ID as in the first screenshot. You can also check it in Bitbucket as in the second screenshot.</p>
+
+            <!-- <h4>About Branch Info</h4>
+            <img src="/static/pics/branch_example.png" alt="Branch Example" class="img-fluid" style="max-width: 500px;">
+            <p>If you work on a shared branch, you need to pay extra attention to resolve push/pull conflicts because others are also pushing changes to the same branch, and sometimes you might get push errors. We suggest creating and working on your own branch with the following steps:</p>
+            <ol>
+                <li>Git clone an existing repo if you don't have one.</li>
+                <li>Create your own branch (say, <code>branch_xx</code>) from the source branch (say, <code>branch_1</code>): <code>git checkout -b branch_xx branch_1</code>.</li>
+                <li>Now you are working on your <code>branch_xx</code>. Once you are done, save and use <code>git commit -am 'commit message'</code> to add and commit the code.</li>
+                <li>Run <code>git push</code>, and the code is pushed to the cloud. Your code commit is now visible to others.</li>
+            </ol> -->
+        </div>
+    </div>
+</div>
+<script>
+    function noUnderscoresAndSpaces(event) {
+        if (event.key === '_' || event.key === ' ') {
+            event.preventDefault();
+            alert('Underscores and spaces are not allowed.');
+            return false;
+        }
+        return true;
+    }
+
+    // Add this JavaScript code to handle form submission
+    document.getElementById('createFolderForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const form = event.target;
+        const formData = new FormData(form);
+
+        fetch('/create-database', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message); // Show the pop-up message
+            window.location.href = '/'; // Redirect to home_page.html
+        })
+        .catch(error => {
+            alert('Failed to create database.');
+            window.location.href = '/'; // Redirect to home_page.html
+        });
+    });
+</script>

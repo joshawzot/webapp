@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+    <h3>Input Form</h3>
+    <p></p>
+    <form action="/view-plot/{{ database }}/{{ table_name }}/{{ plot_function }}" method="POST">
+        <div class="form-group">
+            <label for="state_pattern">Select a State Pattern:</label>
+            <select class="form-control" name="state_pattern" id="state_pattern">
+                <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
+                <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
+                <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
+                <option value="248x248_1state">248x248_1state</option>
+                <option value="1296x64_1state">1296x64_1state</option>
+                <option value="248x248_16states">248x248_16states</option>
+                <option value="248x1_1state">248x1_1state</option>
+            </select>
+        </div>
+        <!-- New input field for integer input -->
+        <div class="form-group">
+            <label for="input_integer">Input an Integer for max y value:</label>
+            <input type="text" class="form-control" name="input_integer" id="input_integer" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+{% endblock %}

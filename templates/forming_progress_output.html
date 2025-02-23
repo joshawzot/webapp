@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Forming Progress Output</h2>
+    <pre>{{ output }}</pre>
+    <a href="{{ url_for('home') }}" class="btn btn-primary mt-3">Return to Home Page</a>
+</div>
+{% endblock %} 

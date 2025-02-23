@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Existing viewport meta tag -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Tetramem Device Testing Webapp{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}"> <!-- assuming you have a styles.css file in a "static" folder -->
+    <script src="{{ url_for('static', filename='js/javascripts.js') }}"></script>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 class="text-center mb-4"></h1>
+        <!-- You can add navigation links, a logo, or other header elements here -->
+    </header>
+
+    <main>
+        {% block content %}
+        <!-- Default content goes here. This will be replaced by child templates that extend this base template -->
+        {% endblock %}
+    </main>
+
+    <footer class="text-center mt-4">
+        <p></p>
+        <!-- Other footer content like links, copyright information, etc. -->
+    </footer>
+</div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+</body>
+</html>

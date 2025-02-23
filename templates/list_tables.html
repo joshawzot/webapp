@@ -1,0 +1,1142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Add a Return to Home Page button -->
+    <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+
+    <!-- Drag and Drop File Upload Area -->
+    <div class="border p-3 mb-4">
+        <h3>Upload Files:</h3>
+        <form id="uploadForm" action="/upload-file" method="post" enctype="multipart/form-data" class="mb-3">
+            <input type="hidden" name="db_name" value="{{ database }}">
+            <div class="form-group">
+                <input type="file" name="files[]" id="files" multiple accept=".csv,.npy" style="display: none;">
+                <div id="drop_area" class="drag-drop-area">
+                    <p>Drag and drop files here</p>
+                    <p>or click to select files</p>
+                </div>
+            </div>
+            <div id="file_list" class="file-list">
+                <p>No files selected</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress">
+                <div id="progress_bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>           
+    </div>
+
+    <div class="container mt-3 mb-3">
+        <!-- First row with table count and select buttons -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <p>Schema: {{ database }}</p>
+                <p id="tableCount">Number of tables: {{ tables|length }}</p>
+                <p id="selectedCount">Number of tables selected: 0</p>
+                <!-- First group: "Select Filtered", "Deselect Filtered" -->
+                <button class="btn btn-primary" id="selectAll">Select Filtered</button>
+                <button class="btn btn-secondary" id="deselectAll">Deselect Filtered</button>
+            </div>
+        </div>
+
+        <!-- Second row with plot buttons -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <!-- Second group: "Plot Selected", "Scatter Plot Selected" -->
+                <button class="btn btn-secondary" id="plotSelected">Plot Selected</button>
+                <button class="btn btn-primary" id="scatterPlotSelected">Scatter Plot Selected</button>
+            </div>
+        </div>
+
+        <!-- Third row with download buttons -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <!-- Third group: "Download Selected as CSV", "Download Selected as NPY" -->
+                <button class="btn btn-success" id="downloadSelected">Download Selected as CSV</button>
+                <button class="btn btn-primary" id="downloadSelectedNpy">Download Selected as NPY</button>
+            </div>
+        </div>
+
+        <!-- Fourth row with delete and copy buttons -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <!-- Fourth group: "Delete Selected", "Copy Selected to Another Folder" -->
+                <button class="btn btn-danger" onclick="deleteSelectedRecords('{{ database }}')">Delete Selected</button>
+                <button class="btn btn-info" id="copySelected">Copy Selected to Another Folder</button>
+            </div>
+        </div>
+
+        <!-- Fifth row with combine buttons -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <!-- Fifth group: "Concatenate Selected (...)", "Reshape and Combine Selected", "Simple Combine", "Simple Combine Columns" -->
+                <button class="btn btn-warning" id="concatenateSelected">Concatenate Selected (...)</button>
+                <button class="btn btn-success" id="mergeSelected">Reshape and Combine Selected</button>
+                <button class="btn btn-secondary" id="simpleCombine">Simple Combine</button>
+                <button class="btn btn-info" id="combineSingleColumns">Simple Combine Columns</button>
+            </div>
+        </div>
+
+        <!-- Filter fields -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="tableFilter" class="form-control" placeholder="Filter table names on the fly">
+            </div>
+        </div>
+        <!-- First set of filter fields with "AND" logic -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="andFilters" class="form-control" placeholder="Enter comma-separated substrings for AND filtering">
+            </div>
+        </div>
+
+        <!-- New row of OR filter fields with "OR" logic -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="orFilters" class="form-control" placeholder="Enter comma-separated substrings for OR filtering">
+            </div>
+        </div>
+
+        <!-- New row for AND NOT filter fields -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="andNotFilters" class="form-control" placeholder="Enter comma-separated substrings for AND NOT filtering">
+            </div>
+        </div>
+
+        <!-- New row for OR NOT filter fields -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="orNotFilters" class="form-control" placeholder="Enter comma-separated substrings for OR NOT filtering">
+            </div>
+        </div>
+
+        <!-- New row for special "IO" OR filter fields -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="ioOrFilters" class="form-control" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
+            </div>
+        </div>
+    </div>
+
+    <ul id="table-list" class="list-group no-bullets">
+        {% for table in tables %}
+            <li data-table-name="{{ table['table_name'] }}" class="table-item">
+                <input type="checkbox" id="select-table-{{ loop.index }}" class="table-checkbox" data-table-name="{{ table['table_name'] }}">
+                <button class="btn btn-primary btn-sm" onclick="window.location.href='{{ url_for('view_table', database=database, table_name=table['table_name']) }}'">View</button>
+                <span class="table-name" contenteditable="true" data-original-name="{{ table['table_name'] }}">{{ table['table_name'] }}</span>
+                <span id="table-name-{{ loop.index }}" class="table-name">({{ table['dimensions'] }})</span>
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script>
+    // Declare variables in the outer scope so they're accessible throughout the script
+    let selectionState = {};
+    let tableItems = [];
+
+    // Debounce function to limit how often the filter function runs
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    // Utility function to get selected and visible table names
+    function getSelectedVisibleTableNames() {
+        const checkboxes = document.querySelectorAll('#table-list .table-item:not(.hidden) .table-checkbox:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-table-name'));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the selection state object
+        selectionState = {};
+
+        // Cache the table items after the DOM content is loaded
+        tableItems = Array.from(document.querySelectorAll('#table-list .table-item'));
+
+        // Function to update the count of selected tables
+        function updateSelectedCount() {
+            const selectedCount = Object.values(selectionState).filter(Boolean).length;
+            document.getElementById('selectedCount').textContent = 'Number of tables selected: ' + selectedCount;
+        }
+
+        // Function to update the table count
+        function updateTableCount() {
+            const totalTables = document.querySelectorAll('#table-list .table-item:not(.hidden)').length;
+            document.getElementById('tableCount').textContent = 'Number of tables: ' + totalTables;
+        }
+
+        // Function to filter tables
+        function filterTables() {
+            // Get values of existing filters
+            const filterText = document.getElementById('tableFilter').value.toLowerCase();
+            const andFiltersText = document.getElementById('andFilters').value.toLowerCase();
+            const orFiltersText = document.getElementById('orFilters').value.toLowerCase();
+
+            // Get values of new "does not contain" filters
+            const andNotFiltersText = document.getElementById('andNotFilters').value.toLowerCase();
+            const orNotFiltersText = document.getElementById('orNotFilters').value.toLowerCase();
+
+            // Get value of the new "IO" OR filter
+            const ioOrFiltersText = document.getElementById('ioOrFilters').value.toLowerCase();
+
+            // Split the comma-separated substrings into arrays
+            const andFilters = andFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+            const orFilters = orFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+            const andNotFilters = andNotFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+            const orNotFilters = orNotFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+            const ioOrFilters = ioOrFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+
+            const anyOrFiltersAreNonEmpty = orFilters.length > 0;
+            const anyOrNotFiltersAreNonEmpty = orNotFilters.length > 0;
+            const anyIoOrFiltersAreNonEmpty = ioOrFilters.length > 0;
+
+            tableItems.forEach(function(item) {
+                const tableName = item.getAttribute('data-table-name');
+                const tableNameLower = tableName.toLowerCase();
+
+                // Check if the item passes the main filter text
+                const passesFilterText = filterText === '' || tableNameLower.includes(filterText);
+
+                // Check if the item passes all AND filters
+                const passesAndFilters = andFilters.every(substring => tableNameLower.includes(substring));
+
+                // Check if the item passes the OR filters
+                const passesOrFilters = !anyOrFiltersAreNonEmpty || orFilters.some(substring => tableNameLower.includes(substring));
+
+                // Check if the item does not contain any of the AND NOT filters
+                const passesAndNotFilters = andNotFilters.every(substring => !tableNameLower.includes(substring));
+
+                // Check if the item does not contain any of the OR NOT filters
+                const passesOrNotFilters = !anyOrNotFiltersAreNonEmpty || orNotFilters.every(substring => !tableNameLower.includes(substring));
+
+                // Special check for the new ioOrFilters
+                // Each ioOrFilter must appear exactly (not followed by a digit)
+                function passesIoOrFilter(filter) {
+                    const idx = tableNameLower.indexOf(filter);
+                    if (idx === -1) return false;
+                    // Check the next character
+                    const nextChar = tableNameLower.charAt(idx + filter.length);
+                    // If nextChar is not a digit (or doesn't exist), then it matches exactly
+                    return !nextChar.match(/[0-9]/);
+                }
+                const passesIoOrFilters = !anyIoOrFiltersAreNonEmpty || ioOrFilters.some(f => passesIoOrFilter(f));
+
+                // Combine all filter conditions
+                const passesAllFilters =
+                    passesFilterText &&
+                    passesAndFilters &&
+                    passesOrFilters &&
+                    passesAndNotFilters &&
+                    passesOrNotFilters &&
+                    passesIoOrFilters;
+
+                // Show or hide the item based on the combined filters
+                if (passesAllFilters) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+
+                // Update the checkbox state based on selectionState
+                const checkbox = item.querySelector('.table-checkbox');
+                checkbox.checked = selectionState[tableName] || false;
+            });
+
+            // Update the table count based on visible tables
+            updateTableCount();
+        }
+
+        // Initialize selection state and add event listeners to checkboxes
+        const checkboxes = document.querySelectorAll('.table-checkbox');
+
+        checkboxes.forEach(function(checkbox) {
+            const tableName = checkbox.getAttribute('data-table-name');
+
+            // Initialize the selection state based on the initial state of the checkbox
+            selectionState[tableName] = checkbox.checked;
+
+            // Listen for changes to update selection state and count
+            checkbox.addEventListener('change', function() {
+                selectionState[tableName] = checkbox.checked;
+                updateSelectedCount(); // Update the selected count
+            });
+        });
+
+        // Update the selected count on page load
+        updateSelectedCount();
+
+        // Update the table count on page load
+        updateTableCount();
+
+        // Attach debounced filter function to input events
+        const debouncedFilterTables = debounce(filterTables, 300);
+
+        document.getElementById('tableFilter').addEventListener('input', debouncedFilterTables);
+        document.getElementById('andFilters').addEventListener('input', debouncedFilterTables);
+        document.getElementById('orFilters').addEventListener('input', debouncedFilterTables);
+        document.getElementById('andNotFilters').addEventListener('input', debouncedFilterTables);
+        document.getElementById('orNotFilters').addEventListener('input', debouncedFilterTables);
+        document.getElementById('ioOrFilters').addEventListener('input', debouncedFilterTables);
+
+        // Call filterTables once on page load to initialize the display
+        filterTables();
+
+        // Ensure the selectAll and deselectAll buttons work with the updated selectionState
+        document.getElementById('selectAll').addEventListener('click', function() {
+            const visibleItems = document.querySelectorAll('#table-list .table-item:not(.hidden)');
+            visibleItems.forEach(function(item) {
+                const checkbox = item.querySelector('.table-checkbox');
+                checkbox.checked = true;
+
+                // Update selection state
+                const tableName = item.getAttribute('data-table-name');
+                selectionState[tableName] = true;
+            });
+
+            updateSelectedCount(); // Update the selected count
+        });
+
+        document.getElementById('deselectAll').addEventListener('click', function() {
+            const visibleItems = document.querySelectorAll('#table-list .table-item:not(.hidden)');
+            visibleItems.forEach(function(item) {
+                const checkbox = item.querySelector('.table-checkbox');
+                checkbox.checked = false;
+
+                // Update selection state
+                const tableName = item.getAttribute('data-table-name');
+                selectionState[tableName] = false;
+            });
+
+            updateSelectedCount(); // Update the selected count
+        });
+
+        // Drag and Drop functionality for file upload
+        var dropArea = document.getElementById('drop_area');
+        var fileInput = document.getElementById('files');
+        var fileList = document.getElementById('file_list');
+        var uploadedFiles = [];
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function(eventName) {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(function(eventName) {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+
+        // Corrected unhighlight event listeners
+        ['dragleave', 'drop'].forEach(function(eventName) {
+            dropArea.addEventListener('click', unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropArea.classList.add('highlight');
+        }
+
+        function unhighlight(e) {
+            dropArea.classList.remove('highlight');
+        }
+
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            var dt = e.dataTransfer;
+            var files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle selected files
+        dropArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function() {
+            var files = fileInput.files;
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            files = [...files];
+            files.forEach(function(file) {
+                // Check if file type is accepted
+                if (['.csv', '.npy'].some(ext => file.name.endsWith(ext))) {
+                    uploadedFiles.push(file);
+                } else {
+                    alert('Unsupported file type: ' + file.name);
+                }
+            });
+            displayFiles();
+        }
+
+        function displayFiles() {
+            fileList.innerHTML = '';
+
+            uploadedFiles.forEach(function(file, index) {
+                var listItem = document.createElement('p');
+                listItem.textContent = file.name;
+                fileList.appendChild(listItem);
+            });
+        }
+
+        // Upload Functionality
+        var uploadForm = document.getElementById('uploadForm');
+        uploadForm.addEventListener('submit', function(event) {
+            // Show the loading overlay
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            // Create a FormData object
+            var formData = new FormData(uploadForm);
+
+            // Append the files
+            uploadedFiles.forEach(function(file) {
+                formData.append('files[]', file);
+            });
+
+            // Send the form data via AJAX
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', uploadForm.action, true);
+
+            // Update the progress bar during upload
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    var percentComplete = Math.round((e.loaded / e.total) * 100);
+                    var progressBar = document.getElementById('progress_bar');
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.setAttribute('aria-valuenow', percentComplete);
+                    progressBar.textContent = percentComplete + '%';
+                }
+            });
+
+            // Hide the overlay and reset progress bar upon completion
+            xhr.onloadend = function() {
+                document.getElementById('loadingOverlay').style.display = 'none';
+                var progressBar = document.getElementById('progress_bar');
+                progressBar.style.width = '0%';
+                progressBar.setAttribute('aria-valuenow', 0);
+                progressBar.textContent = '0%';
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // Refresh the page to display new tables
+                    location.reload();
+                } else {
+                    alert('An error occurred while uploading the files.');
+                }
+            };
+
+            xhr.onerror = function() {
+                alert('An error occurred while uploading the files.');
+            };
+
+            xhr.send(formData);
+
+            // Prevent the default form submission
+            event.preventDefault();
+        });
+
+        // Download CSV Functionality
+        document.getElementById('downloadSelected').addEventListener('click', async function() {
+            const tableNames = getSelectedVisibleTableNames();
+            if (tableNames.length > 0) {
+                const zip = new JSZip();
+
+                // Show the loading overlay
+                document.getElementById('loadingOverlay').style.display = 'flex';
+
+                try {
+                    for (const tableName of tableNames) {
+                        const response = await fetch(`/download_csv?database={{ database }}&table_name=${tableName}`);
+
+                        if (!response.ok) {
+                            throw new Error(`Error fetching data for ${tableName}`);
+                        }
+
+                        const data = await response.text();
+                        zip.file(`${tableName}.csv`, data);
+                    }
+
+                    const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
+                        const progressBar = document.getElementById('progress_bar');
+                        const percent = Math.round(metadata.percent);
+                        progressBar.style.width = percent + '%';
+                        progressBar.setAttribute('aria-valuenow', percent);
+                        progressBar.textContent = percent + '%';
+                    });
+
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(content);
+                    link.download = 'tables.zip';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while generating the zip file.');
+                } finally {
+                    // Hide the loading overlay and reset progress bar
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    var progressBar = document.getElementById('progress_bar');
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                    progressBar.textContent = '0%';
+                }
+            } else {
+                alert('Please select at least one table to download.');
+            }
+        });
+
+        // Download NPY Functionality
+        document.getElementById('downloadSelectedNpy').addEventListener('click', async function() {
+            const tableNames = getSelectedVisibleTableNames();
+            if (tableNames.length > 0) {
+                const zip = new JSZip();
+
+                // Show the loading overlay
+                document.getElementById('loadingOverlay').style.display = 'flex';
+
+                try {
+                    for (const tableName of tableNames) {
+                        const response = await fetch(`/download_npy?database={{ database }}&table_name=${tableName}`);
+
+                        if (!response.ok) {
+                            throw new Error(`Error fetching data for ${tableName}`);
+                        }
+
+                        const data = await response.arrayBuffer();
+                        zip.file(`${tableName}.npy`, data);
+                    }
+
+                    const content = await zip.generateAsync({ type: "blob" }, function(metadata) {
+                        const progressBar = document.getElementById('progress_bar');
+                        const percent = Math.round(metadata.percent);
+                        progressBar.style.width = percent + '%';
+                        progressBar.setAttribute('aria-valuenow', percent);
+                        progressBar.textContent = percent + '%';
+                    });
+
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(content);
+                    link.download = 'tables_npy.zip';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while generating the zip file.');
+                } finally {
+                    // Hide the loading overlay and reset progress bar
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    var progressBar = document.getElementById('progress_bar');
+                    progressBar.style.width = '0%';
+                    progressBar.setAttribute('aria-valuenow', 0);
+                    progressBar.textContent = '0%';
+                }
+            } else {
+                alert('Please select at least one table to download.');
+            }
+        });
+
+        // Function to delete selected tables
+        function deleteSelectedRecords(database) {
+            const tableNames = getSelectedVisibleTableNames();
+            if (tableNames.length > 0) {
+                if (confirm('Are you sure you want to delete the selected tables?')) {
+                    fetch(`/delete-records/${database}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ tables: tableNames }),
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Remove the deleted tables from the DOM
+                            tableNames.forEach(function(tableName) {
+                                const tableItem = document.querySelector(`.table-item[data-table-name="${tableName}"]`);
+                                if (tableItem) {
+                                    tableItem.remove();
+                                }
+                            });
+
+                            // Update the table count
+                            updateTableCount();
+
+                            // Update the selected count
+                            updateSelectedCount();
+                        } else {
+                            alert('Error deleting tables.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error deleting tables.');
+                    });
+                }
+            } else {
+                alert('Please select at least one table to delete.');
+            }
+        }
+
+        // Add the event listener for the "Concatenate Selected" button
+        document.getElementById('concatenateSelected').addEventListener('click', function() {
+            const tableNames = getSelectedVisibleTableNames();
+            const database = '{{ database }}';
+
+            if (tableNames.length >= 2) {
+                // Prompt the user for the name of the new concatenated table
+                const newTableName = prompt('Enter the name for the new concatenated table:');
+                if (newTableName) {
+                    // Show the loading overlay
+                    document.getElementById('loadingOverlay').style.display = 'flex';
+
+                    // Send a POST request to the server to concatenate the tables
+                    fetch(`/concatenate_tables`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            database: database,
+                            tableNames: tableNames,
+                            newTableName: newTableName.trim(),
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        // Hide the loading overlay
+                        document.getElementById('loadingOverlay').style.display = 'none';
+
+                        if (result.success) {
+                            alert(`Tables concatenated successfully into "${newTableName}".`);
+                            // Refresh the page to show the new table
+                            location.reload();
+                        } else {
+                            alert(`Error: ${result.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Hide the loading overlay
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        alert('An error occurred while concatenating the tables.');
+                    });
+                }
+            } else {
+                alert('Please select at least two tables to concatenate.');
+            }
+        });
+
+        // Add the event listener for the copySelected button
+        document.getElementById('copySelected').addEventListener('click', async function() {
+            const tableNames = getSelectedVisibleTableNames();
+            if (tableNames.length > 0) {
+                // Prompt the user for the target schema name
+                const targetSchema = prompt('Enter the name of the target database/schema:');
+                if (targetSchema) {
+                    try {
+                        // Send a POST request to the server to copy the tables
+                        const response = await fetch(`/copy_tables`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                sourceDatabase: '{{ database }}',
+                                targetDatabase: targetSchema.trim(),
+                                tableNames: tableNames,
+                            }),
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok) {
+                            alert(`Tables copied successfully to "${targetSchema}".`);
+                        } else {
+                            // Handle errors, e.g., table name conflicts
+                            alert(`Error: ${result.message}`);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred while copying the tables.');
+                    }
+                }
+            } else {
+                alert('Please select at least one table to copy.');
+            }
+        });
+
+        // Add event listener to table names for renaming
+        document.querySelectorAll('.table-name[contenteditable]').forEach(function(span) {
+            span.addEventListener('blur', function() {
+                let originalName = this.getAttribute('data-original-name');
+                let newName = this.textContent.trim();
+
+                if (!newName) {
+                    alert('Table name cannot be empty.');
+                    this.textContent = originalName;
+                    return;
+                }
+
+                if (newName !== originalName) {
+                    // Send AJAX request to rename the table
+                    fetch('/rename-table', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            database: '{{ database }}',
+                            old_name: originalName,
+                            new_name: newName
+                        }),
+                    }).then(response => {
+                        if (response.ok) {
+                            // Update data-original-name attribute
+                            this.setAttribute('data-original-name', newName);
+                            // Optionally, update any other references
+                            // Update data-table-name attribute on parent li
+                            this.parentElement.setAttribute('data-table-name', newName);
+                        } else {
+                            // Handle error (e.g., revert to original name)
+                            response.text().then(errorMessage => alert(errorMessage));
+                            this.textContent = originalName;
+                        }
+                    }).catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while renaming the table.');
+                        this.textContent = originalName;
+                    });
+                }
+            });
+
+            // Prevent line breaks and handle Enter key
+            span.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.blur();
+                }
+            });
+        });
+
+        // Add the event listener for the "Simple Combine" button
+        document.getElementById('simpleCombine').addEventListener('click', function() {
+            const tableNames = getSelectedVisibleTableNames();
+            const database = '{{ database }}';
+
+            if (tableNames.length === 1) {
+                // Prompt the user for the name of the new combined table
+                const newTableName = prompt('Enter the name for the new combined table:');
+                if (newTableName) {
+                    // Show the loading overlay
+                    document.getElementById('loadingOverlay').style.display = 'flex';
+
+                    // Send a POST request to the server to perform the simple combine
+                    fetch('/simple_combine', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            database: database,
+                            tableName: tableNames[0],
+                            newTableName: newTableName.trim(),
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        // Hide the loading overlay
+                        document.getElementById('loadingOverlay').style.display = 'none';
+
+                        if (result.success) {
+                            alert(`Table combined successfully into "${newTableName}".`);
+                            // Refresh the page to show the new table
+                            location.reload();
+                        } else {
+                            alert(`Error: ${result.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Hide the loading overlay
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        alert('An error occurred while combining the table.');
+                    });
+                }
+            } else {
+                alert('Please select exactly one table to combine.');
+            }
+        });
+
+        // Add the event listener for the "Combine Single Columns" button
+        document.getElementById('combineSingleColumns').addEventListener('click', async function() {
+            const tableNames = getSelectedVisibleTableNames();
+            const database = '{{ database }}';
+
+            if (tableNames.length >= 1) {
+                // Check if all selected tables have only one column
+                const response = await fetch(`/check_single_column_tables`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        database: database,
+                        tableNames: tableNames,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Prompt the user for the name of the new combined table
+                    const newTableName = prompt('Enter the name for the new combined table:');
+                    if (newTableName) {
+                        // Show the loading overlay
+                        document.getElementById('loadingOverlay').style.display = 'flex';
+
+                        // Send a POST request to combine the tables
+                        fetch('/combine_single_columns', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                database: database,
+                                tableNames: tableNames,
+                                newTableName: newTableName.trim(),
+                            }),
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            // Hide the loading overlay
+                            document.getElementById('loadingOverlay').style.display = 'none';
+
+                            if (result.success) {
+                                alert(`Tables combined successfully into "${newTableName}".`);
+                                // Refresh the page to show the new table
+                                location.reload();
+                            } else {
+                                alert(`Error: ${result.message}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            // Hide the loading overlay
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                            alert('An error occurred while combining the tables.');
+                        });
+                    }
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            } else {
+                alert('Please select at least one table to combine.');
+            }
+        });
+
+        // Add the event listener for the "Scatter Plot Selected" button
+        document.getElementById('scatterPlotSelected').addEventListener('click', async function() {
+            const tableNames = getSelectedVisibleTableNames();
+            const database = '{{ database }}';
+
+            if (tableNames.length === 1) {
+                const tableName = tableNames[0];
+
+                // Send a request to get the column names of the selected table
+                const response = await fetch('/get_table_columns', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        database: database,
+                        tableName: tableName,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const columns = result.columns;
+
+                    if (columns.length < 2) {
+                        alert('The selected table must have at least two columns.');
+                        return;
+                    }
+
+                    // Create a modal window for column selection
+                    const modalHtml = `
+                        <div id="columnSelectModal" class="modal">
+                            <div class="modal-content">
+                                <span class="close">&times;</span>
+                                <h2>Select X-axis and Y-axis Columns</h2>
+                                <label for="xColumnSelect">X-axis:</label>
+                                <select id="xColumnSelect" class="form-control mb-2">
+                                    ${columns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                </select>
+                                <label for="yColumnSelect">Y-axis:</label>
+                                <select id="yColumnSelect" class="form-control mb-2">
+                                    ${columns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                                </select>
+                                <button id="plotButton" class="btn btn-primary mt-2">Plot</button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Append modal to the body
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                    const modal = document.getElementById('columnSelectModal');
+                    const closeModal = () => {
+                        modal.remove();
+                    };
+
+                    // Show the modal
+                    modal.style.display = 'block';
+
+                    // Close the modal when the user clicks on <span> (x)
+                    modal.querySelector('.close').onclick = closeModal;
+
+                    // Close the modal when the user clicks outside of the modal content
+                    window.onclick = function(event) {
+                        if (event.target == modal) {
+                            closeModal();
+                        }
+                    };
+
+                    // Handle the plot button click
+                    modal.querySelector('#plotButton').onclick = function() {
+                        const xColumn = document.getElementById('xColumnSelect').value;
+                        const yColumn = document.getElementById('yColumnSelect').value;
+
+                        if (xColumn === yColumn) {
+                            alert('Please select different columns for X-axis and Y-axis.');
+                            return;
+                        }
+
+                        // Remove the modal
+                        closeModal();
+
+                        // Open a new window/tab to display the scatter plot with selected columns
+                        const plotUrl = `/generate_scatter_plot/${database}/${tableName}?x_column=${encodeURIComponent(xColumn)}&y_column=${encodeURIComponent(yColumn)}`;
+                        window.open(plotUrl, '_blank');
+                    };
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            } else {
+                alert('Please select exactly one table for scatter plot.');
+            }
+        });
+    });
+
+    document.getElementById('plotSelected').addEventListener('click', function() {
+        const tableNames = getSelectedVisibleTableNames();
+        if (tableNames.length > 0) {
+            let baseUrl = "{{ url_for('view_plot', database=database, plot_function=plot_function, table_name='PLACEHOLDER') }}";
+            baseUrl = baseUrl.replace('PLACEHOLDER', tableNames.join(','));
+                
+            // Update the current state before redirecting
+            window.history.replaceState({}, '', window.location.href);
+            window.location.href = baseUrl;
+        } else {
+            alert('Please select at least one table to plot.');
+        }
+    });
+
+    function fetchDatabases() {
+        return fetch('/getDatabases')
+            .then(response => {
+                if (response.ok) return response.json();
+                throw new Error('Failed to fetch databases.');
+            })
+            .catch(error => alert(error.message));
+    }
+
+    async function selectDatabase() {
+        const databases = await fetchDatabases();
+        const selectionString = databases.map((db, index) => `${index + 1}. ${db}`).join('\n');
+        const choice = prompt(`Select a database by entering its number:\n${selectionString}`);
+        return databases[parseInt(choice) - 1];
+    }
+
+    document.getElementById('mergeSelected').addEventListener('click', function() {
+        const tableNames = getSelectedVisibleTableNames();
+        const database = '{{ database }}';
+
+        if (tableNames.length >= 1) {
+            // Create a form
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/mergeTablesInput';
+
+            // Add the database name
+            const dbInput = document.createElement('input');
+            dbInput.type = 'hidden';
+            dbInput.name = 'database';
+            dbInput.value = database;
+            form.appendChild(dbInput);
+
+            // Add the table names
+            tableNames.forEach(function(tableName) {
+                const tableInput = document.createElement('input');
+                tableInput.type = 'hidden';
+                tableInput.name = 'tableNames';
+                tableInput.value = tableName;
+                form.appendChild(tableInput);
+            });
+
+            // Add the form to the body and submit
+            document.body.appendChild(form);
+            form.submit();
+
+        } else {
+            alert('Please select at least one table to reshape and combine.');
+        }
+    });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+
+<!-- Styles after removing the Upload Files section styles -->
+<style>
+    .no-bullets {
+        list-style-type: none; /* Removes the bullets */
+        padding-left: 0; /* Removes the padding which is also part of the default list style */
+    }
+    .hidden {
+        display: none;
+    }
+    /* Styles for drag-and-drop area */
+    .drag-drop-area {
+        border: 2px dashed #ccc;
+        border-radius: 4px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .drag-drop-area:hover {
+        background-color: #f9f9f9;
+    }
+
+    .drag-drop-area.highlight {
+        border-color: #4285F4;
+    }
+
+    .file-list p {
+        margin: 5px 0;
+    }
+
+    /* Styles for progress bar */
+    .progress {
+        height: 25px;
+        margin-top: 10px;
+    }
+    .progress-bar {
+        background-color: #28a745;
+        font-weight: bold;
+        transition: width 0.4s ease;
+    }
+
+    /* Styles for loading overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Adjust loading overlay to center content if necessary */
+    .loading-overlay .progress {
+        width: 80%;
+        max-width: 400px;
+    }
+
+    /* Modal styles */
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1000; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto; /* 10% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+        max-width: 500px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+</style>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Processing...</span>
+    </div>
+    <div>Processing files...</div>
+    <!-- Progress Bar -->
+    <!-- <div class="progress w-50 mt-3">
+        <div id="progress_bar" class="progress-bar" role="progressbar"
+             style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+    </div> -->
+</div>
+
+<!-- Close body and html tags -->
+</body>
+</html>
+
+{% endblock %}

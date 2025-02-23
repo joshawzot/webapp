@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Add a Return to Home Page button in the first row -->
+<div class="row mb-3">
+    <div class="col">
+        <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+    </div>
+</div>
+
+<!-- Add a Download Images as PPTX button in the second row -->
+<div class="row">
+    <div class="col">
+        <button class="btn btn-success" id="downloadPPTX">Download all as PPTX</button>
+    </div>
+</div>
+
+<div class="mb-4">
+    {% for plot in plot_data %}
+        <div class="plot-container mb-3">
+            <img src="data:image/png;base64,{{ plot }}" alt="Generated Plot" class="img-fluid">
+            <button class="btn btn-primary mt-2" onclick="downloadPlot('{{ plot }}', {{ loop.index }})">Download Plot</button>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Link to external JavaScript libraries and your scripts.js file -->
+
+<script>
+    document.getElementById('downloadPPTX').addEventListener('click', function() {
+        var plots = Array.from(document.querySelectorAll('.plot-container img')).map(function(img) {
+            return img.src; // This is the Base64 encoded image
+        });
+    
+        fetch('{{ url_for('download_pptx') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({plots: plots}),
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            // Create a link to download the blob
+            var url = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'Downloaded_Presentation.pptx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+    });
+    </script>
+
+<!-- Add code to display the sorted table names at the end -->
+{% if sorted_table_names %}
+    <h3>IO sorted with BER low to high (table_names must contain such as "io34_" to have io number extracted):</h3>
+    <pre>{{ sorted_table_names|join(', ') }}</pre>
+{% endif %}
+
+{% if sorted_table_names_100ppm %}
+    <h3>IO sorted with BER ≤ 100ppm:</h3>
+    <pre>{{ sorted_table_names_100ppm|join(', ') }}</pre>
+{% endif %}
+
+{% if sorted_table_names_200ppm %}
+    <h3>IO sorted with BER ≤ 200ppm:</h3>
+    <pre>{{ sorted_table_names_200ppm|join(', ') }}</pre>
+{% endif %}
+
+{% if sorted_table_names_500ppm %}
+    <h3>IO sorted with BER ≤ 500ppm:</h3>
+    <pre>{{ sorted_table_names_500ppm|join(', ') }}</pre>
+{% endif %}
+
+{% if sorted_table_names_1000ppm %}
+    <h3>IO sorted with BER ≤ 1000ppm:</h3>
+    <pre>{{ sorted_table_names_1000ppm|join(', ') }}</pre>
+{% endif %}
+
+<!-- Add the following two sections to display the best 32 IOs -->
+{% if best_32 %}
+    <h3>Top 32 IOs sorted with BER low to high:</h3>
+    <pre>{{ best_32|join(', ') }}</pre>
+{% endif %}
+
+{% if best_32_with_io %}
+    <h3>Top 32 IOs with 'io' prefix:</h3>
+    <pre>{{ best_32_with_io|join(', ') }}</pre>
+{% endif %}
+
+<!-- Individual Points Map -->
+{% if outlier_coordinates and cluster_map %}
+<div class="card mb-3">
+    <div class="card-header">
+        <h4>Individual Points Map</h4>
+    </div>
+    <div class="card-body">
+        <div class="map-container">
+            <img src="data:image/png;base64,{{ cluster_map }}" alt="Individual Points Map" class="img-fluid">
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if outlier_coordinates %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <h4>Outlier Analysis (Values < 50)</h4>
+        </div>
+        <div class="card-body">
+            <!-- Summary Statistics -->
+            <p>Total Outliers: {{ outlier_coordinates|length }}</p>
+
+            <!-- Outliers Table -->
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Table</th>
+                            <th>Coordinates (row, col)</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for outlier in outlier_coordinates %}
+                        <tr>
+                            <td>{{ outlier.table }}</td>
+                            <td>({{ outlier.coordinates[0] }}, {{ outlier.coordinates[1] }})</td>
+                            <td>{{ "%.3f"|format(outlier.value) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- After the sigma plot but before the BER results -->
+{% if target_values %}
+    <div class="sigma-distance-tables mt-4 mb-4">
+        <h3>Sigma Distance Analysis</h3>
+        {% for table_name in table_names %}
+            <div class="table-responsive mb-4">
+                <h4>{{ table_name }}</h4>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>-4sigma</th>
+                            <th>-3sigma</th>
+                            <th>-2sigma</th>
+                            <th>-1sigma</th>
+                            <th>Mean</th>
+                            <th>1sigma</th>
+                            <th>2sigma</th>
+                            <th>3sigma</th>
+                            <th>4sigma</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for state_idx in range(num_states) %}
+                            <tr>
+                                <th>State {{ state_idx }}</th>
+                                {% for sigma_val in sigma_distances[table_name][state_idx] %}
+                                    <td>{{ "%.1f"|format(sigma_val) }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- Add Sigma Intersections Table -->
+{% if sigma_table %}
+    <div class="sigma-intersections-tables mt-4 mb-4">
+        <h3>Sigma Intersections Analysis</h3>
+        {% for table_name in table_names %}
+            <div class="table-responsive mb-4">
+                <h4>{{ table_name }}</h4>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            {% for sigma in sigma_points %}
+                                <th>{{ sigma }}σ</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for state_idx in range(sigma_table[table_name]|length) %}
+                            <tr>
+                                <th>State {{ state_idx }}</th>
+                                {% for x_val in sigma_table[table_name][state_idx] %}
+                                    <td>{{ "%.1f"|format(x_val) if not x_val|is_nan else "N/A" }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% endblock %}

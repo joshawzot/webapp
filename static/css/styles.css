@@ -1,0 +1,10 @@
+body {
+    margin: 20px;
+}
+.container {
+    max-width: 1200px;
+}
+.image-container img {
+    max-width: 100%;
+    height: auto;
+}

@@ -101,13 +101,13 @@ for db in $databases; do
             fi
         fi
         
-        # Export schema only (no data) using mysqldump
-        echo "Exporting schema for $db..."
+        # Export schema and data using mysqldump
+        echo "Exporting schema and data for $db..."
         mysqldump -h "$SOURCE_HOST" -P "$SOURCE_PORT" -u "$SOURCE_USER" \
-            --no-data --routines --triggers --events --set-gtid-purged=OFF "$db" > "/tmp/${db}_schema.sql"
+            --routines --triggers --events --set-gtid-purged=OFF "$db" > "/tmp/${db}_schema.sql"
         
         if [ $? -ne 0 ]; then
-            error_exit "Failed to export schema for database: $db"
+            error_exit "Failed to export schema and data for database: $db"
         fi
         
         # Create fresh database on target server
@@ -118,12 +118,12 @@ for db in $databases; do
             error_exit "Failed to create database on target server: $db"
         fi
         
-        # Import schema to target server
-        echo "Importing schema to target server..."
+        # Import schema and data to target server
+        echo "Importing schema and data to target server..."
         import_result=$(mysql -h "$TARGET_HOST" -P "$TARGET_PORT" -u "$TARGET_USER" "$db" < "/tmp/${db}_schema.sql" 2>&1)
         if [ $? -ne 0 ]; then
-            echo -e "${RED}Error importing schema: $import_result${NC}"
-            error_exit "Failed to import schema for database: $db"
+            echo -e "${RED}Error importing schema and data: $import_result${NC}"
+            error_exit "Failed to import schema and data for database: $db"
         fi
         
         # Clean up temporary file

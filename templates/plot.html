@@ -206,6 +206,71 @@
             </div>
         {% endfor %}
     </div>
+
+    <!-- Add Sigma Drift Analysis Table -->
+    <div class="sigma-drift-tables mt-4 mb-4">
+        <h3>Sigma Drift Analysis</h3>
+        {% for table_name in table_names %}
+            <div class="table-responsive mb-4">
+                <h4>{{ table_name }}</h4>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            {% for sigma in sigma_points %}
+                                <th>{{ sigma }}σ</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for state_idx in range(sigma_table[table_name]|length) %}
+                            <tr>
+                                <th>State {{ state_idx }}</th>
+                                {% for i in range(sigma_points|length) %}
+                                    {% if i == 0 %}
+                                        <!-- For -4σ column: current value - next value -->
+                                        {% set current_val = sigma_table[table_name][state_idx][i] %}
+                                        {% set next_val = sigma_table[table_name][state_idx][i+1] %}
+                                        {% if not current_val|is_nan and not next_val|is_nan %}
+                                            <td>{{ "%.1f"|format(current_val - next_val) }}</td>
+                                        {% else %}
+                                            <td>N/A</td>
+                                        {% endif %}
+                                    {% elif i == 4 %}
+                                        <!-- For 0σ column: mean value - target value -->
+                                        {% set mean_val = sigma_table[table_name][state_idx][i] %}
+                                        {% if target_values and state_idx < target_values|length and not mean_val|is_nan %}
+                                            <td>{{ "%.1f"|format(mean_val - target_values[state_idx]) }}</td>
+                                        {% else %}
+                                            <td>N/A</td>
+                                        {% endif %}
+                                    {% elif i < 4 %}
+                                        <!-- For negative sigma columns (-3σ, -2σ, -1σ): current value - next value -->
+                                        {% set current_val = sigma_table[table_name][state_idx][i] %}
+                                        {% set next_val = sigma_table[table_name][state_idx][i+1] %}
+                                        {% if not current_val|is_nan and not next_val|is_nan %}
+                                            <td>{{ "%.1f"|format(current_val - next_val) }}</td>
+                                        {% else %}
+                                            <td>N/A</td>
+                                        {% endif %}
+                                    {% else %}
+                                        <!-- For positive sigma columns (1σ, 2σ, 3σ, 4σ): current value - previous value -->
+                                        {% set current_val = sigma_table[table_name][state_idx][i] %}
+                                        {% set prev_val = sigma_table[table_name][state_idx][i-1] %}
+                                        {% if not current_val|is_nan and not prev_val|is_nan %}
+                                            <td>{{ "%.1f"|format(current_val - prev_val) }}</td>
+                                        {% else %}
+                                            <td>N/A</td>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
 {% endif %}
 
 {% endblock %}

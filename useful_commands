@@ -35,3 +35,14 @@ cd /app
 sudo rm -rf /app/*
 
 cd /databk
+
+sudo systemctl restart auto_start_python.service
+sudo systemctl stop auto_start_python.service
+python3 run.py
+
+
+
+sudo systemctl restart jupyter_notebook.service
+sudo systemctl stop jupyter_notebook.service
+sudo systemctl status jupyter_notebook.service
+python3 launch_jupyter.py

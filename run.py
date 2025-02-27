@@ -26,6 +26,10 @@ cache = Cache(app)
 # Add this line to increase the maximum allowed payload to 1GB (adjust as needed)
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 100  # 100MB
 
+# Configure Jupyter proxy
+from jupyter_proxy import configure_jupyter_proxy
+app = configure_jupyter_proxy(app)
+
 # Error handler for file size exceeding MAX_CONTENT_LENGTH
 @app.errorhandler(413)
 def too_large(e):

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Jupyter Notebook - RWB Analysis</h2>
+            <div class="alert alert-info">
+                <strong>Note:</strong> Any changes you make to the notebook will be saved automatically to the server.
+                <hr>
+                <p><strong>What happens when you edit the notebook:</strong></p>
+                <ul>
+                    <li>All code changes are saved to the server's filesystem in real-time</li>
+                    <li>Changes may affect analysis results for all users of this notebook</li>
+                    <li>If you plan to make substantial modifications, consider creating a backup copy first</li>
+                    <li>The notebook environment has access to all the database manipulation tools and visualization functions</li>
+                </ul>
+            </div>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary mb-3">Back to Home</a>
+            <a href="http://localhost:8888/notebooks/rwb.ipynb?token={{ token }}" target="_blank" class="btn btn-primary mb-3">
+                <i class="fas fa-external-link-alt"></i> Open in New Tab
+            </a>
+        </div>
+    </div>
+    
+    <!-- Removed iframe and loading content -->
+</div>
+
+<script>
+    // Script to handle the "Open in New Tab" button
+    document.addEventListener('DOMContentLoaded', function() {
+        // Try different Jupyter URLs if the default one fails when opening in new tab
+        const tryAlternativeUrls = (event) => {
+            const openTabButton = document.querySelector('a.btn-primary');
+            const baseUrl = "http://localhost:8888";
+            const token = "{{ token }}";
+            
+            // List of URL formats to try
+            const urls = [
+                `${baseUrl}/notebooks/rwb.ipynb?token=${token}`,
+                `${baseUrl}/notebooks/rwb.ipynb`,
+                `${baseUrl}/tree/rwb.ipynb?token=${token}`
+            ];
+            
+            // Function to check if a URL is accessible
+            const checkUrl = async (url) => {
+                try {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    return response.ok;
+                } catch {
+                    return false;
+                }
+            };
+            
+            // Try each URL in sequence
+            (async () => {
+                for (const url of urls) {
+                    if (await checkUrl(url)) {
+                        openTabButton.href = url;
+                        return;
+                    }
+                }
+            })();
+        };
+        
+        // Run the check when the page loads
+        tryAlternativeUrls();
+    });
+</script>
+{% endblock %} 

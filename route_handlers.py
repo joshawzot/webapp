@@ -1555,3 +1555,93 @@ def get_disk_space():
     except Exception as e:
         print(f"Error getting disk space: {e}")
         return "Unknown"
+
+# Jupyter Notebook integration
+@app.route('/notebook')
+def jupyter_notebook():
+    """
+    Render the page that contains an iframe to the Jupyter notebook server.
+    This will be the entry point for users to access the rwb.ipynb notebook.
+    """
+    # Check if we have a running Jupyter server from external script
+    status_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.jupyter_status.json')
+    
+    if os.path.exists(status_file):
+        try:
+            with open(status_file, 'r') as f:
+                status = json.load(f)
+            
+            # Check if the process is still running
+            pid = status.get('pid')
+            if pid:
+                try:
+                    # On Unix, this will raise an error if the process doesn't exist
+                    os.kill(pid, 0)
+                    
+                    # Process exists, return the notebook page
+                    token = status.get('token', '')
+                    return render_template('jupyter_notebook.html', token=token)
+                except:
+                    # Process doesn't exist anymore
+                    pass
+        except:
+            # Error reading status file
+            pass
+    
+    # If we get here, we need to tell the user to start the Jupyter server first
+    return render_template('jupyter_start_instructions.html')
+
+@app.route('/jupyter/<path:path>')
+def jupyter_proxy(path=''):
+    """
+    Proxy requests to the Jupyter server.
+    """
+    # Read the token from the file
+    token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.jupyter_token')
+    token = ''
+    
+    try:
+        if os.path.exists(token_file):
+            with open(token_file, 'r') as f:
+                token = f.read().strip()
+    except:
+        pass
+    
+    # Build the target URL
+    jupyter_url = f'http://localhost:8888/{path}'
+    
+    # Add token if we have one and it's not already in the URL
+    if token and 'token=' not in request.query_string.decode('utf-8'):
+        jupyter_url += f'?token={token}'
+    
+    return redirect(jupyter_url)
+
+@app.route('/check-jupyter')
+def check_jupyter():
+    """API endpoint to check if Jupyter server is running"""
+    status_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.jupyter_status.json')
+    
+    if os.path.exists(status_file):
+        try:
+            with open(status_file, 'r') as f:
+                status = json.load(f)
+            
+            # Check if the process is still running
+            pid = status.get('pid')
+            if pid:
+                try:
+                    # On Unix, this will raise an error if the process doesn't exist
+                    os.kill(pid, 0)
+                    
+                    # Process exists
+                    return jsonify({
+                        "status": "running",
+                        "url": status.get('url', ''),
+                        "token": status.get('token', '')
+                    })
+                except:
+                    return jsonify({"status": "stopped", "message": "Process not running"})
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)})
+    
+    return jsonify({"status": "not_found", "message": "Jupyter server status unknown"})

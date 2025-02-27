@@ -308,7 +308,7 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, figsize=(
                         if not line_drawn:
                             horizontal_line_y_value = None
                             ppm = None
-                    else:
+                    else:  #it was due to extreme case where all x values are identical (perfect distribution where we can see sometimes in level3 and when data points are less), the ber must be given 0 (to deal with this special case) since interpolation becomes mathematically impossible
                         ber = 0
                         ppm_ber = 0
                         ppm = 0

@@ -28,3 +28,10 @@ admin2@hawaii:~/webapp_2$ pwd; df -h .
 /home/admin2/webapp_2
 Filesystem      Size  Used Avail Use% Mounted on
 /dev/nvme0n1p3  456G  268G  166G  62% /
+
+sudo kill -9 $(sudo netstat -tulpn | grep 3000 | awk '{print $7}' | cut -d'/' -f1)
+
+cd /app
+sudo rm -rf /app/*
+
+cd /databk

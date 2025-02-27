@@ -201,18 +201,18 @@ def plot_transformed_cdf_2(data, selected_groups):
 
             if not line_drawn:
                 print("No suitable points found to draw a horizontal line.")
-            else:
-                ber = 0
-                ppm_ber = 0
-                ppm = 0
-                horizontal_line_y_value = 0
+        else:
+            ber = 0
+            ppm_ber = 0
+            ppm = 0
+            horizontal_line_y_value = 0
 
-            if horizontal_line_y_value is not None:
-                hlyv_rounded = round(abs(horizontal_line_y_value), 4)
-            else:
-                hlyv_rounded = None  # or 0, depending on your preference
-            #ber_results.append(('', f'state{start_state} to state{end_state}', ber, ppm_ber, ppm, round(abs(horizontal_line_y_value), 4)))
-            ber_results.append((f'state{start_state} to state{end_state}', ppm_ber, ppm))
+        if horizontal_line_y_value is not None:
+            hlyv_rounded = round(abs(horizontal_line_y_value), 4)
+        else:
+            hlyv_rounded = None  # or 0, depending on your preference
+        #ber_results.append(('', f'state{start_state} to state{end_state}', ber, ppm_ber, ppm, round(abs(horizontal_line_y_value), 4)))
+        ber_results.append((f'state{start_state} to state{end_state}', ppm_ber, ppm))
 
     print("ber_results:", ber_results)
    

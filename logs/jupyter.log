@@ -1,22 +1,23 @@
-[W 2025-02-27 00:10:54.458 LabApp] 'notebook_dir' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'token' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-27 00:10:54.458 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[I 2025-02-27 00:10:54.460 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
-[I 2025-02-27 00:10:54.460 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
-[I 00:10:54.461 NotebookApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
-[I 00:10:54.461 NotebookApp] Jupyter Notebook 6.1.5 is running at:
-[I 00:10:54.461 NotebookApp] http://hawaii:8888/?token=...
-[I 00:10:54.461 NotebookApp]  or http://127.0.0.1:8888/?token=...
-[I 00:10:54.461 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-[W 00:11:38.115 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=0hzNQzhA3U9rQs7vcNSZkOirY9XC0spD (127.0.0.1) 7.76ms referer=http://192.168.68.215:3000/
-[W 00:11:38.277 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (127.0.0.1) 0.44ms referer=http://192.168.68.215:3000/
-[W 00:11:38.447 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=0hzNQzhA3U9rQs7vcNSZkOirY9XC0spD (127.0.0.1) 0.45ms referer=http://192.168.68.215:3000/
-[W 00:11:41.475 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250227001054 (127.0.0.1) 0.98ms referer=http://localhost:8888/notebooks/rwb.ipynb
-[I 00:11:41.601 NotebookApp] Kernel started: 6bfcd9f4-b8b9-4ce9-8b47-d8cb614bd7b4, name: python3
-[W 00:14:12.572 NotebookApp] WebSocket ping timeout after 119846 ms.
-[I 00:14:17.576 NotebookApp] Starting buffering for 6bfcd9f4-b8b9-4ce9-8b47-d8cb614bd7b4:21aa6ed4e4744d04b77357071cff80ff
+[W 2025-02-28 08:01:44.079 LabApp] 'notebook_dir' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'token' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-02-28 08:01:44.079 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[I 2025-02-28 08:01:44.081 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
+[I 2025-02-28 08:01:44.081 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
+[I 08:01:44.082 NotebookApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
+[I 08:01:44.082 NotebookApp] Jupyter Notebook 6.1.5 is running at:
+[I 08:01:44.082 NotebookApp] http://hawaii:8888/?token=...
+[I 08:01:44.082 NotebookApp]  or http://127.0.0.1:8888/?token=...
+[I 08:01:44.082 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[W 08:11:19.351 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 7.62ms referer=http://192.168.68.215:3000/
+[W 08:11:19.504 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.42ms referer=http://192.168.68.215:3000/
+[W 08:11:19.664 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.44ms referer=http://192.168.68.215:3000/
+[W 08:11:23.054 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.96ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 08:11:23.346 NotebookApp] Kernel started: e0c55334-d807-44e2-a93b-bc78a9a5cd3c, name: python3
+[I 08:11:43.443 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:41265cfc33914fa589e1dfd039b714b7
+[W 08:11:45.413 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.43ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 08:11:46.716 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:513ba47b99f24bf884a16e292c03a0b8

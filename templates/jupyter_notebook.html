@@ -12,12 +12,11 @@
                 <ul>
                     <li>All code changes are saved to the server's filesystem in real-time</li>
                     <li>Changes may affect analysis results for all users of this notebook</li>
-                    <li>If you plan to make substantial modifications, consider creating a backup copy first</li>
-                    <li>The notebook environment has access to all the database manipulation tools and visualization functions</li>
+                    <li>If you plan to make modifications, consider creating a backup copy first</li>
                 </ul>
             </div>
             <a href="{{ url_for('home') }}" class="btn btn-secondary mb-3">Back to Home</a>
-            <a href="http://localhost:8888/notebooks/rwb.ipynb?token={{ token }}" target="_blank" class="btn btn-primary mb-3">
+            <a href="http://{{ request.host.split(':')[0] }}:8888/notebooks/rwb.ipynb?token={{ token }}" target="_blank" class="btn btn-primary mb-3">
                 <i class="fas fa-external-link-alt"></i> Open in New Tab
             </a>
         </div>
@@ -32,7 +31,8 @@
         // Try different Jupyter URLs if the default one fails when opening in new tab
         const tryAlternativeUrls = (event) => {
             const openTabButton = document.querySelector('a.btn-primary');
-            const baseUrl = "http://localhost:8888";
+            const host = window.location.hostname;
+            const baseUrl = `http://${host}:8888`;
             const token = "{{ token }}";
             
             // List of URL formats to try

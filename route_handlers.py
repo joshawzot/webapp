@@ -37,6 +37,7 @@ import numpy as np
 from io import BytesIO
 import scipy.io
 import shutil
+import socket
 
 # Create a lock for thread-safe plotting
 #plot_lock = threading.Lock()
@@ -707,12 +708,54 @@ def merge_tables_input():
         return 'Database or table names not provided', 400
     return render_template('input_form_merge.html', database=database, table_names=table_names)
 
+'''Original array:
+[[ 1  2  3  4]
+ [ 5  6  7  8]
+ [ 9 10 11 12]]
+
+Pattern array:
+[[3 1 4 2]
+ [2 4 1 3]
+ [4 3 2 1]]
+
+Flattened array:
+[ 1  2  3  4  5  6  7  8  9 10 11 12]
+
+Flattened pattern:
+[3 1 4 2 2 4 1 3 4 3 2 1]
+
+Pattern indices (argsort result):
+[ 1  6 11  3  4 10  0  7  9  2  5  8]
+
+Reordered array:
+[ 2  7 12  4  5 11  1  8 10  3  6  9]
+
+Reshaped to (a*b, 1):
+[[ 2]
+ [ 7]
+ [12]
+ [ 4]
+ [ 5]
+ [11]
+ [ 1]
+ [ 8]
+ [10]
+ [ 3]
+ [ 6]
+ [ 9]]'''
+
 @app.route('/mergeTablesProcess', methods=['POST'])
 def merge_tables_process():
     database = request.form.get('database')
     table_names = request.form.getlist('tableNames')
     state_pattern = request.form.get('state_pattern')
     new_table_name = request.form.get('newTableName')
+
+    print(f"DEBUG: Starting merge process with parameters:")
+    print(f"DEBUG: Database: {database}")
+    print(f"DEBUG: Table names: {table_names}")
+    print(f"DEBUG: State pattern: {state_pattern}")
+    print(f"DEBUG: New table name: {new_table_name}")
 
     if not database:
         return 'Database not specified', 400
@@ -733,6 +776,7 @@ def merge_tables_process():
 
         # Load the pattern file based on state_pattern
         pattern_files = {
+            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
             "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
             "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
@@ -744,50 +788,114 @@ def merge_tables_process():
 
         file_path = pattern_files.get(state_pattern)
         if not file_path or not os.path.exists(file_path):
+            print(f"DEBUG: Pattern file not found: {file_path}")
             return 'Invalid state pattern or file not found', 400
 
         # Load the pattern array and flatten it
+        print(f"DEBUG: Loading pattern file from: {file_path}")
         pattern_array = np.load(file_path)
+        print(f"DEBUG: Pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
+        
         a, b = pattern_array.shape
+        print(f"DEBUG: Pattern dimensions: a={a}, b={b}")
+        
         pattern_flat = pattern_array.flatten()
+        print(f"DEBUG: Pattern flat shape: {pattern_flat.shape}, size: {pattern_flat.size}")
+        print(f"DEBUG: Pattern flat min: {pattern_flat.min()}, max: {pattern_flat.max()}")
+        
+        # Print the first few elements of pattern_flat to verify content
+        print(f"DEBUG: First 10 elements of pattern_flat: {pattern_flat[:10]}")
+        
+        # Count unique values in pattern
+        unique_values, counts = np.unique(pattern_flat, return_counts=True)
+        print(f"DEBUG: Unique values in pattern: {unique_values}")
+        print(f"DEBUG: Counts of unique values: {counts}")
 
         for table_name in table_names:
+            print(f"\nDEBUG: Processing table: {table_name}")
             query = f"SELECT * FROM `{table_name}`"
             cursor.execute(query)
             rows = cursor.fetchall()
+            print(f"DEBUG: Fetched {len(rows)} rows from table")
+            
+            if len(rows) == 0:
+                print(f"DEBUG: Warning - Empty table: {table_name}")
+                continue
+                
             columns = [desc[0] for desc in cursor.description]
+            print(f"DEBUG: Column count: {len(columns)}")
+            
             df = pd.DataFrame(rows, columns=columns)
-
+            print(f"DEBUG: DataFrame shape: {df.shape}")
+            
+            # Check for missing values
+            if df.isnull().values.any():
+                print("DEBUG: Warning - DataFrame contains NaN values")
+            
             # Convert DataFrame to numpy array
             arr = df.to_numpy()
-
+            print(f"DEBUG: Array shape: {arr.shape}, dtype: {arr.dtype}")
+            
+            # Print a sample of the array
+            if arr.size > 0:
+                print(f"DEBUG: Array sample (first element): {arr.flat[0]}")
+            
             # Flatten the array
             arr_flat = arr.flatten()
-
-            # Ensure that arr_flat and pattern_flat are the same size
+            print(f"DEBUG: Flattened array shape: {arr_flat.shape}, size: {arr_flat.size}")
+            
+            # Check for size mismatch before proceeding
             if arr_flat.size != pattern_flat.size:
-                return 'Pattern file and table data dimensions do not match', 400
+                print(f"DEBUG: Size mismatch! arr_flat.size: {arr_flat.size}, pattern_flat.size: {pattern_flat.size}")
+                return f'Pattern file ({pattern_flat.size} elements) and table data ({arr_flat.size} elements) dimensions do not match', 400
 
             # Get indices that would sort the pattern_flat
+            print("DEBUG: Calculating argsort of pattern_flat...")
             pattern_indices = np.argsort(pattern_flat)
+            print(f"DEBUG: Pattern indices shape: {pattern_indices.shape}")
+            print(f"DEBUG: First 10 indices: {pattern_indices[:10]}")
 
             # Reorder arr_flat according to pattern_indices
-            arr_reordered = arr_flat[pattern_indices]
+            print("DEBUG: Reordering arr_flat according to pattern_indices...")
+            try:
+                arr_reordered = arr_flat[pattern_indices]
+                print(f"DEBUG: Reordered array shape: {arr_reordered.shape}")
+            except Exception as e:
+                print(f"DEBUG: Error during reordering: {str(e)}")
+                return f'Error during reordering: {str(e)}', 500
 
             # Reshape to (a*b, 1)
-            arr_new = arr_reordered.reshape((a * b, 1))
+            print(f"DEBUG: Reshaping to ({a*b}, 1)...")
+            try:
+                arr_new = arr_reordered.reshape((a * b, 1))
+                print(f"DEBUG: Reshaped array shape: {arr_new.shape}")
+            except Exception as e:
+                print(f"DEBUG: Error during reshaping: {str(e)}")
+                return f'Error during reshaping: {str(e)}', 500
 
             # Append to list
             reshaped_arrays.append(arr_new)
+            print(f"DEBUG: Successfully processed table: {table_name}")
 
+        print(f"\nDEBUG: All tables processed. Reshaped arrays count: {len(reshaped_arrays)}")
+        
         if reshaped_arrays:
             # Concatenate all reshaped arrays along axis=1
-            combined_array = np.concatenate(reshaped_arrays, axis=1)
+            print("DEBUG: Concatenating arrays...")
+            try:
+                combined_array = np.concatenate(reshaped_arrays, axis=1)
+                print(f"DEBUG: Combined array shape: {combined_array.shape}")
+            except Exception as e:
+                print(f"DEBUG: Error during concatenation: {str(e)}")
+                return f'Error during concatenation: {str(e)}', 500
 
             # Convert back to DataFrame
+            print("DEBUG: Converting to DataFrame...")
             combined_df = pd.DataFrame(combined_array)
+            print(f"DEBUG: Combined DataFrame shape: {combined_df.shape}")
 
             # Rename duplicate columns
+            print("DEBUG: Renaming duplicate columns...")
             combined_df = rename_duplicate_columns(combined_df)
 
             # Check if the new table name already exists
@@ -797,8 +905,10 @@ def merge_tables_process():
                 return 'A table with the new name already exists.', 400
 
             # Create the new table in the database using SQLAlchemy engine
+            print(f"DEBUG: Saving data to new table: {new_table_name}")
             engine = create_db_engine(database)
             combined_df.to_sql(new_table_name, engine, if_exists='fail', index=False)
+            print("DEBUG: Table saved successfully")
 
             # Clean up
             cursor.close()
@@ -814,6 +924,8 @@ def merge_tables_process():
             return 'No tables were reshaped and combined.', 400
 
     except Exception as e:
+        print(f"DEBUG: Unexpected error: {str(e)}")
+        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         return str(e), 500
 
 @app.route('/copy_tables', methods=['POST'])
@@ -1633,15 +1745,30 @@ def check_jupyter():
                     # On Unix, this will raise an error if the process doesn't exist
                     os.kill(pid, 0)
                     
+                    # Process exists - update URL to use correct hostname instead of localhost
+                    hostname = socket.gethostname()
+                    
                     # Process exists
                     return jsonify({
                         "status": "running",
-                        "url": status.get('url', ''),
+                        "url": f"http://{hostname}:8888",
                         "token": status.get('token', '')
                     })
-                except:
-                    return jsonify({"status": "stopped", "message": "Process not running"})
+                except Exception as e:
+                    # Process doesn't exist
+                    return jsonify({
+                        "status": "stopped",
+                        "message": f"Process not running. Please restart the systemd service: sudo systemctl restart jupyter_notebook.service"
+                    })
         except Exception as e:
-            return jsonify({"status": "error", "message": str(e)})
+            # Error reading status file
+            return jsonify({
+                "status": "error",
+                "message": f"Error checking status: {str(e)}. Please restart the systemd service."
+            })
     
-    return jsonify({"status": "not_found", "message": "Jupyter server status unknown"})
+    # No status file
+    return jsonify({
+        "status": "not_started",
+        "message": "Jupyter server has not been started. Please run the systemd service."
+    })

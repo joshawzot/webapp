@@ -387,9 +387,13 @@ def get_group_data_new(table_name, selected_groups, database_name, number_of_sta
         for j in range(num_col_groups + (1 if partial_cols > 0 else 0)):
             start_row = i * rows_per_group
             end_row = (i + 1) * rows_per_group if i < num_row_groups else total_rows
+            print("start_row:", start_row)
+            print("end_row:", end_row)
 
             start_col = j * cols_per_group
             end_col = (j + 1) * cols_per_group if j < num_col_groups else total_cols
+            print("start_col:", start_col)
+            print("end_col:", end_col)
 
             # Check if this group is selected
             if group_idx in selected_groups:

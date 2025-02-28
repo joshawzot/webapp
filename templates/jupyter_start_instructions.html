@@ -39,12 +39,13 @@
             .then(response => response.json())
             .then(data => {
                 const statusElement = document.getElementById('jupyter-status');
+                const host = window.location.hostname;
                 
                 if (data.status === 'running') {
                     statusElement.innerHTML = `
                         <div class="alert alert-success">
                             <p><strong>Jupyter server is now running!</strong></p>
-                            <a href="${data.url}/notebooks/rwb.ipynb?token=${data.token}" class="btn btn-success">
+                            <a href="http://${host}:8888/notebooks/rwb.ipynb?token=${data.token}" class="btn btn-success">
                                 Open Notebook Directly
                             </a>
                             <a href="{{ url_for('jupyter_notebook') }}" class="btn btn-primary">

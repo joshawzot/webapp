@@ -46,3 +46,32 @@ sudo systemctl restart jupyter_notebook.service
 sudo systemctl stop jupyter_notebook.service
 sudo systemctl status jupyter_notebook.service
 python3 launch_jupyter.py
+
+
+
+git log --graph --oneline --all
+
+
+
+
+
+I want to creat a new branch and push the current changes to the new created branch
+# 1. Create a new branch and switch to it
+git checkout -b jupyter-systemd-integration
+
+# 2. Add all current changes
+git add .
+
+# 3. Commit the changes
+git commit -m "Integrate Jupyter notebook with systemd service"
+
+# 4. Push the new branch to the remote repository
+git push -u origin jupyter-systemd-integration
+
+
+
+
+
+sudo apt-get update && sudo apt-get install -y git-gui git-extras
+which gitk
+gitk --all

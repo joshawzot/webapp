@@ -1,6 +1,7 @@
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import Flask, redirect, request, Response
 import requests
+import socket
 
 def configure_jupyter_proxy(app):
     """
@@ -40,9 +41,12 @@ def configure_jupyter_proxy(app):
         # Get the Jupyter token from the app config
         token = app.config.get('JUPYTER_TOKEN', '')
         
+        # Get the server's hostname
+        hostname = socket.gethostname()
+        
         # Build the target URL
         path = request.path[8:]  # Remove the /jupyter/ prefix
-        jupyter_url = f'http://localhost:8888/{path}'
+        jupyter_url = f'http://{hostname}:8888/{path}'
         
         # Add the query string and token
         query_string = request.query_string.decode('utf-8')

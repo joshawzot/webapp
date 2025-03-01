@@ -345,7 +345,7 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, figsize=(
             buf_cdf.close()
 
 from db_operations import create_connection, fetch_data, close_connection, create_db_engine, create_db, get_all_databases, connect_to_db, fetch_tables, rename_database
-def get_group_data_new(table_name, selected_groups, database_name, number_of_states):
+def get_group_data_new(table_name, selected_groups, database_name, number_of_states, custom_division=False):
     connection = create_connection(database_name)
     query = f"SELECT * FROM `{table_name}`"
     cursor = connection.cursor()
@@ -371,45 +371,42 @@ def get_group_data_new(table_name, selected_groups, database_name, number_of_sta
     groups = []
     groups_stats = []  # List to store statistics for each group
 
-    rows_per_group, cols_per_group = int(first_dimension/number_of_states), second_dimension
-    total_rows, total_cols = data_np.shape
-
-    num_row_groups = total_rows // rows_per_group
-    num_col_groups = total_cols // cols_per_group
-    num_of_groups = num_col_groups * num_row_groups
-    partial_rows = total_rows % rows_per_group  # Check if there's a partial row group
-    partial_cols = total_cols % cols_per_group  # Check if there's a partial column group
-
-    group_idx = 0  # Initialize group index
-    real_selected_groups = []
-
-    for i in range(num_row_groups + (1 if partial_rows > 0 else 0)):
-        for j in range(num_col_groups + (1 if partial_cols > 0 else 0)):
-            start_row = i * rows_per_group
-            end_row = (i + 1) * rows_per_group if i < num_row_groups else total_rows
-            print("start_row:", start_row)
-            print("end_row:", end_row)
-
-            start_col = j * cols_per_group
-            end_col = (j + 1) * cols_per_group if j < num_col_groups else total_cols
-            print("start_col:", start_col)
-            print("end_col:", end_col)
-
+    # Use custom division sizes if requested and number_of_states is 4
+    if custom_division and number_of_states == 4:
+        # Custom division sizes [21080, 19880, 21072, 20912]
+        custom_sizes = [21080, 19880, 21072, 20912]
+        print("Using custom division sizes:", custom_sizes)
+        total_rows, total_cols = data_np.shape
+        
+        # Verify that the sum of custom sizes matches the total rows
+        if sum(custom_sizes) != total_rows:
+            print(f"Warning: Sum of custom sizes ({sum(custom_sizes)}) doesn't match total rows ({total_rows}). Adjusting...")
+            # Adjust the last size to make the sum match total rows
+            custom_sizes[-1] = total_rows - sum(custom_sizes[:-1])
+            print("Adjusted custom sizes:", custom_sizes)
+            
+        start_row = 0
+        group_idx = 0
+        real_selected_groups = []
+        
+        for size in custom_sizes:
+            end_row = start_row + size
+            
             # Check if this group is selected
             if group_idx in selected_groups:
                 real_selected_groups.append(group_idx)
-
+                
                 try:
-                    group = data_np[start_row:end_row, start_col:end_col]
+                    group = data_np[start_row:end_row, :]
                     flattened_group = group.flatten()
-
+                    
                     # Filter out negative values
                     positive_flattened_group = flattened_group[flattened_group >= 0]
-
+                    
                     groups.append(positive_flattened_group)
-
+                    
                     # Calculate statistics for the positive values
-                    if len(positive_flattened_group) > 0:  # Ensure there are positive values to analyze
+                    if len(positive_flattened_group) > 0:
                         average = round(np.mean(positive_flattened_group), 2)
                         std_dev = round(np.std(positive_flattened_group), 2)
                         outlier_percentage = round(np.sum(np.abs(positive_flattened_group - average) > 2.698 * std_dev) / len(positive_flattened_group) * 100, 2)
@@ -418,8 +415,60 @@ def get_group_data_new(table_name, selected_groups, database_name, number_of_sta
                         print(f"State {group_idx} has no positive values for analysis.")
                 except IndexError as e:
                     print(f"Error accessing data slice: {e}")
+            
+            start_row = end_row
+            group_idx += 1
+    else:
+        # Original code for even division
+        rows_per_group, cols_per_group = int(first_dimension/number_of_states), second_dimension
+        total_rows, total_cols = data_np.shape
 
-            group_idx += 1  # Increment group index after each inner loop
+        num_row_groups = total_rows // rows_per_group
+        num_col_groups = total_cols // cols_per_group
+        num_of_groups = num_col_groups * num_row_groups
+        partial_rows = total_rows % rows_per_group  # Check if there's a partial row group
+        partial_cols = total_cols % cols_per_group  # Check if there's a partial column group
+
+        group_idx = 0  # Initialize group index
+        real_selected_groups = []
+
+        for i in range(num_row_groups + (1 if partial_rows > 0 else 0)):
+            for j in range(num_col_groups + (1 if partial_cols > 0 else 0)):
+                start_row = i * rows_per_group
+                end_row = (i + 1) * rows_per_group if i < num_row_groups else total_rows
+                print("start_row:", start_row)
+                print("end_row:", end_row)
+
+                start_col = j * cols_per_group
+                end_col = (j + 1) * cols_per_group if j < num_col_groups else total_cols
+                print("start_col:", start_col)
+                print("end_col:", end_col)
+
+                # Check if this group is selected
+                if group_idx in selected_groups:
+                    real_selected_groups.append(group_idx)
+
+                    try:
+                        group = data_np[start_row:end_row, start_col:end_col]
+                        flattened_group = group.flatten()
+
+                        # Filter out negative values
+                        positive_flattened_group = flattened_group[flattened_group >= 0]
+
+                        groups.append(positive_flattened_group)
+
+                        # Calculate statistics for the positive values
+                        if len(positive_flattened_group) > 0:  # Ensure there are positive values to analyze
+                            average = round(np.mean(positive_flattened_group), 2)
+                            std_dev = round(np.std(positive_flattened_group), 2)
+                            outlier_percentage = round(np.sum(np.abs(positive_flattened_group - average) > 2.698 * std_dev) / len(positive_flattened_group) * 100, 2)
+                            groups_stats.append((table_name, group_idx, average, std_dev, outlier_percentage))
+                        else:
+                            print(f"State {group_idx} has no positive values for analysis.")
+                    except IndexError as e:
+                        print(f"Error accessing data slice: {e}")
+
+                group_idx += 1  # Increment group index after each inner loop
 
     close_connection()
 
@@ -441,7 +490,7 @@ def get_group_data_new(table_name, selected_groups, database_name, number_of_sta
 
     return groups, groups_stats, real_selected_groups
 
-def get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states):
+def get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states, custom_division=False):
     connection = create_connection(database_name)
     query = f"SELECT * FROM {table_name}"
     cursor = connection.cursor()
@@ -463,82 +512,152 @@ def get_group_data_latest(target_ranges, table_name, selected_groups, database_n
     #     data_np = data_np * 1e6
 
     groups = []
-    groups_2 = []
     groups_stats = []  # List to store statistics for each group
 
-    rows_per_group, cols_per_group = int(first_dimension/number_of_states), second_dimension
-    total_rows, total_cols = data_np.shape
-
-    num_row_groups = total_rows // rows_per_group
-    num_col_groups = total_cols // cols_per_group
-    num_of_groups = num_col_groups * num_row_groups
-    partial_rows = total_rows % rows_per_group  # Check if there's a partial row group
-    partial_cols = total_cols % cols_per_group  # Check if there's a partial column group
-
-    group_idx = 0  # Initialize group index
-    real_selected_groups = []
-    count = 0
-
-    for i in range(num_row_groups + (1 if partial_rows > 0 else 0)):
-        for j in range(num_col_groups + (1 if partial_cols > 0 else 0)):
-            start_row = i * rows_per_group
-            end_row = (i + 1) * rows_per_group if i < num_row_groups else total_rows
-
-            start_col = j * cols_per_group
-            end_col = (j + 1) * cols_per_group if j < num_col_groups else total_cols
-
+    # Use custom division sizes if requested and number_of_states is 4
+    if custom_division and number_of_states == 4:
+        # Custom division sizes [21080, 19880, 21072, 20912]
+        custom_sizes = [21080, 19880, 21072, 20912]
+        print("Using custom division sizes:", custom_sizes)
+        total_rows, total_cols = data_np.shape
+        
+        # Verify that the sum of custom sizes matches the total rows
+        if sum(custom_sizes) != total_rows:
+            print(f"Warning: Sum of custom sizes ({sum(custom_sizes)}) doesn't match total rows ({total_rows}). Adjusting...")
+            # Adjust the last size to make the sum match total rows
+            custom_sizes[-1] = total_rows - sum(custom_sizes[:-1])
+            print("Adjusted custom sizes:", custom_sizes)
+            
+        start_row = 0
+        group_idx = 0
+        real_selected_groups = []
+        count = 0
+        ber_values = {}
+        
+        for size in custom_sizes:
+            end_row = start_row + size
+            
             # Check if this group is selected
-            #print("selected_groups:", selected_groups)
-            #print("group_idx:", group_idx)
             if group_idx in selected_groups:
                 real_selected_groups.append(group_idx)
-                #print("real_selected_groups:", real_selected_groups)
-
+                
                 try:
-                    print("start_row:", start_row)
-                    print("end_row:", end_row)
-                    print("start_col:", start_col)
-                    print("end_col:", end_col)                    
-                    group = data_np[start_row:end_row, start_col:end_col]
+                    group = data_np[start_row:end_row, :]
                     flattened_group = group.flatten()
-
+                    
                     # Filter out negative values
                     positive_flattened_group = flattened_group[flattened_group >= 0]
+                    
                     groups.append(positive_flattened_group)
-                    groups_2.append(group)
-
+                    
                     # Calculate statistics for the positive values
-                    if len(group) > 0:  # Ensure there are positive values to analyze
-                        average = round(np.mean(group), 2)
-                        std_dev = round(np.std(group), 2)
-
+                    if len(positive_flattened_group) > 0:
+                        average = round(np.mean(positive_flattened_group), 2)
+                        std_dev = round(np.std(positive_flattened_group), 2)
+                        
                         # Get the target range for this group
-                        print("group_idx:", group_idx)
-                        print("count:", count)
-                        #lower_bound, upper_bound = target_ranges[group_idx * 2], target_ranges[group_idx * 2 + 1]
-                        lower_bound, upper_bound = target_ranges[count * 2], target_ranges[count * 2 + 1]
-                        print("lower_bound:", lower_bound)
-                        print("upper_bound:", upper_bound)
-
-                        # Calculate the BER (ppm value of data outside the target range)
-                        out_of_range_data = group[
-                            (group < lower_bound) | (group > upper_bound)
-                        ]
-                        ber_value = round(len(out_of_range_data) / len(group) * 1e6)  # Calculate ppm
-
-                        # Store statistics including BER value
-                        outlier_percentage = round(
-                            np.sum(np.abs(group - average) > 2.698 * std_dev) / len(group) * 100, 0
-                        )
-
-                        groups_stats.append((table_name, group_idx, average, std_dev, outlier_percentage, ber_value))
+                        if count * 2 + 1 < len(target_ranges):
+                            lower_bound, upper_bound = target_ranges[count * 2], target_ranges[count * 2 + 1]
+                            
+                            # Calculate the BER (ppm value of data outside the target range)
+                            out_of_range_data = positive_flattened_group[
+                                (positive_flattened_group < lower_bound) | (positive_flattened_group > upper_bound)
+                            ]
+                            ber_value = round(len(out_of_range_data) / len(positive_flattened_group) * 1e6)  # Calculate ppm
+                            
+                            outlier_percentage = round(
+                                np.sum(np.abs(positive_flattened_group - average) > 2.698 * std_dev) / len(positive_flattened_group) * 100, 0
+                            )
+                            
+                            groups_stats.append((
+                                table_name, group_idx, average, std_dev, outlier_percentage, ber_value, lower_bound, upper_bound
+                            ))
+                            
+                            # Update BER values
+                            ber_values[f"State{count}"] = ber_value
+                        else:
+                            print(f"Warning: Target ranges not provided for group index {group_idx}")
+                        
                         count += 1
                     else:
                         print(f"State {group_idx} has no positive values for analysis.")
                 except IndexError as e:
                     print(f"Error accessing data slice: {e}")
+            
+            start_row = end_row
+            group_idx += 1
+    else:
+        # Original code for even division
+        rows_per_group, cols_per_group = int(first_dimension/number_of_states), second_dimension
+        total_rows, total_cols = data_np.shape
 
-            group_idx += 1  # Increment group index after each inner loop
+        num_row_groups = total_rows // rows_per_group
+        num_col_groups = total_cols // cols_per_group
+        num_of_groups = num_col_groups * num_row_groups
+        partial_rows = total_rows % rows_per_group  # Check if there's a partial row group
+        partial_cols = total_cols % cols_per_group  # Check if there's a partial column group
+
+        group_idx = 0  # Initialize group index
+        real_selected_groups = []
+        count = 0
+        ber_values = {}
+
+        for i in range(num_row_groups + (1 if partial_rows > 0 else 0)):
+            for j in range(num_col_groups + (1 if partial_cols > 0 else 0)):
+                start_row = i * rows_per_group
+                end_row = (i + 1) * rows_per_group if i < num_row_groups else total_rows
+
+                start_col = j * cols_per_group
+                end_col = (j + 1) * cols_per_group if j < num_col_groups else total_cols
+
+                # Check if this group is selected
+                if group_idx in selected_groups:
+                    real_selected_groups.append(group_idx)
+
+                    try:
+                        group = data_np[start_row:end_row, start_col:end_col]
+                        flattened_group = group.flatten()
+
+                        # Filter out negative values
+                        positive_flattened_group = flattened_group[flattened_group >= 0]
+
+                        groups.append(positive_flattened_group)
+
+                        # Calculate statistics for the positive values
+                        if len(positive_flattened_group) > 0:
+                            average = round(np.mean(positive_flattened_group), 2)
+                            std_dev = round(np.std(positive_flattened_group), 2)
+                            
+                            # Get the target range for this group
+                            if count * 2 + 1 < len(target_ranges):
+                                lower_bound, upper_bound = target_ranges[count * 2], target_ranges[count * 2 + 1]
+                                
+                                # Calculate the BER (ppm value of data outside the target range)
+                                out_of_range_data = positive_flattened_group[
+                                    (positive_flattened_group < lower_bound) | (positive_flattened_group > upper_bound)
+                                ]
+                                ber_value = round(len(out_of_range_data) / len(positive_flattened_group) * 1e6)  # Calculate ppm
+                                
+                                outlier_percentage = round(
+                                    np.sum(np.abs(positive_flattened_group - average) > 2.698 * std_dev) / len(positive_flattened_group) * 100, 0
+                                )
+                                
+                                groups_stats.append((
+                                    table_name, group_idx, average, std_dev, outlier_percentage, ber_value, lower_bound, upper_bound
+                                ))
+                                
+                                # Update BER values
+                                ber_values[f"State{count}"] = ber_value
+                            else:
+                                print(f"Warning: Target ranges not provided for group index {group_idx}")
+                            
+                            count += 1
+                        else:
+                            print(f"State {group_idx} has no positive values for analysis.")
+                    except IndexError as e:
+                        print(f"Error accessing data slice: {e}")
+
+                group_idx += 1  # Increment group index after each inner loop
 
     close_connection()
 
@@ -555,45 +674,46 @@ def get_group_data_latest(target_ranges, table_name, selected_groups, database_n
     print("sorted_indices:", sorted_indices)
     sorted_indices = transform_list_by_order(sorted_indices)
     groups = [groups[i] for i in sorted_indices]
-    #print(groups)
 
-   # Calculate BER values for different levels and transitions
-    num_levels = len(selected_groups)
-    ber_values = {}
-
+    # Calculate BER values for different levels and transitions
+    num_levels = len(groups)
+    
     # Level n BER
     for level in range(num_levels):
-        lower_bound, upper_bound = target_ranges[level * 2], target_ranges[level * 2 + 1]
-        level_data = groups[level]
-        if len(level_data) > 0:
-            out_of_range_data = level_data[
-                (level_data < lower_bound) | (level_data > upper_bound)
-            ]
-            ber_values[f"State{level}"] = round(len(out_of_range_data) / len(level_data) * 1e6)
-        else:
-            ber_values[f"State{level}"] = 0
+        if level * 2 + 1 < len(target_ranges):
+            lower_bound, upper_bound = target_ranges[level * 2], target_ranges[level * 2 + 1]
+            level_data = groups[level]
+            if len(level_data) > 0:
+                out_of_range_data = level_data[
+                    (level_data < lower_bound) | (level_data > upper_bound)
+                ]
+                ber_values[f"State{level}"] = round(len(out_of_range_data) / len(level_data) * 1e6)
+            else:
+                ber_values[f"State{level}"] = 0
 
     # Level n to level n-1 BER
     for level in range(1, num_levels):
-        lower_bound = target_ranges[level * 2]
-        level_data = groups[level]
-        if len(level_data) > 0:
-            ber_values[f"State{level} to State{level-1}"] = round(
-                np.sum(level_data < lower_bound) / len(level_data) * 1e6
-            )
-        else:
-            ber_values[f"State{level} to Level{level-1}"] = 0
+        if level * 2 < len(target_ranges):
+            lower_bound = target_ranges[level * 2]
+            level_data = groups[level]
+            if len(level_data) > 0:
+                ber_values[f"State{level} to State{level-1}"] = round(
+                    np.sum(level_data < lower_bound) / len(level_data) * 1e6
+                )
+            else:
+                ber_values[f"State{level} to State{level-1}"] = 0
 
     # Level n to level n+1 BER
     for level in range(num_levels - 1):
-        upper_bound = target_ranges[level*2 + 1]
-        level_data = groups[level]
-        if len(level_data) > 0:
-            ber_values[f"State{level} to State{level+1}"] = round(
-                np.sum(level_data > upper_bound) / len(level_data) * 1e6
-            )
-        else:
-            ber_values[f"State{level} to State{level+1}"] = 0
+        if level * 2 + 1 < len(target_ranges):
+            upper_bound = target_ranges[level * 2 + 1]
+            level_data = groups[level]
+            if len(level_data) > 0:
+                ber_values[f"State{level} to State{level+1}"] = round(
+                    np.sum(level_data > upper_bound) / len(level_data) * 1e6
+                )
+            else:
+                ber_values[f"State{level} to State{level+1}"] = 0
 
     return groups, groups_stats, real_selected_groups, ber_values
     

@@ -21,3 +21,25 @@
 [I 08:11:43.443 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:41265cfc33914fa589e1dfd039b714b7
 [W 08:11:45.413 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.43ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
 [I 08:11:46.716 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:513ba47b99f24bf884a16e292c03a0b8
+[W 08:15:37.727 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.42ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 08:15:41.436 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:b416ea6e012b435eb5fc1ac10d72d2a0
+[W 08:15:45.208 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.75ms referer=http://192.168.68.215:3000/
+[W 08:15:45.366 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.63ms referer=http://192.168.68.215:3000/
+[W 08:15:45.516 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.71ms referer=http://192.168.68.215:3000/
+[W 08:15:50.577 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.52ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 08:15:52.765 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:bc76d0eec82244efa27a5f5d17c7a0f8
+[W 08:16:01.645 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.42ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 08:16:12.515 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:2e7ae11acbb1495b95478df4a2fbc592
+[W 08:19:56.709 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.65ms referer=http://192.168.68.215:3000/
+[W 08:19:56.869 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
+[W 08:19:57.029 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
+[W 15:56:32.108 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.62ms referer=http://192.168.68.215:3000/
+[W 15:56:32.267 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.48ms referer=http://192.168.68.215:3000/
+[W 15:56:32.422 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.46ms referer=http://192.168.68.215:3000/
+[W 15:56:34.111 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.38ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 15:56:36.957 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:b543d740655a4e87830dc81fe0b8afe4
+[W 16:07:10.095 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.65ms referer=http://192.168.68.215:3000/
+[W 16:07:10.255 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.48ms referer=http://192.168.68.215:3000/
+[W 16:07:10.404 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
+[W 16:32:58.491 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.39ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 16:33:08.117 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:bca3776d0c4a49e6975fc8b329f3775a

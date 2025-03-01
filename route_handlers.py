@@ -776,8 +776,8 @@ def merge_tables_process():
 
         # Load the pattern file based on state_pattern
         pattern_files = {
-            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
             "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
             "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
             "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
@@ -1377,7 +1377,7 @@ def get_form_data_generate_plot(form):
             'selected_groups_1D', 'pass_range_1D', 'state_pattern',
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
-            'color_map_flag', 'outlier_analysis_flag', 'target_values'  # Added target_values here
+            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division'  # Added custom_division here
         ]
     }
 
@@ -1414,6 +1414,7 @@ def get_form_data_generate_plot(form):
     # Convert checkbox flags to boolean
     form_data['color_map_flag'] = form_data.get('color_map_flag', 'False') == 'True'
     form_data['outlier_analysis_flag'] = form_data.get('outlier_analysis_flag', 'False') == 'True'
+    form_data['custom_division'] = form_data.get('custom_division', 'False') == 'True'
 
     # Process target values
     target_values_str = form_data.get('target_values', '')

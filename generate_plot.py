@@ -423,6 +423,7 @@ def generate_plot(table_names, database_name, form_data):
     color_map_flag = form_data['color_map_flag']  # This is now a boolean
     outlier_analysis_flag = form_data.get('outlier_analysis_flag', False)  # Default to False if not provided
     target_values = form_data.get('target_values', [])  # Get target values from form_data
+    custom_division = form_data.get('custom_division', False)  # Get custom_division flag, default to False
     
     # Initialize sigma_distances and num_states at the start
     sigma_distances = {}
@@ -431,6 +432,7 @@ def generate_plot(table_names, database_name, form_data):
     print("color_map_flag:", color_map_flag)
     print("outlier_analysis_flag:", outlier_analysis_flag)
     print("target_values:", target_values)  # Print target values for debugging
+    print("custom_division:", custom_division)  # Print custom_division for debugging
 
     print("table_names:", table_names)
     table_names = reorder_tables_fuxi(table_names)
@@ -450,8 +452,8 @@ def generate_plot(table_names, database_name, form_data):
         print("state_pattern:", state_pattern)
         # Define a dictionary to map state patterns to their file paths
         pattern_files = {
-            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
             "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
             "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
             "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
@@ -521,12 +523,12 @@ def generate_plot(table_names, database_name, form_data):
     for table_name in table_names:
         if target_range_flag == 0:
             if form_data['state_pattern_type'] == '1D':
-                groups, stats, selected_groups = get_group_data_new(table_name, selected_groups, database_name, number_of_states)
+                groups, stats, selected_groups = get_group_data_new(table_name, selected_groups, database_name, number_of_states, custom_division)
             elif form_data['state_pattern_type'] == 'predefined':
                 groups, stats, selected_groups = get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array)
         elif target_range_flag == 1:
             if form_data['state_pattern_type'] == '1D':
-                groups, stats, selected_groups, table_miao_ber = get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states)
+                groups, stats, selected_groups, table_miao_ber = get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states, custom_division)
             elif form_data['state_pattern_type'] == 'predefined':
                 groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2(target_ranges, table_name, selected_groups, database_name, pattern_file_array)
             miao_ber.append(table_miao_ber)

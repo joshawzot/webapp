@@ -17,7 +17,12 @@
         <div id="1D-fields" style="display:none;">
             <div class="form-group">
                 <label for="number_of_states">Number of States:</label>
-                <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states">
+                <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states" onchange="checkCustomDivision()">
+            </div>
+            <div class="form-group" id="custom_division_container" style="display:block;">
+                <label for="custom_division">Use Custom Division [21080, 19880, 21072, 20912]:</label>
+                <input type="checkbox" name="custom_division" id="custom_division" value="True">
+                <small class="form-text text-muted">Only applicable when number of states is 4</small>
             </div>
             <div class="form-group">
                 <label for="selected_groups_1D">Selected States:</label>
@@ -43,8 +48,8 @@
             <div class="form-group">
                 <label for="state_pattern">Select a State Pattern:</label>
                 <select class="form-control" name="state_pattern" id="state_pattern">
-                    <option value="3x4_4states_debug">3x4_4states_debug</option>
                     <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
+                    <option value="3x4_4states_debug">3x4_4states_debug</option>
                     <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
                     <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
                     <option value="248x248_1state">248x248_1state</option>
@@ -128,9 +133,13 @@
         // Reset checkboxes
         outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
+        document.getElementById('custom_division').checked = false;
         
         // Call toggleStatePatternType to set proper visibility
         toggleStatePatternType();
+        
+        // Check custom division visibility
+        checkCustomDivision();
     }
 
     // Handle both initial page load and back/forward navigation
@@ -156,6 +165,19 @@
             customInput.style.display = 'none';
         }
     }
+    
+    function checkCustomDivision() {
+        var numberOfStates = document.getElementById('number_of_states').value;
+        var customDivisionContainer = document.getElementById('custom_division_container');
+        var customDivisionCheckbox = document.getElementById('custom_division');
+        
+        if (numberOfStates === '4') {
+            customDivisionContainer.style.display = 'block';
+        } else {
+            customDivisionContainer.style.display = 'none';
+            customDivisionCheckbox.checked = false;
+        }
+    }
 
     function toggleStatePatternType() {
         var patternType = document.getElementById('state_pattern_type').value;
@@ -169,6 +191,7 @@
             fieldsPredefined.style.display = 'none';
             numberOfStates.value = '4';  // Set default value when 1D is selected
             outlierAnalysis.checked = false;  // Uncheck the outlier analysis checkbox
+            checkCustomDivision();  // Check the custom division visibility
         } else {
             fields1D.style.display = 'none';
             fieldsPredefined.style.display = 'block';

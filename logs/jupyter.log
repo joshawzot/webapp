@@ -1,45 +1,45 @@
-[W 2025-02-28 08:01:44.079 LabApp] 'notebook_dir' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'token' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-02-28 08:01:44.079 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[I 2025-02-28 08:01:44.081 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
-[I 2025-02-28 08:01:44.081 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
-[I 08:01:44.082 NotebookApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
-[I 08:01:44.082 NotebookApp] Jupyter Notebook 6.1.5 is running at:
-[I 08:01:44.082 NotebookApp] http://hawaii:8888/?token=...
-[I 08:01:44.082 NotebookApp]  or http://127.0.0.1:8888/?token=...
-[I 08:01:44.082 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-[W 08:11:19.351 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 7.62ms referer=http://192.168.68.215:3000/
-[W 08:11:19.504 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.42ms referer=http://192.168.68.215:3000/
-[W 08:11:19.664 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.44ms referer=http://192.168.68.215:3000/
-[W 08:11:23.054 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.96ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 08:11:23.346 NotebookApp] Kernel started: e0c55334-d807-44e2-a93b-bc78a9a5cd3c, name: python3
-[I 08:11:43.443 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:41265cfc33914fa589e1dfd039b714b7
-[W 08:11:45.413 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.43ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 08:11:46.716 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:513ba47b99f24bf884a16e292c03a0b8
-[W 08:15:37.727 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.42ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 08:15:41.436 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:b416ea6e012b435eb5fc1ac10d72d2a0
-[W 08:15:45.208 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.75ms referer=http://192.168.68.215:3000/
-[W 08:15:45.366 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.63ms referer=http://192.168.68.215:3000/
-[W 08:15:45.516 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.71ms referer=http://192.168.68.215:3000/
-[W 08:15:50.577 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.52ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 08:15:52.765 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:bc76d0eec82244efa27a5f5d17c7a0f8
-[W 08:16:01.645 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.42ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 08:16:12.515 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:2e7ae11acbb1495b95478df4a2fbc592
-[W 08:19:56.709 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.65ms referer=http://192.168.68.215:3000/
-[W 08:19:56.869 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
-[W 08:19:57.029 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
-[W 15:56:32.108 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.62ms referer=http://192.168.68.215:3000/
-[W 15:56:32.267 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.48ms referer=http://192.168.68.215:3000/
-[W 15:56:32.422 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.46ms referer=http://192.168.68.215:3000/
-[W 15:56:34.111 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.38ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 15:56:36.957 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:b543d740655a4e87830dc81fe0b8afe4
-[W 16:07:10.095 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.65ms referer=http://192.168.68.215:3000/
-[W 16:07:10.255 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.48ms referer=http://192.168.68.215:3000/
-[W 16:07:10.404 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=vf6qe4INrE7OGDEiXZ8InbPIsXK0pccy (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
-[W 16:32:58.491 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250228080143 (192.168.88.12) 0.39ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
-[I 16:33:08.117 NotebookApp] Starting buffering for e0c55334-d807-44e2-a93b-bc78a9a5cd3c:bca3776d0c4a49e6975fc8b329f3775a
+[W 2025-03-03 19:20:15.416 LabApp] 'notebook_dir' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'token' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-03-03 19:20:15.416 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[I 2025-03-03 19:20:15.417 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
+[I 2025-03-03 19:20:15.417 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
+[I 19:20:15.419 NotebookApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
+[I 19:20:15.419 NotebookApp] Jupyter Notebook 6.1.5 is running at:
+[I 19:20:15.419 NotebookApp] http://hawaii:8888/?token=...
+[I 19:20:15.419 NotebookApp]  or http://127.0.0.1:8888/?token=...
+[I 19:20:15.419 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[W 19:20:49.433 NotebookApp] 405 HEAD /notebooks/rwb_viewer_exampleanalysis.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 7.46ms referer=http://192.168.68.215:3000/
+[W 19:20:49.585 NotebookApp] 405 HEAD /notebooks/rwb_viewer_exampleanalysis.ipynb (192.168.88.12) 0.43ms referer=http://192.168.68.215:3000/
+[W 19:20:49.745 NotebookApp] 405 HEAD /tree/rwb_viewer_exampleanalysis.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.45ms referer=http://192.168.68.215:3000/
+[W 19:20:52.706 NotebookApp] Notebook rwb_viewer_exampleanalysis.ipynb is not trusted
+[W 19:20:52.870 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250303192015 (192.168.88.12) 0.94ms referer=http://192.168.68.215:8888/notebooks/rwb_viewer_exampleanalysis.ipynb
+[I 19:20:53.959 NotebookApp] Kernel started: 429847a0-f364-4aa2-ab63-06b3f944407e, name: python3
+[I 19:20:57.693 NotebookApp] Starting buffering for 429847a0-f364-4aa2-ab63-06b3f944407e:47d5780e0d864a2b804b0fd397b0f1c3
+[W 19:21:17.023 NotebookApp] 405 HEAD /notebooks/test.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.61ms referer=http://192.168.68.215:3000/
+[W 19:21:17.175 NotebookApp] 405 HEAD /notebooks/test.ipynb (192.168.88.12) 0.40ms referer=http://192.168.68.215:3000/
+[W 19:21:17.341 NotebookApp] 405 HEAD /tree/test.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.44ms referer=http://192.168.68.215:3000/
+[W 19:21:22.677 NotebookApp] Notebook test.ipynb is not trusted
+[W 19:21:22.804 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250303192015 (192.168.88.12) 0.42ms referer=http://192.168.68.215:8888/notebooks/test.ipynb
+[I 19:21:22.856 NotebookApp] Kernel started: 7bf271f6-f4fd-4a74-8b1d-9cc89acbcf0c, name: python3
+[I 19:21:31.600 NotebookApp] Starting buffering for 7bf271f6-f4fd-4a74-8b1d-9cc89acbcf0c:7a15688584e84ad983cae2e2b8826dff
+[W 19:24:55.806 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.62ms referer=http://192.168.68.215:3000/
+[W 19:24:55.960 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.44ms referer=http://192.168.68.215:3000/
+[W 19:24:56.118 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.46ms referer=http://192.168.68.215:3000/
+[W 19:31:08.529 NotebookApp] 405 HEAD /notebooks/test.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.62ms referer=http://192.168.68.215:3000/
+[W 19:31:08.697 NotebookApp] 405 HEAD /notebooks/test.ipynb (192.168.88.12) 0.43ms referer=http://192.168.68.215:3000/
+[W 19:31:08.849 NotebookApp] 405 HEAD /tree/test.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.43ms referer=http://192.168.68.215:3000/
+[W 19:31:25.989 NotebookApp] 405 HEAD /notebooks/rwb.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.64ms referer=http://192.168.68.215:3000/
+[W 19:31:26.148 NotebookApp] 405 HEAD /notebooks/rwb.ipynb (192.168.88.12) 0.43ms referer=http://192.168.68.215:3000/
+[W 19:31:26.308 NotebookApp] 405 HEAD /tree/rwb.ipynb?token=L9iqLhpbQzT3ECJ8Z4WIJ8dmwAeVnwtk (192.168.88.12) 0.46ms referer=http://192.168.68.215:3000/
+[W 19:31:28.658 NotebookApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250303192015 (192.168.88.12) 0.43ms referer=http://192.168.68.215:8888/notebooks/rwb.ipynb
+[I 19:31:28.819 NotebookApp] Kernel started: 97d80771-0cc2-4547-ba79-c75db689b06f, name: python3
+[I 19:31:39.218 NotebookApp] Starting buffering for 97d80771-0cc2-4547-ba79-c75db689b06f:a061ab7295a04a799ed3b67ce7ada6e9
+[I 19:31:39.319 NotebookApp] Kernel restarted: 97d80771-0cc2-4547-ba79-c75db689b06f
+[I 19:31:39.648 NotebookApp] Restoring connection for 97d80771-0cc2-4547-ba79-c75db689b06f:a061ab7295a04a799ed3b67ce7ada6e9
+[I 19:31:39.648 NotebookApp] Replaying 5 buffered messages
+[I 19:32:46.896 NotebookApp] Starting buffering for 97d80771-0cc2-4547-ba79-c75db689b06f:a061ab7295a04a799ed3b67ce7ada6e9

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Jupyter Notebook Selection</h2>
+            <div class="alert alert-info">
+                <strong>Note:</strong> You can select an existing notebook to open or create a new one.
+            </div>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary mb-3">Back to Home</a>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create a New Notebook</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('create_notebook') }}" method="post">
+                        <div class="form-group">
+                            <label for="notebook_name">New Notebook Name:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="notebook_name" name="notebook_name" 
+                                       placeholder="Enter name (without .ipynb extension)" required>
+                                <div class="input-group-append">
+                                    <span class="input-group-text">.ipynb</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Only letters, numbers, underscores and hyphens are allowed.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-2">Create and Open</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Existing Notebooks</h4>
+                </div>
+                <div class="card-body">
+                    {% if notebooks %}
+                        <div class="list-group">
+                            {% for notebook in notebooks %}
+                                <a href="{{ url_for('open_notebook', notebook_name=notebook) }}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ notebook }}</h5>
+                                        <small>{{ notebook_dates[loop.index0] }}</small>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            No existing notebooks found in the postprocess directory.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

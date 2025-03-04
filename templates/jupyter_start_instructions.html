@@ -6,7 +6,7 @@
         <div class="col">
             <h2>Jupyter Notebook Server Not Running</h2>
             <div class="alert alert-warning">
-                <p><strong>The Jupyter notebook server is not running.</strong> You need to start it before you can access the RWB notebook.</p>
+                <p><strong>The Jupyter notebook server is not running.</strong> You need to start it before you can access any notebooks.</p>
             </div>
         </div>
     </div>
@@ -14,7 +14,7 @@
     <div class="row">
         <div class="col">
             <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
-            <a href="{{ url_for('jupyter_notebook') }}" class="btn btn-primary">Refresh This Page</a>
+            <a href="{{ url_for('notebook_selector') }}" class="btn btn-primary">Refresh</a>
         </div>
     </div>
     
@@ -26,6 +26,21 @@
                 </div>
                 <div class="card-body">
                     <div id="jupyter-status">Checking server status...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Admin Information</h4>
+                </div>
+                <div class="card-body">
+                    <p>If you are an administrator, you can restart the Jupyter server using the following command:</p>
+                    <pre><code>sudo systemctl restart jupyter_notebook.service</code></pre>
+                    <p>The service is managed by systemd and will automatically restart if it fails.</p>
                 </div>
             </div>
         </div>
@@ -45,11 +60,8 @@
                     statusElement.innerHTML = `
                         <div class="alert alert-success">
                             <p><strong>Jupyter server is now running!</strong></p>
-                            <a href="http://${host}:8888/notebooks/rwb.ipynb?token=${data.token}" class="btn btn-success">
-                                Open Notebook Directly
-                            </a>
-                            <a href="{{ url_for('jupyter_notebook') }}" class="btn btn-primary">
-                                Refresh This Page
+                            <a href="{{ url_for('notebook_selector') }}" class="btn btn-success">
+                                Go to Notebook Selection
                             </a>
                         </div>
                     `;

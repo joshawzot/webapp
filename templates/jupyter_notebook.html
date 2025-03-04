@@ -4,7 +4,7 @@
 <div class="container-fluid">
     <div class="row mb-3">
         <div class="col">
-            <h2>Jupyter Notebook - RWB Analysis</h2>
+            <h2>Jupyter Notebook - {{ notebook_name }}</h2>
             <div class="alert alert-info">
                 <strong>Note:</strong> Any changes you make to the notebook will be saved automatically to the server.
                 <hr>
@@ -16,7 +16,10 @@
                 </ul>
             </div>
             <a href="{{ url_for('home') }}" class="btn btn-secondary mb-3">Back to Home</a>
-            <a href="http://{{ request.host.split(':')[0] }}:8888/notebooks/rwb.ipynb?token={{ token }}" target="_blank" class="btn btn-primary mb-3">
+            <a href="{{ url_for('notebook_selector') }}" class="btn btn-info mb-3">
+                <i class="fas fa-list"></i> Back to Notebook List
+            </a>
+            <a href="http://{{ request.host.split(':')[0] }}:8888/notebooks/{{ notebook_path }}?token={{ token }}" target="_blank" class="btn btn-primary mb-3">
                 <i class="fas fa-external-link-alt"></i> Open in New Tab
             </a>
         </div>
@@ -34,12 +37,13 @@
             const host = window.location.hostname;
             const baseUrl = `http://${host}:8888`;
             const token = "{{ token }}";
+            const notebookPath = "{{ notebook_path }}";
             
             // List of URL formats to try
             const urls = [
-                `${baseUrl}/notebooks/rwb.ipynb?token=${token}`,
-                `${baseUrl}/notebooks/rwb.ipynb`,
-                `${baseUrl}/tree/rwb.ipynb?token=${token}`
+                `${baseUrl}/notebooks/${notebookPath}?token=${token}`,
+                `${baseUrl}/notebooks/${notebookPath}`,
+                `${baseUrl}/tree/${notebookPath}?token=${token}`
             ];
             
             // Function to check if a URL is accessible

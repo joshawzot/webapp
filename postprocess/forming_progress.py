@@ -32,8 +32,8 @@ rwb_pull = cf.rwb_fetch_data(regex='form', regex_col='TEST_NAME')
 
 # Restrict to dies of interest
 # die_id = ['TT21','TT22','TT24','TT25']
-die_macro_filter = pd.DataFrame({'DIE_ID': ['TT21','TT22','TT25','TT21','TT22','TT24','TT25', 'TT24'],
-                                 'MACRO': [2, 2, 2, 3, 3, 3, 3, 4]})
+die_macro_filter = pd.DataFrame({'DIE_ID': ['TT21','TT22','TT25','TT21','TT22','TT24','TT25', 'TT24','TT18', 'TT30'],
+                                 'MACRO': [2, 2, 2, 3, 3, 3, 3, 4,3,3]})
 
 # print(rwb_pull.loc[rwb_pull.DIE_ID=='tt24'].RUN_NAME.unique())
 

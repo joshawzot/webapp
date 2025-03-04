@@ -412,8 +412,8 @@ def view_plot(database, table_name, plot_function):
                     return render_template('input_form_generate_plot.html', database=database, table_name=table_name, plot_function=plot_function)
                 elif plot_function == "generate_plot_read_stability":
                     return render_template('input_form_generate_plot_read_stability.html', database=database, table_name=table_name, plot_function=plot_function)
-                #elif plot_function == "generate_plot_ber_by_bls":
-                    #return render_template('input_form_generate_plot_ber_by_bls.html', database=database, table_name=table_name, plot_function=plot_function)
+                    #elif plot_function == "generate_plot_ber_by_bls":
+                        #return render_template('input_form_generate_plot_ber_by_bls.html', database=database, table_name=table_name, plot_function=plot_function)
             else:
                 return f"Invalid plot function selection", 400
 
@@ -429,8 +429,8 @@ def view_plot(database, table_name, plot_function):
                     form_data = get_form_data_generate_plot(request.form)
                 elif plot_function == "generate_plot_read_stability":
                     form_data = get_form_data_generate_plot_read_stability(request.form)
-                #elif plot_function == "generate_plot_ber_by_bls":
-                    #form_data = get_form_data_generate_plot_ber_by_bls(request.form)
+                    #elif plot_function == "generate_plot_ber_by_bls":
+                        #form_data = get_form_data_generate_plot_ber_by_bls(request.form)
         
                 # Convert form data to JSON
                 form_data_json = json.dumps(form_data)
@@ -1673,10 +1673,55 @@ def get_disk_space():
 @app.route('/notebook')
 def jupyter_notebook():
     """
-    Render the page that contains an iframe to the Jupyter notebook server.
-    This will be the entry point for users to access the rwb.ipynb notebook.
+    Redirect to the notebook selector page instead of directly showing a specific notebook.
+    This will be the entry point for users to access all available notebooks.
     """
-    # Check if we have a running Jupyter server from external script
+    return redirect(url_for('notebook_selector'))
+
+@app.route('/notebook-selector')
+def notebook_selector():
+    """
+    Display a page with a list of available notebooks and an option to create a new one.
+    """
+    postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+    
+    # Check if the directory exists
+    if not os.path.exists(postprocess_dir):
+        os.makedirs(postprocess_dir)
+    
+    # Get all .ipynb files in the directory
+    notebooks = [f for f in os.listdir(postprocess_dir) if f.endswith('.ipynb')]
+    notebooks.sort()  # Sort alphabetically
+    
+    # Get the modification dates for each notebook
+    notebook_dates = []
+    for notebook in notebooks:
+        file_path = os.path.join(postprocess_dir, notebook)
+        mod_time = os.path.getmtime(file_path)
+        mod_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mod_time))
+        notebook_dates.append(mod_time_str)
+    
+    return render_template('notebook_selector.html', notebooks=notebooks, notebook_dates=notebook_dates)
+
+@app.route('/open-notebook/<notebook_name>')
+def open_notebook(notebook_name):
+    """
+    Open a specific Jupyter notebook.
+    """
+    # Validate the notebook name to prevent directory traversal
+    if '..' in notebook_name or '/' in notebook_name or '\\' in notebook_name:
+        flash('Invalid notebook name', 'danger')
+        return redirect(url_for('notebook_selector'))
+    
+    # Ensure the notebook exists
+    postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+    notebook_path = os.path.join(postprocess_dir, notebook_name)
+    
+    if not os.path.exists(notebook_path) or not notebook_name.endswith('.ipynb'):
+        flash('Notebook not found', 'danger')
+        return redirect(url_for('notebook_selector'))
+    
+    # Check if Jupyter server is running
     status_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.jupyter_status.json')
     
     if os.path.exists(status_file):
@@ -1693,7 +1738,12 @@ def jupyter_notebook():
                     
                     # Process exists, return the notebook page
                     token = status.get('token', '')
-                    return render_template('jupyter_notebook.html', token=token)
+                    # Calculate the relative path from notebook_dir to the target notebook
+                    notebook_rel_path = os.path.relpath(notebook_path, postprocess_dir)
+                    return render_template('jupyter_notebook.html', 
+                                           token=token, 
+                                           notebook_path=notebook_rel_path,
+                                           notebook_name=notebook_name)
                 except:
                     # Process doesn't exist anymore
                     pass
@@ -1703,6 +1753,84 @@ def jupyter_notebook():
     
     # If we get here, we need to tell the user to start the Jupyter server first
     return render_template('jupyter_start_instructions.html')
+
+@app.route('/create-notebook', methods=['POST'])
+def create_notebook():
+    """
+    Create a new Jupyter notebook with the given name.
+    """
+    notebook_name = request.form.get('notebook_name', '')
+    
+    # Validate the notebook name
+    if not notebook_name or not re.match(r'^[a-zA-Z0-9_-]+$', notebook_name):
+        flash('Invalid notebook name. Use only letters, numbers, underscores, and hyphens.', 'danger')
+        return redirect(url_for('notebook_selector'))
+    
+    # Add .ipynb extension if not present
+    if not notebook_name.endswith('.ipynb'):
+        notebook_name = f"{notebook_name}.ipynb"
+    
+    postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+    notebook_path = os.path.join(postprocess_dir, notebook_name)
+    
+    # Check if file already exists
+    if os.path.exists(notebook_path):
+        flash(f'A notebook with the name {notebook_name} already exists.', 'warning')
+        return redirect(url_for('open_notebook', notebook_name=notebook_name))
+    
+    # Create a new notebook file with basic structure
+    notebook_content = {
+        "cells": [],
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3"
+            },
+            "language_info": {
+                "codemirror_mode": {
+                    "name": "ipython",
+                    "version": 3
+                },
+                "file_extension": ".py",
+                "mimetype": "text/x-python",
+                "name": "python",
+                "nbconvert_exporter": "python",
+                "pygments_lexer": "ipython3",
+                "version": "3.8.0"
+            }
+        },
+        "nbformat": 4,
+        "nbformat_minor": 4
+    }
+    
+    # Add a default cell with import statements
+    notebook_content["cells"].append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "source": [
+            "# New Jupyter notebook\n",
+            "# Import common libraries\n",
+            "import pandas as pd\n",
+            "import numpy as np\n",
+            "import matplotlib.pyplot as plt\n",
+            "import os, sys\n",
+            "\n",
+            "# Add core processing functions\n",
+            "import core_post_processing_functions as cf\n",
+            "\n",
+            "# Your code here"
+        ],
+        "outputs": []
+    })
+    
+    # Write the notebook to file
+    with open(notebook_path, 'w') as f:
+        json.dump(notebook_content, f, indent=2)
+    
+    # Redirect to open the new notebook
+    return redirect(url_for('open_notebook', notebook_name=notebook_name))
 
 @app.route('/jupyter/<path:path>')
 def jupyter_proxy(path=''):
@@ -1720,8 +1848,11 @@ def jupyter_proxy(path=''):
     except:
         pass
     
+    # Get the server's hostname instead of hardcoded localhost
+    hostname = socket.gethostname()
+    
     # Build the target URL
-    jupyter_url = f'http://localhost:8888/{path}'
+    jupyter_url = f'http://{hostname}:8888/{path}'
     
     # Add token if we have one and it's not already in the URL
     if token and 'token=' not in request.query_string.decode('utf-8'):

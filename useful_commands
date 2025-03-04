@@ -13,22 +13,6 @@ mysql -u root -pp@ssw0rd
 df -h
 pwd; df -h .
 
-admin2@hawaii:~/webapp_2$ df -h
-Filesystem      Size  Used Avail Use% Mounted on
-tmpfs           6.3G  2.3M  6.3G   1% /run
-efivarfs        438K  255K  178K  59% /sys/firmware/efi/efivars
-/dev/nvme0n1p3  456G  267G  167G  62% /
-tmpfs            32G     0   32G   0% /dev/shm
-tmpfs           5.0M  4.0K  5.0M   1% /run/lock
-/dev/nvme1n1p1  1.8T   28K  1.7T   1% /app
-/dev/nvme2n1p1  1.8T   52K  1.7T   1% /databk
-/dev/nvme0n1p1  896M   74M  823M   9% /boot/efi
-tmpfs           6.3G  108K  6.3G   1% /run/user/1001
-admin2@hawaii:~/webapp_2$ pwd; df -h .
-/home/admin2/webapp_2
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/nvme0n1p3  456G  268G  166G  62% /
-
 sudo kill -9 $(sudo netstat -tulpn | grep 3000 | awk '{print $7}' | cut -d'/' -f1)
 
 cd /app

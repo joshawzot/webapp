@@ -1904,3 +1904,89 @@ def check_jupyter():
         "status": "not_started",
         "message": "Jupyter server has not been started. Please run the systemd service."
     })
+
+@app.route('/test-machines')
+def test_machines():
+    """
+    Display a page with test machine connections.
+    """
+    test_machines = [
+        {"ip": "192.168.68.206", "hostname": "192.168.68.206", "user": "nuc6"},
+        {"ip": "192.168.68.129", "hostname": "192.168.68.129", "user": "nuc14"},
+        #{"ip": "192.168.68.205", "hostname": "192.168.68.205", "user": "NUC5"},
+        #{"ip": "192.168.68.231", "hostname": "192.168.68.231", "user": "TC1"},
+        #{"ip": "192.168.68.235", "hostname": "192.168.68.235", "user": "TC5"},
+        {"ip": "192.168.68.124", "hostname": "192.168.68.124", "user": "slate"},
+        {"ip": "192.168.68.234", "hostname": "192.168.68.234", "user": "tc4"},
+        #{"ip": "192.168.68.120", "hostname": "192.168.68.120", "user": "tetramem"},
+        #{"ip": "192.168.68.200", "hostname": "192.168.68.200", "user": "nuc0"},
+        #{"ip": "192.168.68.164", "hostname": "192.168.68.164", "user": "lenovoi7"},
+    ]
+    
+    return render_template('test_machines.html', test_machines=test_machines)
+
+@app.route('/test-ssh-connection', methods=['POST'])
+def test_ssh_connection():
+    """
+    Test SSH connection to a specified machine and return the result.
+    """
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            
+            if not machine_ip or not machine_user:
+                return jsonify({'success': False, 'message': 'Missing IP or username'})
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$'
+            }
+            
+            # Check if we have a password for this machine
+            if machine_ip in machine_passwords:
+                password = machine_passwords[machine_ip]
+                # Use sshpass to provide the password non-interactively
+                result = subprocess.run(
+                    ['sshpass', '-p', password, 'ssh', 
+                     '-o', 'ConnectTimeout=5', 
+                     '-o', 'StrictHostKeyChecking=no', 
+                     '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', 'echo Connection successful'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+            else:
+                # For other machines, try without password (key-based auth)
+                result = subprocess.run(
+                    ['ssh', '-o', 'ConnectTimeout=5', '-o', 'BatchMode=yes', 
+                     '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', 'echo Connection successful'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+            
+            if result.returncode == 0:
+                return jsonify({
+                    'success': True, 
+                    'message': 'Connection successful',
+                    'output': result.stdout.strip()
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Connection failed',
+                    'error': result.stderr.strip()
+                })
+                
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'message': 'Connection timed out'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+    
+    return jsonify({'success': False, 'message': 'Invalid request method'})

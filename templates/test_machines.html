@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Test Machine SSH Connections</h2>
+            <div class="alert alert-info">
+                <strong>Note:</strong> Click on a machine to test the SSH connection. Green indicates a successful connection, red indicates a failure.
+            </div>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary mb-3">Back to Home</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Available Test Machines</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for machine in test_machines %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card machine-card" data-ip="{{ machine.ip }}" data-user="{{ machine.user }}">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ machine.user }}@{{ machine.ip }}</h5>
+                                    <p class="card-text">Hostname: {{ machine.hostname }}</p>
+                                    <button class="btn btn-primary test-connection">Test Connection</button>
+                                    <div class="connection-status mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Connection Information</h4>
+                </div>
+                <div class="card-body">
+                    <div id="connection-info">
+                        <p>Select a machine to test the connection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listeners to all test connection buttons
+        const testButtons = document.querySelectorAll('.test-connection');
+        testButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const card = this.closest('.machine-card');
+                const ip = card.dataset.ip;
+                const user = card.dataset.user;
+                const statusDiv = card.querySelector('.connection-status');
+                const connectionInfo = document.getElementById('connection-info');
+                
+                // Update UI to show testing
+                statusDiv.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="sr-only">Testing...</span></div>';
+                connectionInfo.innerHTML = `<p>Testing connection to ${user}@${ip}...</p>`;
+                
+                // Send request to test connection
+                const formData = new FormData();
+                formData.append('machine_ip', ip);
+                formData.append('machine_user', user);
+                
+                fetch('/test-ssh-connection', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Success
+                        card.classList.add('border-success');
+                        card.classList.remove('border-danger');
+                        statusDiv.innerHTML = '<div class="alert alert-success mb-0">Connection successful</div>';
+                        connectionInfo.innerHTML = `
+                            <div class="alert alert-success">
+                                <h5>Connection to ${user}@${ip} successful!</h5>
+                                <p><strong>Output:</strong> ${data.output}</p>
+                            </div>
+                        `;
+                    } else {
+                        // Failure
+                        card.classList.add('border-danger');
+                        card.classList.remove('border-success');
+                        statusDiv.innerHTML = '<div class="alert alert-danger mb-0">Connection failed</div>';
+                        connectionInfo.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h5>Connection to ${user}@${ip} failed</h5>
+                                <p><strong>Error:</strong> ${data.message}</p>
+                                ${data.error ? `<pre>${data.error}</pre>` : ''}
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    // Error in request
+                    card.classList.add('border-danger');
+                    card.classList.remove('border-success');
+                    statusDiv.innerHTML = '<div class="alert alert-danger mb-0">Request error</div>';
+                    connectionInfo.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5>Error testing connection to ${user}@${ip}</h5>
+                            <p>${error.message}</p>
+                        </div>
+                    `;
+                });
+            });
+        });
+    });
+</script>
+
+<style>
+    .machine-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .machine-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .border-success {
+        border: 2px solid #28a745;
+    }
+    
+    .border-danger {
+        border: 2px solid #dc3545;
+    }
+    
+    .connection-status {
+        min-height: 40px;
+    }
+</style>
+{% endblock %} 

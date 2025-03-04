@@ -49,12 +49,7 @@ python3 launch_jupyter.py
 
 
 
-git log --graph --oneline --all
-
-
-
-
-
+#--------------------------------------------------
 I want to creat a new branch and push the current changes to the new created branch
 # 1. Create a new branch and switch to it
 git checkout -b jupyter-systemd-integration
@@ -69,9 +64,10 @@ git commit -m "Integrate Jupyter notebook with systemd service"
 git push -u origin jupyter-systemd-integration
 
 
+#--------------------------------------------------------
+#I have 2 branches, one is main the other is "branch1", I want to merge the branch1 into mian (meaning that the main will be updated to the "branch1", but if there is conflict (main has its own commit after the branching of branch1, what would I do. 1. first give me the strategy when there is no conflict, and 2. give me the strategy when there is conflict
 
-
-
-sudo apt-get update && sudo apt-get install -y git-gui git-extras
-which gitk
-gitk --all
+   git checkout main
+      git fetch
+         git merge branch1
+            git push origin main

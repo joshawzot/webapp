@@ -8,7 +8,7 @@ from sqlalchemy import inspect, MetaData, Table, Column, types
 from sqlalchemy import text
 
 # Local server details
-DB_HOST = "192.168.68.164"
+DB_HOST = "192.168.68.215"
 DB_USER = "remote_user"
 MYSQL_PASSWORD_RAW = ''
 DB_PORT = 3306

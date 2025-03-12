@@ -1,0 +1,309 @@
+/* General styles for VS-like interface */
+.vs-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 120px);
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.vs-header {
+    height: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2c2c2c;
+    color: white;
+    padding: 0 15px;
+    border-bottom: 1px solid #333;
+}
+
+.vs-title {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.vs-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.vs-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Explorer panel styles */
+.vs-explorer {
+    width: 300px;
+    border-right: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    background-color: #f3f3f3;
+    overflow: hidden;
+}
+
+.vs-explorer-header {
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #6f6f6f;
+    background-color: #f3f3f3;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.vs-path-navigator {
+    display: flex;
+    padding: 5px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.vs-path-navigator input {
+    flex: 1;
+    margin-right: 5px;
+    font-size: 12px;
+}
+
+.vs-file-tree {
+    flex: 1;
+    overflow: auto;
+    padding: 5px 0;
+    font-size: 13px;
+}
+
+/* Editor panel styles */
+.vs-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+.vs-tabs {
+    height: 35px;
+    background-color: #f3f3f3;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.vs-tab-placeholder {
+    padding: 8px 15px;
+    color: #777;
+    font-style: italic;
+    font-size: 13px;
+}
+
+.vs-tab {
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    height: 35px;
+    border-right: 1px solid #e0e0e0;
+    background-color: #f3f3f3;
+    cursor: pointer;
+    font-size: 13px;
+    min-width: 120px;
+    max-width: 200px;
+    position: relative;
+}
+
+.vs-tab.active {
+    background-color: #fff;
+    border-bottom: 2px solid #007acc;
+}
+
+.vs-tab-name {
+    margin-right: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vs-tab-close {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.vs-tab-close:hover {
+    background-color: #ddd;
+}
+
+.vs-editor-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.vs-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #777;
+}
+
+.vs-status-bar {
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #007acc;
+    color: white;
+    padding: 0 15px;
+    font-size: 12px;
+}
+
+.vs-editor-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* File tree item styles */
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-item:hover {
+    background-color: #e8e8e8;
+}
+
+.file-item.selected {
+    background-color: #cce5ff;
+}
+
+.file-item .icon {
+    margin-right: 5px;
+    width: 16px;
+    text-align: center;
+}
+
+.file-item .file-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Directory item with children */
+.directory-item {
+    cursor: pointer;
+}
+
+.directory-item .icon {
+    transition: transform 0.2s;
+}
+
+.directory-item.expanded .icon.fa-folder {
+    color: #dcb67a;
+}
+
+.directory-item.expanded .icon.fa-caret-right {
+    transform: rotate(90deg);
+}
+
+.directory-contents {
+    margin-left: 15px;
+    display: none;
+}
+
+.directory-item.expanded .directory-contents {
+    display: block;
+}
+
+/* Icon colors */
+.icon.fa-folder {
+    color: #dcb67a;
+}
+
+.icon.fa-file {
+    color: #75beff;
+}
+
+.icon.python {
+    color: #4b8bbe;
+}
+
+.icon.javascript {
+    color: #f0db4f;
+}
+
+.icon.html {
+    color: #e44d26;
+}
+
+.icon.css {
+    color: #264de4;
+}
+
+.icon.json {
+    color: #f5de19;
+}
+
+.icon.markdown {
+    color: #083fa1;
+}
+
+.icon.image {
+    color: #ff9e64;
+}
+
+.icon.pdf {
+    color: #f40f02;
+}
+
+/* Loading indicator */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #777;
+}
+
+/* Monaco editor container */
+#editor-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* File explorer message notifications */
+.file-explorer-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    animation: slide-in 0.3s ease-out forwards;
+}
+
+@keyframes slide-in {
+    0% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+} 

@@ -372,3 +372,54 @@ def get_total_database_size():
     finally:
         cursor.close()
         connection.close()
+
+def create_long_running_connection(database=None):
+    """Create a database connection with increased timeout settings for long-running operations."""
+    connection = mysql.connector.connect(
+        host=DB_CONFIG['DB_HOST'],
+        user=DB_CONFIG['DB_USER'],
+        password=DB_CONFIG['MYSQL_PASSWORD_RAW'],
+        database=database,
+        connect_timeout=300,  # 5 minutes connection timeout
+        connection_timeout=300,  # 5 minutes connection timeout 
+        # For MySQL 8.0+, use these settings:
+        # net_read_timeout=3600,  # 1 hour read timeout
+        # net_write_timeout=3600,  # 1 hour write timeout
+        # Older versions may need these:
+        read_timeout=3600,    # 1 hour read timeout 
+        write_timeout=3600    # 1 hour write timeout
+    )
+    
+    # Set session variables for this connection
+    cursor = connection.cursor()
+    cursor.execute("SET SESSION wait_timeout=3600")  # 1 hour
+    cursor.execute("SET SESSION max_execution_time=3600000")  # 1 hour in milliseconds
+    cursor.execute("SET SESSION net_read_timeout=3600")  # 1 hour
+    cursor.execute("SET SESSION net_write_timeout=3600")  # 1 hour
+    cursor.execute("SET SESSION interactive_timeout=3600")  # 1 hour
+    connection.commit()
+    
+    return connection
+
+def create_long_running_engine(db_name):
+    """Create an SQLAlchemy engine with increased timeout settings."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import QueuePool
+    
+    connect_args = {
+        'connect_timeout': 300,
+        'read_timeout': 3600,
+        'write_timeout': 3600
+    }
+    
+    # Create engine with custom pool settings and connect args
+    engine = create_engine(
+        f"mysql+mysqlconnector://{DB_CONFIG['DB_USER']}:{DB_CONFIG['MYSQL_PASSWORD']}@{DB_CONFIG['DB_HOST']}/{db_name}",
+        pool_size=5,  # Start with 5 connections in the pool
+        max_overflow=10,  # Allow up to 10 additional connections
+        pool_timeout=300,  # Wait up to 5 minutes for a connection
+        pool_recycle=3600,  # Recycle connections after 1 hour
+        connect_args=connect_args
+    )
+    
+    return engine

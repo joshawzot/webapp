@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Database Statistics</h2>
+        <a href="/" class="btn btn-primary">Return to Home</a>
+    </div>
+
+    <div class="alert alert-info mb-4">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Total number of Schemas</h5>
+                <div class="display-4">{{ databases|length }}</div>
+            </div>
+            <div class="col-md-4">
+                <h5>Total Database Size</h5>
+                <div class="display-4">{{ total_size }}</div>
+            </div>
+            <div class="col-md-4">
+                <h5>Available Disk Space</h5>
+                <div class="display-4">{{ available_space }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add detailed disk space information -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Disk Space Details</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h5>Total Disk Space</h5>
+                    <div class="h4">{{ disk_info.total_space }}</div>
+                </div>
+                <div class="col-md-3">
+                    <h5>Used Disk Space</h5>
+                    <div class="h4">{{ disk_info.used_space }}</div>
+                </div>
+                <div class="col-md-3">
+                    <h5>Free Disk Space</h5>
+                    <div class="h4">{{ disk_info.free_space }}</div>
+                </div>
+                <div class="col-md-3">
+                    <h5>Disk Usage</h5>
+                    <div class="h4">{{ disk_info.usage_percent }}</div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" 
+                             style="width: {{ disk_info.usage_percent }}" 
+                             aria-valuenow="{{ disk_info.usage_percent|replace('%', '') }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ disk_info.usage_percent }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <h4>System Information</h4>
+        <div id="loading-indicator" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading system information...</span>
+            </div>
+            <p>Loading system information...</p>
+        </div>
+        <div id="system-info" class="d-none">
+            <table class="table table-striped">
+                <tbody id="system-info-table">
+                    <!-- System info will be added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load system information asynchronously to prevent slowing page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        // This is a placeholder. In a real implementation, you'd make an AJAX request
+        // to get system information from the server.
+        const systemInfo = [
+            { name: "Server Uptime", value: "73 days" },
+            { name: "CPU Usage", value: "32%" },
+            { name: "Memory Usage", value: "45%" }
+        ];
+        
+        const tableBody = document.getElementById('system-info-table');
+        systemInfo.forEach(info => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${info.name}</strong></td>
+                <td>${info.value}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        // Hide loading indicator and show system info
+        document.getElementById('loading-indicator').classList.add('d-none');
+        document.getElementById('system-info').classList.remove('d-none');
+    }, 1000); // Simulate a delay for demonstration
+});
+</script>
+{% endblock %} 

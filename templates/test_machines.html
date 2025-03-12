@@ -90,6 +90,9 @@
                             <div class="alert alert-success">
                                 <h5>Connection to ${user}@${ip} successful!</h5>
                                 <p><strong>Output:</strong> ${data.output}</p>
+                                <a href="/remote-commands?ip=${ip}&user=${user}" class="btn btn-success mt-2">
+                                    <i class="fas fa-terminal"></i> Run Commands on Machine
+                                </a>
                             </div>
                         `;
                     } else {

@@ -161,6 +161,78 @@
         return Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-table-name'));
     }
 
+    // New function to get all selected table names regardless of visibility
+    function getAllSelectedTableNames() {
+        // Use the selection state object to get all selected tables
+        return Object.entries(selectionState)
+            .filter(([tableName, isSelected]) => isSelected)
+            .map(([tableName, isSelected]) => tableName);
+    }
+
+    // Global function to update the count of selected tables
+    function updateSelectedCount() {
+        const selectedCount = Object.values(selectionState).filter(Boolean).length;
+        document.getElementById('selectedCount').textContent = 'Number of tables selected: ' + selectedCount;
+    }
+
+    // Global function to update the table count
+    function updateTableCount() {
+        const totalTables = document.querySelectorAll('#table-list .table-item:not(.hidden)').length;
+        document.getElementById('tableCount').textContent = 'Number of tables: ' + totalTables;
+    }
+
+    // Function to delete selected tables - moved outside of DOMContentLoaded for global access
+    function deleteSelectedRecords(database) {
+        console.log("deleteSelectedRecords called with database:", database);
+        const tableNames = getAllSelectedTableNames();
+        console.log("Selected table names:", tableNames);
+        
+        if (tableNames.length > 0) {
+            if (confirm('Are you sure you want to delete the selected tables?')) {
+                console.log("Sending DELETE request to /delete-records/" + database);
+                fetch(`/delete-records/${database}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ tables: tableNames }),
+                })
+                .then(response => {
+                    console.log("Response received:", response);
+                    if (response.ok) {
+                        console.log("Deleting tables from DOM:", tableNames);
+                        // Remove the deleted tables from the DOM
+                        tableNames.forEach(function(tableName) {
+                            const tableItem = document.querySelector(`.table-item[data-table-name="${tableName}"]`);
+                            if (tableItem) {
+                                tableItem.remove();
+                            }
+                            // Also remove the table from the selection state
+                            delete selectionState[tableName];
+                        });
+
+                        // Update the table count
+                        updateTableCount();
+
+                        // Update the selected count
+                        updateSelectedCount();
+                        
+                        alert(`Successfully deleted ${tableNames.length} tables.`);
+                    } else {
+                        console.error("Error response from server:", response.status);
+                        alert('Error deleting tables.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting tables.');
+                });
+            }
+        } else {
+            alert('Please select at least one table to delete.');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the selection state object
         selectionState = {};
@@ -168,17 +240,11 @@
         // Cache the table items after the DOM content is loaded
         tableItems = Array.from(document.querySelectorAll('#table-list .table-item'));
 
-        // Function to update the count of selected tables
-        function updateSelectedCount() {
-            const selectedCount = Object.values(selectionState).filter(Boolean).length;
-            document.getElementById('selectedCount').textContent = 'Number of tables selected: ' + selectedCount;
-        }
+        // Update the selected count on page load
+        updateSelectedCount();
 
-        // Function to update the table count
-        function updateTableCount() {
-            const totalTables = document.querySelectorAll('#table-list .table-item:not(.hidden)').length;
-            document.getElementById('tableCount').textContent = 'Number of tables: ' + totalTables;
-        }
+        // Update the table count on page load
+        updateTableCount();
 
         // Function to filter tables
         function filterTables() {
@@ -263,25 +329,23 @@
 
         // Initialize selection state and add event listeners to checkboxes
         const checkboxes = document.querySelectorAll('.table-checkbox');
+        console.log("Found checkboxes:", checkboxes.length);
 
         checkboxes.forEach(function(checkbox) {
             const tableName = checkbox.getAttribute('data-table-name');
+            console.log("Initializing checkbox for table:", tableName);
 
             // Initialize the selection state based on the initial state of the checkbox
             selectionState[tableName] = checkbox.checked;
 
             // Listen for changes to update selection state and count
             checkbox.addEventListener('change', function() {
+                console.log(`Checkbox for ${tableName} changed to:`, checkbox.checked);
                 selectionState[tableName] = checkbox.checked;
+                console.log("Updated selectionState:", selectionState);
                 updateSelectedCount(); // Update the selected count
             });
         });
-
-        // Update the selected count on page load
-        updateSelectedCount();
-
-        // Update the table count on page load
-        updateTableCount();
 
         // Attach debounced filter function to input events
         const debouncedFilterTables = debounce(filterTables, 300);
@@ -560,47 +624,6 @@
             }
         });
 
-        // Function to delete selected tables
-        function deleteSelectedRecords(database) {
-            const tableNames = getSelectedVisibleTableNames();
-            if (tableNames.length > 0) {
-                if (confirm('Are you sure you want to delete the selected tables?')) {
-                    fetch(`/delete-records/${database}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ tables: tableNames }),
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            // Remove the deleted tables from the DOM
-                            tableNames.forEach(function(tableName) {
-                                const tableItem = document.querySelector(`.table-item[data-table-name="${tableName}"]`);
-                                if (tableItem) {
-                                    tableItem.remove();
-                                }
-                            });
-
-                            // Update the table count
-                            updateTableCount();
-
-                            // Update the selected count
-                            updateSelectedCount();
-                        } else {
-                            alert('Error deleting tables.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error deleting tables.');
-                    });
-                }
-            } else {
-                alert('Please select at least one table to delete.');
-            }
-        }
-
         // Add the event listener for the "Concatenate Selected" button
         document.getElementById('concatenateSelected').addEventListener('click', function() {
             const tableNames = getSelectedVisibleTableNames();
@@ -654,40 +677,171 @@
         document.getElementById('copySelected').addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
             if (tableNames.length > 0) {
-                // Prompt the user for the target schema name
-                const targetSchema = prompt('Enter the name of the target database/schema:');
-                if (targetSchema) {
-                    try {
-                        // Send a POST request to the server to copy the tables
-                        const response = await fetch(`/copy_tables`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                sourceDatabase: '{{ database }}',
-                                targetDatabase: targetSchema.trim(),
-                                tableNames: tableNames,
-                            }),
-                        });
-
-                        const result = await response.json();
-
-                        if (response.ok) {
-                            alert(`Tables copied successfully to "${targetSchema}".`);
-                        } else {
-                            // Handle errors, e.g., table name conflicts
-                            alert(`Error: ${result.message}`);
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('An error occurred while copying the tables.');
+                // Get all available databases first
+                try {
+                    const response = await fetch('/getDatabases');
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch databases');
                     }
+                    
+                    const databases = await response.json();
+                    
+                    // Create and show a modal for database selection with filtering
+                    const modalHtml = `
+                    <div id="copyTablesModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Copy Tables to Another Folder</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Select target folder:</p>
+                                
+                                <!-- Filter fields -->
+                                <div class="form-group">
+                                    <input type="text" id="targetFolderFilter" class="form-control mb-2" 
+                                           placeholder="Filter folder names on the fly">
+                                    <input type="text" id="targetFolderAndFilter" class="form-control mb-2" 
+                                           placeholder="Enter comma-separated substrings for AND filtering">
+                                </div>
+                                
+                                <!-- List of databases -->
+                                <div id="databaseContainer" style="max-height: 300px; overflow-y: auto;">
+                                    ${databases.map((db, index) => `
+                                        <div class="database-option">
+                                            <div class="custom-control custom-radio">
+                                                <input type="radio" id="db_${index}" name="targetDatabase" 
+                                                       class="custom-control-input" value="${db}">
+                                                <label class="custom-control-label" for="db_${index}">${db}</label>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="confirmCopy">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                    
+                    // Append modal to body
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                    
+                    const modal = document.getElementById('copyTablesModal');
+                    modal.style.display = 'block';
+                    
+                    // Set up close button handlers
+                    const closeButtons = modal.querySelectorAll('.close, .close-modal');
+                    closeButtons.forEach(button => {
+                        button.addEventListener('click', function() {
+                            modal.remove();
+                        });
+                    });
+                    
+                    // Filter functionality
+                    const targetFolderFilter = document.getElementById('targetFolderFilter');
+                    const targetFolderAndFilter = document.getElementById('targetFolderAndFilter');
+                    const databaseOptions = document.querySelectorAll('.database-option');
+                    
+                    function filterDatabases() {
+                        const filterText = targetFolderFilter.value.toLowerCase();
+                        const andFilterText = targetFolderAndFilter.value.toLowerCase();
+                        
+                        // Split AND filters into array
+                        const andFilters = andFilterText.split(',').map(s => s.trim()).filter(s => s !== '');
+                        
+                        databaseOptions.forEach(option => {
+                            const dbName = option.querySelector('label').textContent.toLowerCase();
+                            
+                            // Check if passes main filter - using startsWith instead of includes
+                            const passesMainFilter = !filterText || dbName.startsWith(filterText);
+                            
+                            // Check if passes AND filters (these still use includes)
+                            const passesAndFilters = andFilters.every(substring => dbName.includes(substring));
+                            
+                            // Show or hide based on combined filters
+                            if (passesMainFilter && passesAndFilters) {
+                                option.style.display = 'block';
+                            } else {
+                                option.style.display = 'none';
+                            }
+                        });
+                    }
+                    
+                    // Add event listeners for filter inputs
+                    targetFolderFilter.addEventListener('input', debounce(filterDatabases, 300));
+                    targetFolderAndFilter.addEventListener('input', debounce(filterDatabases, 300));
+                    
+                    // Handle confirm button
+                    document.getElementById('confirmCopy').addEventListener('click', function() {
+                        const selectedRadio = document.querySelector('input[name="targetDatabase"]:checked');
+                        
+                        if (!selectedRadio) {
+                            alert('Please select a target folder');
+                            return;
+                        }
+                        
+                        const targetSchema = selectedRadio.value;
+                        modal.remove();
+                        
+                        // Continue with the copy operation
+                        performCopyOperation(tableNames, targetSchema);
+                    });
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while fetching folders.');
                 }
             } else {
                 alert('Please select at least one table to copy.');
             }
         });
+        
+        // Helper function to perform the actual copy operation
+        async function performCopyOperation(tableNames, targetSchema) {
+            try {
+                // Show loading overlay if it exists
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'flex';
+                
+                // Send a POST request to the server to copy the tables
+                const response = await fetch(`/copy_tables`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sourceDatabase: '{{ database }}',
+                        targetDatabase: targetSchema.trim(),
+                        tableNames: tableNames,
+                    }),
+                });
+
+                const result = await response.json();
+                
+                // Hide loading overlay
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+
+                if (response.ok) {
+                    alert(`Tables copied successfully to "${targetSchema}".`);
+                } else {
+                    // Handle errors, e.g., table name conflicts
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Hide loading overlay on error too
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                alert('An error occurred while copying the tables.');
+            }
+        }
 
         // Add event listener to table names for renaming
         document.querySelectorAll('.table-name[contenteditable]').forEach(function(span) {

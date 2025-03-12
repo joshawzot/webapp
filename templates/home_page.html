@@ -11,6 +11,7 @@
     </div>
     {% endif %}
 
+    <!-- Action Buttons Section -->
     <div class="mb-3">
         <a href="/create-db" class="btn btn-info">Create New Folder</a>
         <!-- New Button to Run Forming Progress Script -->
@@ -25,57 +26,52 @@
         </a>
         <!-- Test Machines SSH Button -->
         <a href="{{ url_for('test_machines') }}" class="btn btn-warning">
-            <i class="fas fa-terminal"></i> Test Machines SSH
+            <i class="fas fa-terminal"></i> SSH to Testers
+        </a>
+        <!-- Database Statistics Button -->
+        <a href="{{ url_for('database_stats') }}" class="btn btn-info">
+            <i class="fas fa-chart-bar"></i> Database Statistics
         </a>
     </div>
 
-    <!-- Display total number of schemas and disk space information -->
-    <div class="alert alert-info mb-3">
-        <div class="row">
-            <div class="col-md-4">
-                Total number of Schemas: {{ databases|length }}
-            </div>
-            <div class="col-md-4">
-                Total Database Size: {{ total_size }}
-            </div>
-            <div class="col-md-4">
-                Available Disk Space: {{ available_space }}
-            </div>
+    <!-- Recent Visits Section -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recently Visited Folders</h5>
+            <span class="badge badge-info">Last 5 visits</span>
         </div>
-    </div>
-
-    <!-- Merge Folders Modal -->
-    <div class="modal fade" id="mergeFoldersModal" tabindex="-1" role="dialog" aria-labelledby="mergeFoldersModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="mergeFoldersModalLabel">Merge Folders</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+        <div class="card-body p-0">
+            {% if recent_visits %}
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Folder Name</th>
+                            <th>Visited By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in recent_visits %}
+                            <tr>
+                                <td>{{ visit.folder_name }}</td>
+                                <td>
+                                    <span class="badge badge-secondary">{{ visit.username }}</span>
+                                </td>
+                                <td>
+                                    <form action="/list-tables" method="post" class="d-inline">
+                                        <input type="hidden" name="database" value="{{ visit.folder_name }}">
+                                        <button type="submit" class="btn btn-sm btn-primary">Open</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="text-center p-3 text-muted">
+                    <p>No recent folder visits to display</p>
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="newSchemaName">New Folder Name:</label>
-                        <input type="text" class="form-control" id="newSchemaName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Select Folders to Merge:</label>
-                        <div style="max-height: 300px; overflow-y: auto;">
-                            {% for db in databases %}
-                            <div class="custom-control custom-checkbox">
-                                <input type="checkbox" class="custom-control-input schema-checkbox" id="schema_{{ loop.index }}" value="{{ db }}">
-                                <label class="custom-control-label" for="schema_{{ loop.index }}">{{ db }}</label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="mergeFoldersBtn">Merge</button>
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -142,12 +138,129 @@
             </fieldset>
         </form>
     </div>
+
+    <!-- Merge Folders Modal -->
+    <div class="modal fade" id="mergeFoldersModal" tabindex="-1" role="dialog" aria-labelledby="mergeFoldersModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mergeFoldersModalLabel">Merge Folders</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Add schema type selection options -->
+                    <div class="form-group">
+                        <label>Merge Target:</label>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="newSchemaOption" name="schemaOption" class="custom-control-input" checked>
+                            <label class="custom-control-label" for="newSchemaOption">Create new folder</label>
+                        </div>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="existingSchemaOption" name="schemaOption" class="custom-control-input">
+                            <label class="custom-control-label" for="existingSchemaOption">Merge into existing folder</label>
+                        </div>
+                    </div>
+                    
+                    <!-- New Schema input - shown by default -->
+                    <div id="newSchemaSection">
+                        <div class="form-group">
+                            <label for="newSchemaName">New Folder Name:</label>
+                            <input type="text" class="form-control" id="newSchemaName" required>
+                        </div>
+                    </div>
+
+                    <!-- Existing Schema dropdown - hidden by default -->
+                    <div id="existingSchemaSection" style="display: none;">
+                        <div class="form-group">
+                            <label for="existingSchemaSelect">Select Target Folder:</label>
+                            
+                            <!-- Add filter input field -->
+                            <input type="text" class="form-control mb-2" id="targetFolderFilter" 
+                                   placeholder="Filter folder names on the fly (matches from beginning)">
+                            
+                            <!-- Add AND filter input field -->
+                            <input type="text" class="form-control mb-2" id="targetFolderAndFilter" 
+                                   placeholder="Enter comma-separated substrings for AND filtering">
+                            
+                            <!-- Replace dropdown with a styled div containing checkboxes -->
+                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                                {% for db in databases %}
+                                <div class="target-folder-option">
+                                    <div class="custom-control custom-radio">
+                                        <input type="radio" id="target_{{ db }}" name="targetFolder" 
+                                               class="custom-control-input target-schema-radio" value="{{ db }}">
+                                        <label class="custom-control-label" for="target_{{ db }}">{{ db }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Add information note about table naming -->
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> <strong>Note:</strong> All tables will have the schema name added to the prefix (e.g., schema_table). 
+                        Table names that exceed 64 characters will be skipped from migrating to the merged folder.
+                    </div>
+                    
+                    <!-- Add counter display for selected and total -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <span id="folderSelectedCount">Selected folders: 0</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Select/Deselect Filtered buttons -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <button type="button" class="btn btn-primary btn-sm" id="selectFilteredFolders">Select Filtered</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="deselectFilteredFolders">Deselect Filtered</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add filter fields -->
+                    <div class="form-group">
+                        <input type="text" class="form-control mb-2" id="folderFilter" placeholder="Filter folder names on the fly">
+                        <input type="text" class="form-control mb-2" id="folderAndFilters" placeholder="Enter comma-separated substrings for AND filtering">
+                        <input type="text" class="form-control mb-2" id="folderOrFilters" placeholder="Enter comma-separated substrings for OR filtering">
+                        <input type="text" class="form-control mb-2" id="folderAndNotFilters" placeholder="Enter comma-separated substrings for AND NOT filtering">
+                        <input type="text" class="form-control mb-2" id="folderOrNotFilters" placeholder="Enter comma-separated substrings for OR NOT filtering">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select Folders to Merge:</label>
+                        <div id="folderListContainer" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Folders will be populated dynamically when filtered -->
+                            <div class="text-center text-muted p-3" id="folderListMessage">
+                                Enter filter criteria above to display folders
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="mergeFoldersBtn">Merge</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Include Clusterize.js before your scripts -->
 <script src="https://unpkg.com/clusterize.js@0.18.1/clusterize.min.js"></script>
 
 <script>
+// Debounce function to limit how often a function runs
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', (event) => {
     // Cache selectors
     const filterInputs = Array.from(document.querySelectorAll('.filterInput'));
@@ -210,15 +323,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 form.submit();
             });
         });
-    }
-
-    // Debounce function
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
     }
 
     // Updated filter function
@@ -285,17 +389,39 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // Add handler for merge folders button
     document.getElementById('mergeFoldersBtn').addEventListener('click', function() {
-        const newSchemaName = document.getElementById('newSchemaName').value;
+        // Determine which option is selected
+        const useExistingSchema = document.getElementById('existingSchemaOption').checked;
+        
+        // Get the appropriate schema name based on selected option
+        let targetSchemaName;
+        if (useExistingSchema) {
+            // Get the selected radio button value
+            const selectedRadio = document.querySelector('.target-schema-radio:checked');
+            if (!selectedRadio) {
+                alert('Please select a target folder');
+                return;
+            }
+            targetSchemaName = selectedRadio.value;
+        } else {
+            targetSchemaName = document.getElementById('newSchemaName').value;
+            
+            if (!targetSchemaName) {
+                alert('Please enter a name for the new folder');
+                return;
+            }
+        }
+        
         const selectedSchemas = Array.from(document.querySelectorAll('.schema-checkbox:checked'))
             .map(checkbox => checkbox.value);
 
-        if (!newSchemaName) {
-            alert('Please enter a name for the new folder');
+        if (selectedSchemas.length < 1) {
+            alert('Please select at least one folder to merge');
             return;
         }
-
-        if (selectedSchemas.length < 2) {
-            alert('Please select at least two folders to merge');
+        
+        // If merging to existing schema, ensure we're not selecting the target
+        if (useExistingSchema && selectedSchemas.includes(targetSchemaName)) {
+            alert('Cannot merge a folder into itself. Please remove the target folder from selection.');
             return;
         }
 
@@ -306,8 +432,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                newSchemaName: newSchemaName,
-                selectedSchemas: selectedSchemas
+                newSchemaName: targetSchemaName,
+                selectedSchemas: selectedSchemas,
+                useExistingSchema: useExistingSchema
             })
         })
         .then(response => response.json())
@@ -324,6 +451,227 @@ document.addEventListener('DOMContentLoaded', (event) => {
             alert('An error occurred while merging folders');
         });
     });
+    
+    // Add event listeners for schema option toggle
+    document.getElementById('newSchemaOption').addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('newSchemaSection').style.display = 'block';
+            document.getElementById('existingSchemaSection').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('existingSchemaOption').addEventListener('change', function() {
+        if (this.checked) {
+            document.getElementById('newSchemaSection').style.display = 'none';
+            document.getElementById('existingSchemaSection').style.display = 'block';
+        }
+    });
+
+    // Function to filter target folders
+    function filterTargetFolders() {
+        const filterText = document.getElementById('targetFolderFilter').value.toLowerCase();
+        const andFilterText = document.getElementById('targetFolderAndFilter').value.toLowerCase();
+        
+        // Split the comma-separated substrings into arrays for AND filtering
+        const andFilters = andFilterText.split(',').map(s => s.trim()).filter(s => s !== '');
+        
+        // Get all target folder options
+        const targetFolderOptions = document.querySelectorAll('.target-folder-option');
+        
+        // Filter the folders
+        targetFolderOptions.forEach(option => {
+            const folderLabel = option.querySelector('label').textContent.toLowerCase();
+            
+            // Check if passes main filter - use startsWith instead of includes
+            const passesMainFilter = !filterText || folderLabel.startsWith(filterText);
+            
+            // Check if passes AND filters
+            const passesAndFilters = andFilters.every(substring => folderLabel.includes(substring));
+            
+            // Show or hide based on combined filters
+            if (passesMainFilter && passesAndFilters) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+    }
+    
+    // Add event listeners for target folder filtering
+    document.getElementById('targetFolderFilter').addEventListener('input', debounce(filterTargetFolders, 300));
+    document.getElementById('targetFolderAndFilter').addEventListener('input', debounce(filterTargetFolders, 300));
+
+    // Initialize folder selection state and filtering
+    let folderSelectionState = {};
+    let folderItems = [];
+
+    // Initialize when modal is shown
+    $('#mergeFoldersModal').on('shown.bs.modal', function () {
+        // Initialize selection state object if not already initialized
+        folderSelectionState = folderSelectionState || {};
+        
+        // Initially, the folder list is empty until filtered
+        folderItems = [];
+        
+        // Initial count update
+        updateFolderSelectedCount();
+        
+        // Set up event listeners for filter fields
+        document.getElementById('folderFilter').addEventListener('input', debounce(filterFolders, 300));
+        document.getElementById('folderAndFilters').addEventListener('input', debounce(filterFolders, 300));
+        document.getElementById('folderOrFilters').addEventListener('input', debounce(filterFolders, 300));
+        document.getElementById('folderAndNotFilters').addEventListener('input', debounce(filterFolders, 300));
+        document.getElementById('folderOrNotFilters').addEventListener('input', debounce(filterFolders, 300));
+        
+        // Set up target folder filtering if inputs exist
+        if (document.getElementById('targetFolderFilter')) {
+            document.getElementById('targetFolderFilter').addEventListener('input', debounce(filterTargetFolders, 300));
+        }
+        if (document.getElementById('targetFolderAndFilter')) {
+            document.getElementById('targetFolderAndFilter').addEventListener('input', debounce(filterTargetFolders, 300));
+        }
+        
+        // Set up select/deselect filtered buttons
+        document.getElementById('selectFilteredFolders').addEventListener('click', selectFilteredFolders);
+        document.getElementById('deselectFilteredFolders').addEventListener('click', deselectFilteredFolders);
+    });
+    
+    // Function to update the selected folders count
+    function updateFolderSelectedCount() {
+        const selectedCount = Object.values(folderSelectionState).filter(Boolean).length;
+        document.getElementById('folderSelectedCount').textContent = 'Selected folders: ' + selectedCount;
+    }
+    
+    // Function to filter folders
+    function filterFolders() {
+        // Get filter values
+        const filterText = document.getElementById('folderFilter').value.toLowerCase();
+        const andFiltersText = document.getElementById('folderAndFilters').value.toLowerCase();
+        const orFiltersText = document.getElementById('folderOrFilters').value.toLowerCase();
+        const andNotFiltersText = document.getElementById('folderAndNotFilters').value.toLowerCase();
+        const orNotFiltersText = document.getElementById('folderOrNotFilters').value.toLowerCase();
+        
+        // Split the comma-separated values
+        const andFilters = andFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+        const orFilters = orFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+        const andNotFilters = andNotFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+        const orNotFilters = orNotFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+        
+        // Check if any filter is applied
+        const hasAnyFilter = filterText !== '' || andFilters.length > 0 || orFilters.length > 0 || 
+                            andNotFilters.length > 0 || orNotFilters.length > 0;
+        
+        // If no filters are applied, show the message and clear the folder list
+        if (!hasAnyFilter) {
+            document.getElementById('folderListContainer').innerHTML = 
+                '<div class="text-center text-muted p-3" id="folderListMessage">Enter filter criteria above to display folders</div>';
+            return;
+        }
+        
+        // Check if any filter is non-empty
+        const anyOrFiltersAreNonEmpty = orFilters.length > 0;
+        const anyOrNotFiltersAreNonEmpty = orNotFilters.length > 0;
+        
+        // Get all databases from the original data
+        const allDatabases = [
+            {% for db in databases %}
+            "{{ db }}"{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Filter the databases
+        const filteredDatabases = allDatabases.filter(db => {
+            const dbLower = db.toLowerCase();
+            
+            // Check if passes the main filter
+            const passesFilterText = filterText === '' || dbLower.startsWith(filterText);
+            
+            // Check if passes AND filters
+            const passesAndFilters = andFilters.every(substring => dbLower.includes(substring));
+            
+            // Check if passes OR filters
+            const passesOrFilters = !anyOrFiltersAreNonEmpty || orFilters.some(substring => dbLower.includes(substring));
+            
+            // Check if passes AND NOT filters
+            const passesAndNotFilters = andNotFilters.every(substring => !dbLower.includes(substring));
+            
+            // Check if passes OR NOT filters
+            const passesOrNotFilters = !anyOrNotFiltersAreNonEmpty || orNotFilters.some(substring => !dbLower.includes(substring));
+            
+            // Combine all filter conditions
+            return passesFilterText && passesAndFilters && passesOrFilters && 
+                   passesAndNotFilters && passesOrNotFilters;
+        });
+        
+        // Check if any folders match the filter
+        if (filteredDatabases.length === 0) {
+            document.getElementById('folderListContainer').innerHTML = 
+                '<div class="text-center text-muted p-3">No folders match your filter criteria</div>';
+            return;
+        }
+        
+        // Generate HTML for the filtered folders
+        const folderListHTML = filteredDatabases.map((db, index) => `
+            <div class="custom-control custom-checkbox folder-item">
+                <input type="checkbox" class="custom-control-input schema-checkbox" 
+                       id="schema_dyn_${index}" value="${db}"
+                       ${folderSelectionState[db] ? 'checked' : ''}>
+                <label class="custom-control-label" for="schema_dyn_${index}">${db}</label>
+            </div>
+        `).join('');
+        
+        // Update the folder list container
+        document.getElementById('folderListContainer').innerHTML = folderListHTML;
+        
+        // Re-attach event listeners to the newly created checkboxes
+        document.querySelectorAll('#folderListContainer .schema-checkbox').forEach(function(checkbox) {
+            const folderName = checkbox.value;
+            
+            // Initialize the selection state if not already done
+            if (folderSelectionState[folderName] === undefined) {
+                folderSelectionState[folderName] = checkbox.checked;
+            }
+            
+            // Add event listener for checkbox changes
+            checkbox.addEventListener('change', function() {
+                folderSelectionState[folderName] = checkbox.checked;
+                updateFolderSelectedCount();
+            });
+        });
+        
+        // Update reference to folder items
+        folderItems = Array.from(document.querySelectorAll('.folder-item'));
+    }
+    
+    // Function to select all filtered (visible) folders
+    function selectFilteredFolders() {
+        const visibleItems = document.querySelectorAll('#folderListContainer .folder-item:not(.hidden)');
+        visibleItems.forEach(function(item) {
+            const checkbox = item.querySelector('.schema-checkbox');
+            checkbox.checked = true;
+            
+            // Update selection state
+            folderSelectionState[checkbox.value] = true;
+        });
+        
+        // Update selected count
+        updateFolderSelectedCount();
+    }
+    
+    // Function to deselect all filtered (visible) folders
+    function deselectFilteredFolders() {
+        const visibleItems = document.querySelectorAll('#folderListContainer .folder-item:not(.hidden)');
+        visibleItems.forEach(function(item) {
+            const checkbox = item.querySelector('.schema-checkbox');
+            checkbox.checked = false;
+            
+            // Update selection state
+            folderSelectionState[checkbox.value] = false;
+        });
+        
+        // Update selected count
+        updateFolderSelectedCount();
+    }
 });
 
 // Ensure page reload on back navigation to prevent stale data
@@ -348,7 +696,7 @@ window.onpageshow = function(event) {
 }
 
 .database-option:hover {
-    background-color: #f8f9fa;
+    background-color: #f5f5f5;
 }
 
 .filterInput,
@@ -365,6 +713,10 @@ window.onpageshow = function(event) {
     text-align: center;
     margin-top: 10px;
     color: #888;
+}
+
+.hidden {
+    display: none !important;
 }
 </style>
 

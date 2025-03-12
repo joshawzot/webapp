@@ -1,0 +1,1139 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Remote Terminal Sessions</h2>
+            <div class="alert alert-info">
+                <strong>Machine:</strong> {{ machine_user }}@{{ machine_ip }}
+                <p>Open interactive terminal sessions to control the remote machine. Sessions will remain active even when you close the browser.</p>
+                <p class="mb-0"><strong>Important:</strong> Terminal sessions operate in <span class="badge badge-warning">Exclusive Access Mode</span>. Only one user can connect to a terminal session at a time. If you connect to a session that another user is currently using, they will be disconnected.</p>
+            </div>
+            <a href="{{ url_for('test_machines') }}" class="btn btn-secondary mb-3">Back to Test Machines</a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Terminal Sessions</h4>
+                        <button class="btn btn-light" id="refresh-sessions">
+                            <i class="fas fa-sync-alt"></i> Refresh Session List
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Removed system sessions section -->
+                    
+                    <div id="existing-sessions" class="mb-4">
+                        <h5>Existing Sessions</h5>
+                        <div class="alert alert-info" id="loading-sessions">
+                            Loading existing sessions...
+                        </div>
+                        <div id="sessions-list" class="row" style="display: none;">
+                            <!-- Existing sessions will be listed here -->
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5>Create New Session</h5>
+                    <form id="terminal-form">
+                        <input type="hidden" name="machine_ip" value="{{ machine_ip }}">
+                        <input type="hidden" name="machine_user" value="{{ machine_user }}">
+                        
+                        <div class="form-group">
+                            <label for="num_terminals">Number of new terminal sessions:</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="num_terminals" min="1" max="4" value="1">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-success" id="create-terminals">
+                                        <i class="fas fa-terminal"></i> Create Terminal Sessions
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">You can create up to 4 terminal sessions to run different commands simultaneously.</small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="terminals-container">
+        <!-- Terminal sessions will be created here -->
+    </div>
+</div>
+
+<!-- Terminal Session Template -->
+<template id="terminal-template">
+    <div class="row mb-4 terminal-row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">Terminal Session <span class="terminal-number"></span> <small class="session-info text-light ml-2"></small></h5>
+                        <small class="text-warning"><i class="fas fa-lock"></i> Exclusive Access Mode - Only one user can control this terminal at a time</small>
+                    </div>
+                    <div>
+                        <span class="badge badge-secondary active-users mr-2" title="Connection status"><i class="fas fa-user"></i> Not connected</span>
+                        <button class="btn btn-sm btn-outline-light terminal-clear">Clear</button>
+                        <button class="btn btn-sm btn-outline-warning terminal-disconnect">Disconnect</button>
+                        <button class="btn btn-sm btn-outline-danger terminal-close">Close Session</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="terminal-container" style="height: 400px;">
+                        <!-- Terminal will be rendered here using Xterm.js -->
+                    </div>
+                </div>
+                <div class="card-footer bg-dark text-white">
+                    <small>Session remains active even after disconnecting. Other users can take control when you disconnect.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Existing Session Template -->
+<template id="existing-session-template">
+    <div class="col-md-6 mb-3">
+        <div class="card session-card">
+            <div class="card-header bg-dark text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Terminal <span class="session-terminal-id"></span></h5>
+                    <span class="badge badge-warning"><i class="fas fa-lock"></i> Exclusive Access</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Created: <span class="session-created-at"></span></span>
+                    <span class="session-status badge"></span>
+                </div>
+                <p class="card-text creator-info mb-1"><strong>Created by:</strong> <span class="session-creator">Unknown</span></p>
+                <p class="card-text current-user-info mb-1"><strong>Currently used by:</strong> <span class="current-user">None</span></p>
+                <p class="card-text users-connected mb-1">Current status: <span class="session-users badge badge-secondary">Not in use</span></p>
+                
+                <div class="alert alert-warning mt-3 mb-3 p-2" style="font-size: 0.85rem;">
+                    <strong>Note:</strong> Only one user can control this terminal at a time. Connecting will disconnect any current user.
+                </div>
+                
+                <button class="btn btn-primary btn-block mt-3 connect-session">Connect to Terminal</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Include Socket.IO client library -->
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+<!-- Include Xterm.js and its addons -->
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.7.0/lib/xterm-addon-fit.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.8.0/lib/xterm-addon-web-links.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.min.css">
+
+<script>
+    // Global variables - accessible to all functions
+    let activeTerminals = 0;
+    let terminals = {}; // Store terminal instances
+    let nextTerminalId = 1;
+    let socket;
+    let machineIp = '';
+    let machineUser = '';
+    // Generate a unique client ID for this browser session
+    const clientUniqueId = Math.random().toString(36).substring(2, 10);
+    
+    // Function to generate a unique terminal ID
+    function generateUniqueTerminalId() {
+        // Combine the next ID with a timestamp and client unique ID
+        // This ensures that even if two clients generate an ID at the same millisecond,
+        // they will get different IDs due to the unique client identifier
+        const timestamp = new Date().getTime();
+        const uniqueId = `${nextTerminalId++}_${timestamp}_${clientUniqueId}`;
+        console.log("Generated unique terminal ID:", uniqueId);
+        return uniqueId;
+    }
+    
+    // Function to refresh the list of sessions - moved to global scope
+    function refreshSessionsList() {
+        console.log("Refreshing sessions list");
+        const loadingSessionsAlert = document.getElementById('loading-sessions');
+        const sessionsListContainer = document.getElementById('sessions-list');
+        
+        if (loadingSessionsAlert) loadingSessionsAlert.style.display = 'block';
+        if (sessionsListContainer) sessionsListContainer.style.display = 'none';
+        
+        if (!socket || !socket.connected) {
+            console.error("Socket not connected - cannot refresh sessions list");
+            if (loadingSessionsAlert) {
+                loadingSessionsAlert.textContent = "Error: Not connected to server. Please refresh the page.";
+                loadingSessionsAlert.classList.remove('alert-info');
+                loadingSessionsAlert.classList.add('alert-danger');
+            }
+            return;
+        }
+        
+        // Add a timeout to show an error if the server doesn't respond quickly
+        const requestStartTime = new Date().getTime();
+        window.sessionListTimeoutId = setTimeout(() => {
+            console.error("Session list request timed out");
+            if (loadingSessionsAlert) {
+                loadingSessionsAlert.textContent = "Loading taking longer than expected. Server may be busy...";
+                loadingSessionsAlert.classList.remove('alert-info');
+                loadingSessionsAlert.classList.add('alert-warning');
+            }
+        }, 3000);
+        
+        // Store the request time to verify we're showing the latest data
+        window.lastSessionListRequest = requestStartTime;
+        
+        socket.emit('list_terminals', {
+            machine_ip: machineIp,
+            machine_user: machineUser
+        });
+    }
+    
+    // Format date for display - moved to global scope
+    function formatDate(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            return date.toLocaleString();
+        } catch (e) {
+            return dateStr || 'Unknown';
+        }
+    }
+    
+    // Initialize socket connection
+    try {
+        console.log("Initializing Socket.IO connection");
+        socket = io({
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000
+        });
+        console.log("Socket.IO initialized");
+        
+        // Set up automatic refresh of sessions list every 30 seconds (moved from createTerminalSession)
+        setInterval(refreshSessionsList, 30000);
+    } catch (e) {
+        console.error("Error initializing Socket.IO:", e);
+        alert("Error connecting to the terminal server. Please refresh the page and try again.");
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM Content Loaded - Initializing page");
+        
+        // Initialize terminal form elements
+        const terminalForm = document.getElementById('terminal-form');
+        const numTerminalsInput = document.getElementById('num_terminals');
+        const createTerminalsBtn = document.getElementById('create-terminals');
+        const terminalsContainer = document.getElementById('terminals-container');
+        const terminalTemplate = document.getElementById('terminal-template');
+        const existingSessionTemplate = document.getElementById('existing-session-template');
+        const sessionsListContainer = document.getElementById('sessions-list');
+        const loadingSessionsAlert = document.getElementById('loading-sessions');
+        const refreshSessionsBtn = document.getElementById('refresh-sessions');
+        
+        // Set global variables for machine credentials
+        machineIp = terminalForm ? terminalForm.elements.machine_ip.value : '';
+        machineUser = terminalForm ? terminalForm.elements.machine_user.value : '';
+        
+        console.log("Machine credentials set:", machineUser + "@" + machineIp);
+        
+        // Handle socket connection events
+        socket.on('connect', () => {
+            console.log('Connected to server with socket ID:', socket.id);
+            // Request list of existing sessions
+            refreshSessionsList();
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('Socket connection error:', error);
+        });
+        
+        socket.on('connect_timeout', () => {
+            console.error('Socket connection timeout');
+        });
+        
+        socket.on('reconnect', (attemptNumber) => {
+            console.log('Reconnected to server after', attemptNumber, 'attempts');
+            // Re-request list of existing sessions
+            refreshSessionsList();
+        });
+        
+        socket.on('reconnect_attempt', (attemptNumber) => {
+            console.log('Attempting to reconnect:', attemptNumber);
+        });
+        
+        socket.on('reconnect_error', (error) => {
+            console.error('Error while reconnecting:', error);
+        });
+        
+        socket.on('reconnect_failed', () => {
+            console.error('Failed to reconnect');
+            alert('Failed to connect to the terminal server. Please refresh the page.');
+        });
+        
+        socket.on('disconnect', (reason) => {
+            console.log('Disconnected from server, reason:', reason);
+            // Show disconnection message in all terminals
+            Object.values(terminals).forEach(term => {
+                if (term.xterm) {
+                    term.xterm.write('\r\n\x1b[31mDisconnected from server (' + reason + '). Please refresh the page.\x1b[0m\r\n');
+                }
+            });
+        });
+        
+        // Handle terminal list event
+        socket.on('terminal_list', function(data) {
+            console.log(`Received terminal list with ${data.sessions ? data.sessions.length : 0} sessions`);
+            
+            // Clear any timeout warnings
+            if (window.sessionListTimeoutId) {
+                clearTimeout(window.sessionListTimeoutId);
+            }
+            
+            // Verify this is the response to our most recent request
+            if (window.lastSessionListRequest && new Date().getTime() - window.lastSessionListRequest > 10000) {
+                console.log("Ignoring stale session list data");
+                return;
+            }
+            
+            loadingSessionsAlert.style.display = 'none';
+            sessionsListContainer.style.display = 'flex';
+            
+            // Clear existing list
+            sessionsListContainer.innerHTML = '';
+            
+            if (data.sessions && data.sessions.length > 0) {
+                // Sort sessions by creation time or display order
+                data.sessions.sort((a, b) => {
+                    // Extract the numeric part from the terminal ID (before first underscore)
+                    const getBaseId = (id) => {
+                        if (typeof id === 'string' && id.includes('_')) {
+                            return parseInt(id.split('_')[0], 10);
+                        }
+                        return parseInt(id, 10);
+                    };
+                    
+                    return getBaseId(a.terminal_id) - getBaseId(b.terminal_id);
+                });
+                
+                // Create elements for each session
+                data.sessions.forEach(session => {
+                    // Ensure creator information is properly set
+                    if (!session.creator || session.creator === 'Unknown') {
+                        // Check if there's a creator in connected_users
+                        if (session.connected_users && session.connected_users.length > 0) {
+                            const creator = session.connected_users.find(u => u.role === 'creator');
+                            if (creator) {
+                                session.creator = creator.username;
+                            }
+                        }
+                    }
+                    
+                    const sessionElement = document.importNode(existingSessionTemplate.content, true);
+                    
+                    // Set session details - show only the base ID part for display
+                    const displayId = (typeof session.terminal_id === 'string' && session.terminal_id.includes('_')) 
+                        ? session.terminal_id.split('_')[0] 
+                        : session.terminal_id;
+                    
+                    sessionElement.querySelector('.session-terminal-id').textContent = displayId;
+                    sessionElement.querySelector('.session-created-at').textContent = formatDate(session.created_at);
+                    
+                    // Set creator information
+                    const creatorElement = sessionElement.querySelector('.session-creator');
+                    if (creatorElement) {
+                        creatorElement.textContent = session.creator || 'Unknown';
+                    }
+                    
+                    // Set current user information - use the server-provided current_user field
+                    const currentUserElement = sessionElement.querySelector('.current-user');
+                    if (currentUserElement) {
+                        // Show the actual connected user (which may be different from the creator)
+                        if (session.users_count > 0) {
+                            // Use the current_user field from the server response, which should be the actually connected user
+                            currentUserElement.textContent = session.current_user && session.current_user !== 'None' 
+                                ? session.current_user 
+                                : 'None';
+                        } else {
+                            currentUserElement.textContent = 'None';
+                        }
+                        
+                        // Debug log
+                        console.log(`Setting current user for terminal ${session.terminal_id} to: ${currentUserElement.textContent}`);
+                    }
+                    
+                    const statusBadge = sessionElement.querySelector('.session-status');
+                    if (session.active) {
+                        statusBadge.textContent = 'Active';
+                        statusBadge.classList.add('badge-success');
+                    } else {
+                        statusBadge.textContent = 'Inactive';
+                        statusBadge.classList.add('badge-secondary');
+                    }
+                    
+                    // Show connected users count if available
+                    if (session.users_count !== undefined) {
+                        const usersElement = sessionElement.querySelector('.session-users');
+                        if (usersElement) {
+                            if (session.users_count > 0) {
+                                usersElement.textContent = 'In Use (Exclusive)';
+                                usersElement.className = 'session-users badge badge-warning';
+                            } else {
+                                usersElement.textContent = 'Available';
+                                usersElement.className = 'session-users badge badge-success';
+                            }
+                        }
+                    }
+                    
+                    // Set up connect button
+                    const connectBtn = sessionElement.querySelector('.connect-session');
+                    connectBtn.dataset.terminalId = session.terminal_id;
+                    connectBtn.dataset.sessionId = session.session_id;
+                    
+                    // Connect button event handler
+                    connectBtn.addEventListener('click', function() {
+                        const terminalId = this.dataset.terminalId;
+                        connectToSession(terminalId);
+                    });
+                    
+                    // Add to the container
+                    sessionsListContainer.appendChild(sessionElement);
+                });
+                
+                // Update nextTerminalId to be greater than any existing base terminal ID
+                try {
+                    const baseIds = data.sessions.map(s => {
+                        // Extract the numeric part from the terminal ID (before first underscore)
+                        if (typeof s.terminal_id === 'string' && s.terminal_id.includes('_')) {
+                            return parseInt(s.terminal_id.split('_')[0], 10);
+                        }
+                        return parseInt(s.terminal_id, 10);
+                    }).filter(id => !isNaN(id));
+                    
+                    if (baseIds.length > 0) {
+                        const maxBaseId = Math.max(...baseIds);
+                        nextTerminalId = maxBaseId + 1;
+                    }
+                } catch (e) {
+                    console.error("Error updating nextTerminalId:", e);
+                }
+            } else {
+                // No sessions found
+                sessionsListContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">No existing sessions found for this machine.</div></div>';
+            }
+        });
+        
+        // Handle user count updates for terminals
+        socket.on('terminal_users_update', function(data) {
+            const terminalId = data.terminal_id;
+            const usersCount = data.users_count || 0;
+            const currentUsername = data.current_username || 'None';
+            const creatorUsername = data.creator_username; // Get creator from server update
+            
+            console.log(`Received user count update for terminal ${terminalId}: ${usersCount} users, current user: ${currentUsername}, creator: ${creatorUsername}`);
+            
+            // Update active terminal if we're connected to it
+            if (terminals[terminalId]) {
+                const usersIndicator = terminals[terminalId].row.querySelector('.active-users');
+                if (usersIndicator) {
+                    if (usersCount > 0) {
+                        usersIndicator.textContent = 'You have exclusive control';
+                        usersIndicator.className = 'badge badge-success active-users';
+                        usersIndicator.innerHTML = '<i class="fas fa-lock"></i> Exclusive control';
+                    } else {
+                        usersIndicator.textContent = 'No users connected';
+                        usersIndicator.className = 'badge badge-secondary active-users';
+                    }
+                }
+            }
+            
+            // Also update in the sessions list
+            const sessionElements = document.querySelectorAll('.session-card');
+            sessionElements.forEach(element => {
+                const termIdElement = element.querySelector('.session-terminal-id');
+                if (termIdElement && termIdElement.textContent === terminalId) {
+                    // Update session status
+                    const usersElement = element.querySelector('.session-users');
+                    if (usersElement) {
+                        if (usersCount > 0) {
+                            usersElement.textContent = 'In Use (Exclusive)';
+                            usersElement.className = 'session-users badge badge-warning';
+                        } else {
+                            usersElement.textContent = 'Available';
+                            usersElement.className = 'session-users badge badge-success';
+                        }
+                    }
+                    
+                    // Update the current user field to show who's actually connected
+                    const currentUserElement = element.querySelector('.current-user');
+                    
+                    if (currentUserElement) {
+                        if (usersCount > 0) {
+                            // Always use the server's current_username - this should be the actually connected user
+                            currentUserElement.textContent = currentUsername !== 'None' && currentUsername !== 'Unknown' 
+                                ? currentUsername 
+                                : 'None';
+                        } else {
+                            currentUserElement.textContent = 'None';
+                        }
+                        
+                        // Log for debugging
+                        console.log(`Updated current user for terminal ${terminalId} to: ${currentUserElement.textContent}`);
+                    }
+                }
+            });
+            
+            // Refresh the session list to get updated user information
+            if (data.refresh_user_list) {
+                console.log("Refreshing session list due to user count change");
+                refreshSessionsList();
+            }
+        });
+        
+        // Listen for new terminal creation to update the session list in real-time for all users
+        socket.on('terminal_created', function(data) {
+            console.log("New terminal session created:", data.terminal_id);
+            // Only refresh if it wasn't created by this client (we already see our own terminals)
+            if (!terminals[data.terminal_id]) {
+                console.log("Refreshing sessions list due to new terminal creation");
+                refreshSessionsList();
+            }
+        });
+        
+        // Listen for terminal deletion to update session list in real-time
+        socket.on('terminal_deleted', function(data) {
+            console.log("Terminal session deleted:", data.terminal_id);
+            // Always refresh to ensure all clients have consistent view
+            console.log("Refreshing sessions list due to terminal deletion");
+            refreshSessionsList();
+        });
+        
+        // Initialize refresh sessions button
+        if (refreshSessionsBtn) {
+            console.log("Adding click handler to refreshSessionsBtn");
+            refreshSessionsBtn.addEventListener('click', refreshSessionsList);
+        }
+        
+        // Initialize create terminals button
+        if (createTerminalsBtn) {
+        createTerminalsBtn.addEventListener('click', function() {
+            const numTerminals = parseInt(numTerminalsInput.value);
+            
+            if (numTerminals < 1 || numTerminals > 4) {
+                alert('Please select between 1 and 4 terminal sessions');
+                return;
+            }
+            
+            // Create the requested number of terminals
+            for (let i = 0; i < numTerminals; i++) {
+                const terminalId = generateUniqueTerminalId();
+                createTerminalSession(terminalId, false);
+            }
+        });
+        }
+        
+        // Setup beforeunload event to inform user about persistent sessions
+        window.addEventListener('beforeunload', function(e) {
+            if (activeTerminals > 0) {
+                // This will show a confirmation dialog in most browsers
+                e.preventDefault();
+                e.returnValue = 'Your terminal sessions will remain active and can be accessed later. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+        
+        // Ensure page reload on back navigation to prevent stale data
+        window.onpageshow = function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        };
+        
+        // Show the existing sessions on page load
+        refreshSessionsList();
+    });
+
+    // Move the function definitions outside the event handler to avoid redefinition issues
+
+    // Removed system sessions related functions
+        
+    // Function to connect to an existing session
+    function connectToSession(terminalId) {
+        console.log("Connecting to session with ID:", terminalId);
+        
+        // Check if we're already connected to this terminal
+        if (terminals[terminalId]) {
+            // Just focus the terminal
+            terminals[terminalId].xterm.focus();
+            return;
+        }
+        
+        // Warn user about exclusive access mode
+        if (confirm("This terminal uses exclusive access mode. Connecting will disconnect any current user. Continue?")) {
+            // Create a new terminal view for this session
+            createTerminalSession(terminalId, true);
+        }
+    }
+    
+    // Removed system sessions related functions
+    
+    // Function to create a new terminal session
+    function createTerminalSession(terminalId, isExisting) {
+        try {
+            console.log("Creating terminal session", terminalId, "isExisting:", isExisting);
+            
+            // Get terminal container and template
+            const terminalsContainer = document.getElementById('terminals-container');
+            const terminalTemplate = document.getElementById('terminal-template');
+            
+            if (!terminalsContainer || !terminalTemplate) {
+                alert("Terminal container or template not found");
+                return;
+            }
+            
+            // Clone the terminal template
+            const terminalContent = document.importNode(terminalTemplate.content, true);
+            
+            // Set terminal number - extract base ID for display
+            const displayId = (typeof terminalId === 'string' && terminalId.includes('_')) 
+                ? terminalId.split('_')[0] 
+                : terminalId;
+            terminalContent.querySelector('.terminal-number').textContent = displayId;
+            
+            // Add new terminal to the container
+            terminalsContainer.appendChild(terminalContent);
+            
+            // Get the elements for this terminal
+            const terminalRow = terminalsContainer.lastElementChild;
+            const terminalContainer = terminalRow.querySelector('.terminal-container');
+            const terminalClear = terminalRow.querySelector('.terminal-clear');
+            const terminalDisconnect = terminalRow.querySelector('.terminal-disconnect');
+            const terminalClose = terminalRow.querySelector('.terminal-close');
+            
+            // Initialize xterm.js
+            const xterm = new Terminal({
+                cursorBlink: true,
+                theme: {
+                    background: '#1e1e1e',
+                    foreground: '#f0f0f0',
+                    cursor: '#ffffff',
+                    selection: 'rgba(255, 255, 255, 0.3)',
+                    black: '#000000',
+                    red: '#cc0000',
+                    green: '#4e9a06',
+                    yellow: '#c4a000',
+                    blue: '#3465a4',
+                    magenta: '#75507b',
+                    cyan: '#06989a',
+                    white: '#d3d7cf',
+                    brightBlack: '#555753',
+                    brightRed: '#ef2929',
+                    brightGreen: '#8ae234',
+                    brightYellow: '#fce94f',
+                    brightBlue: '#729fcf',
+                    brightMagenta: '#ad7fa8',
+                    brightCyan: '#34e2e2',
+                    brightWhite: '#eeeeec'
+                },
+                fontFamily: 'Courier New, monospace',
+                fontSize: 14,
+                lineHeight: 1.2,
+                scrollback: 5000
+            });
+            
+            // Create a FitAddon to properly size the terminal to its container
+            const fitAddon = new FitAddon.FitAddon();
+            xterm.loadAddon(fitAddon);
+            
+            // Load WebLinks addon to make URLs clickable
+            xterm.loadAddon(new WebLinksAddon.WebLinksAddon());
+            
+            // Render the terminal in the container
+            xterm.open(terminalContainer);
+            fitAddon.fit();
+            
+            // Store terminal information
+            terminals[terminalId] = {
+                xterm: xterm,
+                fitAddon: fitAddon,
+                container: terminalContainer,
+                row: terminalRow,
+                eventHandlers: {} // Store event handlers for later cleanup
+            };
+            
+            activeTerminals++;
+            
+            // Check if socket is connected
+            if (!socket || !socket.connected) {
+                xterm.write('\r\n\x1b[31mError: Not connected to server. Please refresh the page and try again.\x1b[0m\r\n');
+                return;
+            }
+            
+            // Connect to terminal session
+            if (isExisting) {
+                xterm.write('Connecting to existing session...\r\n');
+                
+                // Send connect request to server
+                socket.emit('open_terminal', {
+                    machine_ip: machineIp,
+                    machine_user: machineUser,
+                    terminal_id: terminalId,
+                    rows: xterm.rows,
+                    cols: xterm.cols,
+                    type: 'connect'
+                });
+            } else {
+                xterm.write('Creating new terminal session...\r\n');
+                
+                // Send create request to server
+                socket.emit('open_terminal', {
+                    machine_ip: machineIp,
+                    machine_user: machineUser,
+                    terminal_id: terminalId,
+                    rows: xterm.rows,
+                    cols: xterm.cols,
+                    type: 'create'
+                });
+            }
+            
+            // Handle data from the server - store handler for cleanup
+            const outputHandler = function(data) {
+                if (data.terminal_id === terminalId && terminals[terminalId]) {
+                    terminals[terminalId].xterm.write(data.output);
+                }
+            };
+            socket.on('terminal_output', outputHandler);
+            terminals[terminalId].eventHandlers['terminal_output'] = outputHandler;
+            
+            // Handle terminal history (for existing sessions) - store handler for cleanup
+            const historyHandler = function(data) {
+                if (data.terminal_id === terminalId && terminals[terminalId]) {
+                    console.log("Received terminal history for session:", terminalId);
+                    terminals[terminalId].xterm.write(data.output);
+                }
+            };
+            socket.on('terminal_history', historyHandler);
+            terminals[terminalId].eventHandlers['terminal_history'] = historyHandler;
+            
+            // Handle session ready event - store handler for cleanup
+            const readyHandler = function(data) {
+                if (data.terminal_id === terminalId && terminals[terminalId]) {
+                    // Update any session specific info in the UI
+                    const sessionInfo = terminalRow.querySelector('.session-info');
+                    if (sessionInfo) {
+                        let infoText = '';
+                        
+                        // Add creator info if available
+                        if (data.creator && data.creator !== 'Unknown') {
+                            infoText += `Created by: ${data.creator}`;
+                        }
+                        
+                        // Add exclusive access indicator
+                        if (data.exclusive) {
+                            infoText += infoText ? ' • ' : '';
+                            infoText += 'Exclusive Access';
+                        }
+                        
+                        // Add any other details
+                        if (data.details) {
+                            infoText += infoText ? ' • ' : '';
+                            infoText += data.details;
+                        }
+                        
+                        sessionInfo.textContent = infoText;
+                    }
+                    
+                    // Show an exclusive access message
+                    if (data.exclusive && terminals[data.terminal_id].xterm) {
+                        let message = '\r\n\x1b[33m════════════════════════════════════════\x1b[0m\r\n';
+                        message += '\x1b[33m⚠️  EXCLUSIVE ACCESS MODE ACTIVE\x1b[0m\r\n';
+                        message += '\x1b[33m   Other users will be disconnected if they try to connect\x1b[0m\r\n';
+                        
+                        // Add creator info to the message
+                        if (data.creator && data.creator !== 'Unknown') {
+                            message += `\x1b[33m   Original session creator: ${data.creator}\x1b[0m\r\n`;
+                        }
+                        
+                        message += '\x1b[33m════════════════════════════════════════\x1b[0m\r\n\r\n';
+                        
+                        terminals[data.terminal_id].xterm.write(message);
+                    }
+                    
+                    // Focus the terminal
+                    xterm.focus();
+                    
+                    // Update session list
+                    refreshSessionsList();
+                }
+            };
+            socket.on('terminal_ready', readyHandler);
+            terminals[terminalId].eventHandlers['terminal_ready'] = readyHandler;
+            
+            // Handle session error event - store handler for cleanup
+            const errorHandler = function(data) {
+                if (data.terminal_id === terminalId && terminals[terminalId]) {
+                    terminals[terminalId].xterm.write(`\r\n\x1b[31mError: ${data.error}\x1b[0m\r\n`);
+                }
+            };
+            socket.on('terminal_error', errorHandler);
+            terminals[terminalId].eventHandlers['terminal_error'] = errorHandler;
+            
+            // Handle terminal close button
+            terminalClose.addEventListener('click', function() {
+                // Protect against multiple clicks
+                if (this.dataset.closing === 'true') {
+                    console.log("Close already in progress, forcing cleanup");
+                    forceCleanupAllTerminals();
+                    return;
+                }
+                
+                this.dataset.closing = 'true';
+                
+                if (confirm('Are you sure you want to close this terminal session? This will end the session for all users.')) {
+                    console.log("User confirmed terminal close for", terminalId);
+                    
+                    // Record terminal info before we do anything
+                    const termInfo = {
+                        id: terminalId,
+                        displayId: displayId,
+                        row: terminals[terminalId].row,
+                        container: terminalContainer
+                    };
+                    
+                    // 1. Immediately hide the terminal row to give visual feedback
+                    if (terminalRow) {
+                        console.log("Hiding terminal row immediately");
+                        terminalRow.style.display = 'none';
+                    }
+                    
+                    // 2. Close the session on the server (we don't wait for response)
+                    socket.emit('close_terminal', {
+                        machine_ip: machineIp,
+                        machine_user: machineUser,
+                        terminal_id: terminalId,
+                        force_close: true
+                    });
+                    
+                    // 3. Immediately remove the row from the DOM
+                    if (terminalRow && terminalRow.parentNode) {
+                        console.log("Removing terminal row from DOM immediately");
+                        terminalRow.parentNode.removeChild(terminalRow);
+                    }
+                    
+                    // 4. Clean up internal state
+                    try {
+                        console.log("Immediate cleanup for terminal", terminalId);
+                        cleanupTerminal(terminalId, true);
+                    } catch (e) {
+                        console.error("Error in immediate cleanup:", e);
+                    }
+                    
+                    // 5. Force refresh session list
+                    refreshSessionsList();
+                    
+                    // 6. Add a delayed failsafe cleanup
+                    setTimeout(() => {
+                        try {
+                            forceRemoveTerminalFromDOM(terminalId, displayId);
+                        } catch (e2) {
+                            console.error("Error in backup cleanup:", e2);
+                        }
+                    }, 500);
+                } else {
+                    // Reset closing state if user cancels
+                    this.dataset.closing = 'false';
+                }
+            });
+            
+            // Handle terminal close event - store handler for cleanup
+            const closedHandler = function(data) {
+                if (data.terminal_id === terminalId && terminals[terminalId]) {
+                    console.log(`Received terminal_closed event for ${terminalId}, forced=${data.forced}`);
+                    
+                    // If there's a specific reason (like being kicked out), display it
+                    if (data.reason) {
+                        terminals[terminalId].xterm.write(`\r\n\x1b[31m${data.reason}\x1b[0m\r\n`);
+                        
+                        // Show alert notification
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger';
+                        alertDiv.style.position = 'fixed';
+                        alertDiv.style.top = '10px';
+                        alertDiv.style.right = '10px';
+                        alertDiv.style.zIndex = '9999';
+                        alertDiv.innerHTML = `<strong>You have been disconnected:</strong> ${data.reason}`;
+                        document.body.appendChild(alertDiv);
+                        
+                        // Remove the alert after 10 seconds
+                        setTimeout(() => {
+                            if (alertDiv.parentNode) {
+                                alertDiv.parentNode.removeChild(alertDiv);
+                            }
+                        }, 10000);
+                    }
+                    else if (data.forced) {
+                        terminals[terminalId].xterm.write('\r\n\x1b[33mSession closed by server or another user.\x1b[0m\r\n');
+                    }
+                    
+                    // Get DOM references before cleanup
+                    const termRow = terminals[terminalId].row;
+                    const termDisplayId = (typeof terminalId === 'string' && terminalId.includes('_')) 
+                        ? terminalId.split('_')[0] 
+                        : terminalId;
+                    
+                    // Immediately hide the row
+                    if (termRow) {
+                        console.log(`Hiding terminal row for ${terminalId} from event handler`);
+                        termRow.style.display = 'none';
+                    }
+                    
+                    // Directly remove from the DOM
+                    if (termRow && termRow.parentNode) {
+                        console.log(`Removing terminal row for ${terminalId} from event handler`);
+                        termRow.parentNode.removeChild(termRow);
+                    }
+                    
+                    // Clean up the terminal
+                    setTimeout(() => {
+                        cleanupTerminal(terminalId, data.forced);
+                        
+                        // Add second failsafe
+                        setTimeout(() => {
+                            forceRemoveTerminalFromDOM(terminalId, termDisplayId);
+                        }, 500);
+                    }, 100);
+                }
+            };
+            
+            // Global utility to forcefully remove a terminal from the DOM by ID
+            function forceRemoveTerminalFromDOM(termId, displayId) {
+                console.log(`Force removing terminal ${termId} (display: ${displayId}) from DOM`);
+                
+                // Try removing by direct reference if terminal still exists
+                if (terminals[termId] && terminals[termId].row) {
+                    const row = terminals[termId].row;
+                    if (row.parentNode) {
+                        console.log(`Found terminal ${termId} by direct reference, removing`);
+                        row.parentNode.removeChild(row);
+                    }
+                    
+                    // Also delete from terminals object if still there
+                    delete terminals[termId];
+                }
+                
+                // Search for any elements with this terminal number and remove them
+                document.querySelectorAll('.terminal-row').forEach(row => {
+                    const numSpan = row.querySelector('.terminal-number');
+                    if (numSpan && numSpan.textContent === displayId) {
+                        console.log(`Found orphaned terminal with display ID ${displayId}, removing`);
+                        if (row.parentNode) {
+                            row.parentNode.removeChild(row);
+                        }
+                    }
+                });
+                
+                // Refresh session list
+                refreshSessionsList();
+            }
+            
+            // Global emergency cleanup function
+            function forceCleanupAllTerminals() {
+                console.log("Emergency cleanup of all terminals");
+                
+                // First, try normal cleanup of all terminals
+                Object.keys(terminals).forEach(id => {
+                    try {
+                        cleanupTerminal(id, true);
+                    } catch (e) {
+                        console.error(`Failed to clean up terminal ${id}:`, e);
+                    }
+                });
+                
+                // Then forcibly remove all terminal rows from DOM
+                document.querySelectorAll('.terminal-row').forEach(row => {
+                    try {
+                        if (row.parentNode) {
+                            row.parentNode.removeChild(row);
+                        }
+                    } catch (e) {
+                        console.error("Failed to remove terminal row:", e);
+                    }
+                });
+                
+                // Reset terminals object and counter
+                terminals = {};
+                activeTerminals = 0;
+                
+                // Refresh sessions list
+                refreshSessionsList();
+            }
+            
+            // Helper function to clean up terminal UI
+            function cleanupTerminal(id, wasForceClose) {
+                console.log(`Starting cleanup for terminal ${id} (force close: ${wasForceClose})`);
+                
+                try {
+                    if (!terminals[id]) {
+                        console.log(`Terminal ${id} not found in terminals object`);
+                        return;
+                    }
+                    
+                    // Store references to elements before we start removing things
+                    const row = terminals[id].row;
+                    const parentNode = row ? row.parentNode : null;
+                    const xtermInstance = terminals[id].xterm;
+                    const handlers = terminals[id].eventHandlers || {};
+                    
+                    console.log(`Terminal ${id} elements: row=${!!row}, parentNode=${!!parentNode}, xterm=${!!xtermInstance}`);
+                    
+                    // Step 1: Remove event listeners
+                    console.log(`Removing event handlers for terminal ${id}`);
+                    Object.keys(handlers).forEach(eventName => {
+                        if (handlers[eventName]) {
+                            socket.off(eventName, handlers[eventName]);
+                            console.log(`Removed handler for ${eventName}`);
+                        }
+                    });
+                    
+                    // Step 2: Dispose xterm instance
+                    if (xtermInstance) {
+                        console.log(`Disposing xterm instance for terminal ${id}`);
+                        xtermInstance.dispose();
+                    }
+                    
+                    // Step 3: Remove from DOM
+                    if (row && parentNode) {
+                        console.log(`Removing terminal ${id} row from DOM`);
+                        parentNode.removeChild(row);
+                    } else if (row) {
+                        console.log(`Terminal ${id} row has no parent, using alternative removal method`);
+                        // Alternative way to try to remove the element
+                        row.style.display = 'none';
+                        if (row.remove) row.remove();
+                    }
+                    
+                    // Step 4: Remove from terminals object
+                    console.log(`Deleting terminal ${id} from terminals object`);
+                    delete terminals[id];
+                    
+                    // Step 5: Decrement active terminals count
+                    activeTerminals--;
+                    console.log(`Reduced activeTerminals count to ${activeTerminals}`);
+                    
+                    // Step 6: Update session list
+                    console.log(`Refreshing sessions list after terminal ${id} cleanup`);
+                    refreshSessionsList();
+                    
+                    console.log(`Terminal ${id} cleanup completed successfully`);
+                } catch (e) {
+                    console.error(`Error cleaning up terminal ${id}:`, e);
+                }
+            }
+            
+            socket.on('terminal_closed', closedHandler);
+            terminals[terminalId].eventHandlers['terminal_closed'] = closedHandler;
+            
+            // Handle terminal clear button
+            terminalClear.addEventListener('click', function() {
+                xterm.clear();
+            });
+            
+            // Handle terminal disconnect button
+            terminalDisconnect.addEventListener('click', function() {
+                // Just remove the terminal from the client without closing the server session
+                socket.emit('close_terminal', {
+                    machine_ip: machineIp,
+                    machine_user: machineUser,
+                    terminal_id: terminalId,
+                    force_close: false
+                });
+                
+                // Show disconnecting message
+                terminals[terminalId].xterm.write('\r\n\x1b[33mDisconnecting from session (session will remain active)...\x1b[0m\r\n');
+                
+                // Store a reference to the row outside the terminals object
+                const rowToRemove = terminals[terminalId].row;
+                
+                // Ensure local cleanup regardless of server response
+                setTimeout(() => {
+                    try {
+                        console.log("Executing disconnect cleanup for terminal", terminalId);
+                        cleanupTerminal(terminalId, false);
+                        
+                        // Additional backup DOM cleanup if needed
+                        if (rowToRemove && rowToRemove.parentNode) {
+                            console.log("Performing backup DOM cleanup after disconnect");
+                            rowToRemove.parentNode.removeChild(rowToRemove);
+                        }
+                    } catch (e) {
+                        console.error("Error in disconnect cleanup:", e);
+                    }
+                    
+                    // Force refresh the sessions list
+                    refreshSessionsList();
+                }, 500);
+            });
+            
+            // Handle user input
+            xterm.onData(function(data) {
+                socket.emit('send_command', {
+                    machine_ip: machineIp,
+                    machine_user: machineUser,
+                    terminal_id: terminalId,
+                    command: data
+                });
+            });
+            
+            // Handle terminal resize
+            window.addEventListener('resize', function() {
+                if (terminals[terminalId]) {
+                    const fitAddon = terminals[terminalId].fitAddon;
+                    fitAddon.fit();
+                    
+                    // Notify server of new size
+                    socket.emit('resize_terminal', {
+                        machine_ip: machineIp,
+                        machine_user: machineUser,
+                        terminal_id: terminalId,
+                        rows: xterm.rows,
+                        cols: xterm.cols
+                    });
+                }
+            });
+            
+            // Initial resize
+            setTimeout(() => {
+                try {
+                    if (terminals[terminalId]) {
+                        const fitAddon = terminals[terminalId].fitAddon;
+                        fitAddon.fit();
+                        
+                        // Notify server of new size
+                        socket.emit('resize_terminal', {
+                            machine_ip: machineIp,
+                            machine_user: machineUser,
+                            terminal_id: terminalId,
+                            rows: xterm.rows,
+                            cols: xterm.cols
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error resizing terminal:", e);
+                }
+            }, 100);
+            
+        } catch (e) {
+            console.error("Error creating terminal:", e);
+            alert("Error creating terminal: " + e.message);
+        }
+    }
+</script>
+{% endblock %} 

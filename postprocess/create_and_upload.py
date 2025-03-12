@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 # Local server details
-DB_HOST = "192.168.68.164"
+DB_HOST = "192.168.68.215"
 DB_USER = "remote_user"
 MYSQL_PASSWORD_RAW = ''
 DB_PORT = 3306
@@ -18,6 +18,9 @@ def validate_database_name(db_name):
     words = db_name.split('_')
     if len(words) != 7:
         print("Database name must have exactly seven parts separated by underscores.")
+        return False
+    if len(db_name)>64:
+        print(f"Max database name length is 64 characters, current length is {len(db_name)}")
         return False
     for word in words:
         if '_' in word or ' ' in word:

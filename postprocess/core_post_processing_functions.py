@@ -3,13 +3,14 @@ import numpy as np
 import pandas as pd
 import os, re
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+# from mpl_toolkits.axes_grid1 import make_axes_locatable
 import scipy.stats as stats
 import bisect
 from itertools import chain
 import math
 import matplotlib.colors as mcolors
 import scipy.interpolate as spi
+from scipy.interpolate import interp1d
 import paramiko
 import random
 import time
@@ -25,29 +26,29 @@ import time
 #     target_pattern[:,324*2:324*3] = 2
 #     target_pattern[:,324*3:] = 3
 
-def plot_nq(data_arrays, ):
-    plt.figure(figsize=(8, 6))
-    # Generate a color map to differentiate each dataset visually
-    colors = ['r', 'b', 'g', 'm']
+# def plot_nq(data_arrays, ):
+#     plt.figure(figsize=(8, 6))
+#     # Generate a color map to differentiate each dataset visually
+#     colors = ['r', 'b', 'g', 'm']
 
-    for idx, data in enumerate(data_arrays):
-        # Sort the data and calculate quantiles
-        sorted_data = np.sort(data)
-        quantiles = np.linspace(0, 1, len(sorted_data))
+#     for idx, data in enumerate(data_arrays):
+#         # Sort the data and calculate quantiles
+#         sorted_data = np.sort(data)
+#         quantiles = np.linspace(0, 1, len(sorted_data))
 
-        # Transform quantiles into standard normal variates
-        normal_quantiles = stats.norm.ppf(quantiles)
+#         # Transform quantiles into standard normal variates
+#         normal_quantiles = stats.norm.ppf(quantiles)
 
-        # Plot with a normal distribution scale on the y-axis
-        plt.plot(sorted_data, normal_quantiles, marker='o', linestyle='-', color=colors[idx], label=f'Data {idx+1}')
+#         # Plot with a normal distribution scale on the y-axis
+#         plt.plot(sorted_data, normal_quantiles, marker='o', linestyle='-', color=colors[idx], label=f'Data {idx+1}')
 
-    # Add labels and legend
-    plt.xlabel('Data Values')
-    plt.ylabel('Normal Quantiles')
-    plt.title('Overlay of Data Distributions on a Normal Scale')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+#     # Add labels and legend
+#     plt.xlabel('Data Values')
+#     plt.ylabel('Normal Quantiles')
+#     plt.title('Overlay of Data Distributions on a Normal Scale')
+#     plt.legend()
+#     plt.grid(True)
+#     plt.show()
 
 # Data input is passed as a dictionary and titles are the order of the keys desired to be plotted
 def plot_bit_fail_map(data, titles = ['plot 1','plot 2','plot 3','plot 4']):
@@ -73,7 +74,7 @@ def plot_bit_fail_map(data, titles = ['plot 1','plot 2','plot 3','plot 4']):
 # Returns a dictionary of read window budget (rwb) for each key in the data plotted and the interpolated ppm distributions
 # cpm_range is a tuple of (adc_code_0_cond, adc_code_63_cond)
 def rwb_intcond_overlaylevelnqplot(data_list, titles = ['plot 1','plot 2','plot 3','plot 4'], ref_ppm_list = [170,500], xpoint_levels_list = [(0,1),(1,2),(2,3)], 
-                                   enable_plots = False, plot_ref_lines = True, cond_range=(30,160)):
+                                   enable_plots = False, plot_ref_lines = True, cond_range=(30,160), enable_xpoint_ppm_ext = False):
     if enable_plots:
         if len(titles) > 4:
             num_rows = math.ceil(len(titles)/2)
@@ -110,8 +111,10 @@ def rwb_intcond_overlaylevelnqplot(data_list, titles = ['plot 1','plot 2','plot 
     #         if max_cond_temp > max_cond:
     #             max_cond = max_cond_temp
     # interpolated_cond_range = np.arange(int(min_cond/2)*2, int(max_cond/2)*2+2, 2)
-    rwb = pd.DataFrame(np.nan, index=titles, columns=[['LEVEL_%d%d_XPOINT_PPM' % (lower,upper) for (lower,upper) in xpoint_levels_list] + 
+    rwb = pd.DataFrame(np.nan, index=titles, columns=[
+                        ['LEVEL_%d%d_XPOINT_PPM' % (lower,upper) for (lower,upper) in xpoint_levels_list] + 
                         ['LEVEL_%d%d_XPOINT_ADC' % (lower,upper) for (lower,upper) in xpoint_levels_list] + 
+                        ['LEVEL_%d%d_XPOINT_EXT_PPM' % (lower,upper) for (lower,upper) in xpoint_levels_list] + 
                         ['LEVEL_%d%d_XPOINT_SUM_PPM' % (lower,upper) for (lower,upper) in xpoint_levels_list] + 
                         ['LEVEL_%d%d_XPOINT_SUM_ADC' % (lower,upper) for (lower,upper) in xpoint_levels_list] + 
                         list(chain.from_iterable([['LEVEL_%d%d_%sSIGMA_ADCRWB' % (lower,upper,ppm) for (lower,upper) in xpoint_levels_list] for ppm in str_sigma_list])) + 
@@ -126,7 +129,7 @@ def rwb_intcond_overlaylevelnqplot(data_list, titles = ['plot 1','plot 2','plot 
                         ])
     
     for i, key in enumerate(titles):
-        # First subplot for `rowbar_1d`
+        print(f' - Post processing {key}')
         j = 0
         sorted_data = [np.nan, np.nan, np.nan, np.nan]
         normal_quantiles = [np.nan, np.nan, np.nan, np.nan]
@@ -167,6 +170,10 @@ def rwb_intcond_overlaylevelnqplot(data_list, titles = ['plot 1','plot 2','plot 
         # Save conductance range for later post processing
         rwb.loc[key,'ADC_0_COND_US'] = cond_range[0]
         rwb.loc[key,'ADC_63_COND_US'] = cond_range[1]
+
+        # # TIME DEBUG
+        # sec1_start_time = time.time()
+
         # xpoint_levels_list = [(0,1),(1,2),(2,3),(0,3)] # List of intersection levels at which to calculate rwb
         for lower_level, upper_level in xpoint_levels_list:
             for stat_type, stat_value in ref_ppmsigma_list:
@@ -284,7 +291,13 @@ def rwb_intcond_overlaylevelnqplot(data_list, titles = ['plot 1','plot 2','plot 
             #     # rwb.loc[key,'LEVEL_%d%d_%dADC_PPM' % (lower_level,upper_level,cond)] = cond_to_adc(lower_level_ppm, cond_range) + cond_to_adc(upper_level_ppm, cond_range)
 
 
+        # # TIME DEBUG
+        # sec2_start_time = time.time()
+
         # Calculate sigma and min/max ADC for each level
+        transformed_data = []
+        intersections = []
+        four_level_ft = True
         for level in [0,1,2,3]:
             rwb.loc[key,'LEVEL_%d_DISTSIGMA' % level] = np.std(sorted_data[level])
 
@@ -308,6 +321,106 @@ def rwb_intcond_overlaylevelnqplot(data_list, titles = ['plot 1','plot 2','plot 
                 else:
                     ppm = stats.norm.cdf(normal_quantiles[level][index]) * 1e6
                 rwb.loc[key,'LEVEL_%d_%dADC_PPM' % (level,adc)] = ppm
+
+            # calculate interpolated xpoint PPM
+            if sorted_data[level].min() == -1:
+                four_level_ft = False
+            cdf_values = (np.arange(1, len(sorted_data[level]) + 1) - 0.5) / len(sorted_data[level])
+            sigma_values = stats.norm.ppf(cdf_values)
+
+            transformed_data.append((sorted_data[level], sigma_values))
+
+        # calculate interpolated xpoint PPM
+        if four_level_ft and enable_xpoint_ppm_ext:
+            print(' - Performing PPM extrapolation')
+            def sigma_to_ppm(sigma):
+                # Calculate the area in the tail beyond the sigma value on one side of the distribution
+                tail_probability = stats.norm.sf(sigma)
+                # Convert this probability to parts per million
+                ppm = tail_probability * 1_000_000
+                return ppm
+
+            for k in range(3):
+                x1, y1 = transformed_data[k]
+                x2, y2 = transformed_data[k + 1]
+
+                y1 = -y1  # Reverse the y-axis for the first of the two states being compared
+
+                start_state = k
+                end_state = k + 1
+
+                common_x_min_all = min(min(x1), min(x2))
+                common_x_max_all = max(max(x1), max(x2))
+                common_x_all = np.linspace(common_x_min_all, common_x_max_all, num=4000)
+
+                # Remove duplicates and interpolate
+                unique_x1, unique_indices_x1 = np.unique(x1, return_index=True)
+                unique_y1 = y1[unique_indices_x1]
+                unique_x2, unique_indices_x2 = np.unique(x2, return_index=True)
+                unique_y2 = y2[unique_indices_x2]
+
+                interp_common_x_1 = interp1d(unique_x1, unique_y1, fill_value="extrapolate")(common_x_all)
+                interp_common_x_2 = interp1d(unique_x2, unique_y2, fill_value="extrapolate")(common_x_all)
+
+                # Don't Convert sigma to CDF values, keep sigma values
+                cdf_value_1 = interp_common_x_1
+                cdf_value_2 = interp_common_x_2
+
+                # Check if both cdf_value_1 and cdf_value_2 are not all NaN before plotting and finding intersections
+                if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
+                    # Find and mark intersection only if both arrays have valid data
+                    idx_closest = np.argmin(np.abs(cdf_value_1 - cdf_value_2))
+                    intersection_x = common_x_all[idx_closest]
+                    intersection_y = cdf_value_1[idx_closest]
+                    # plt.scatter(intersection_x, intersection_y, color='red', s=50, zorder=5)
+                    intersections.append((intersection_x, intersection_y))
+
+                    ber = np.abs(cdf_value_1[idx_closest])
+                    ppm_ber = sigma_to_ppm(ber)  #intersection
+
+                    # Draw horizontal lines if x-differences are about 2 units apart
+                    target_x_diff = 2
+                    tolerance = 0.2
+                    line_drawn = False
+
+                    for idx in range(len(common_x_all) - 1):
+                        for jdx in range(idx + 1, len(common_x_all)):
+                            x_diff = common_x_all[jdx] - common_x_all[idx]
+                            if abs(x_diff - target_x_diff) < tolerance:
+                                if cdf_value_2[jdx] > cdf_value_1[idx]:  # Check divergence
+                                    horizontal_line_y_value = cdf_value_2[jdx]
+                                    ppm = sigma_to_ppm(abs(horizontal_line_y_value))  #2uS
+                                    # print(f"Horizontal line drawn from x={common_x_all[idx]} to x={common_x_all[jdx]} at y={cdf_value_2[jdx]}")
+                                    #print("ppm:", ppm)
+                                    line_drawn = True
+                                    break
+
+                        if line_drawn:
+                            break
+
+                    if not line_drawn:
+                        print("No suitable points found to draw a horizontal line.")
+                
+                else:
+                    ber = 0
+                    ppm_ber = 0
+                    ppm = 0
+                    horizontal_line_y_value = 0
+
+                rwb.loc[key,'LEVEL_%d%d_XPOINT_EXT_PPM' % (start_state,end_state)] = ppm
+
+                    # if horizontal_line_y_value is not None:
+                    #     hlyv_rounded = round(abs(horizontal_line_y_value), 4)
+                    # else:
+                    #     hlyv_rounded = None  # or 0, depending on your preference
+                    #ber_results.append(('', f'state{start_state} to state{end_state}', ber, ppm_ber, ppm, round(abs(horizontal_line_y_value), 4)))
+                    # ber_results.append((f'state{start_state} to state{end_state}', ppm_ber, ppm))
+        
+        # # TIME DEBUG
+        # sec3_start_time = time.time()
+        # if key == 20:
+        #     print('First section time: ', sec2_start_time - sec1_start_time)
+        #     print('Second section time: ', sec3_start_time - sec2_start_time)
 
     
     # Make sure df columns are flat
@@ -890,19 +1003,28 @@ def nq_plots_overlayreadout(data_list, titles = ['plot 1','plot 2','plot 3','plo
     plt.show()
 
 # Plot cond vs. bit sigma overlaying level 0/1/2/3 grouped by custom column
-def rwb_overlay_levels_nqplot(rwb, ref_ppm=170, groupby_col='IO', single_col_subplot=True):
+def rwb_overlay_levels_nqplot(rwb, ref_ppm=170, groupby_col='IO', subplot_format='square', levels=(0,1,2,3),
+                              interactive_mode=True):
     if len(rwb) != rwb[groupby_col].nunique():
         raise Exception('Each row must be a unique value in the groupby column')
 
     col_names = [x for x in rwb.columns if re.search('^LEVEL_[0-3]_.*ADC_PPM$',x)]
     window_ppm_data = rwb[col_names]
 
-    if single_col_subplot:
-        fig, axs = plt.subplots(len(rwb), 1, figsize=(5, 3*len(rwb)))
-    else:
+    if subplot_format == 'single_col':
+        fig, axs_temp = plt.subplots(len(rwb), 1, figsize=(5, 3*len(rwb)))
+    elif subplot_format == 'two_cols':
         n_rows_to_plot = math.ceil(len(rwb)/2)
-        fig, axs = plt.subplots(n_rows_to_plot, 2, figsize=(10, 3*n_rows_to_plot))  # 2 row, 2 columns of subplots
-    axs = axs.flatten()
+        fig, axs_temp = plt.subplots(n_rows_to_plot, 2, figsize=(10, 3*n_rows_to_plot))  # 2 row, 2 columns of subplots
+    elif subplot_format == 'square': # default
+        n_rows_to_plot = math.ceil(math.sqrt(len(rwb)))
+        fig, axs_temp = plt.subplots(n_rows_to_plot, n_rows_to_plot, figsize=(25, 25))
+    
+    if len(rwb) > 1:
+        axs = axs_temp.flatten()
+    else:
+        axs = []
+        axs.append(axs_temp)
 
     # Find range of conductance
     cond_list = []
@@ -912,6 +1034,8 @@ def rwb_overlay_levels_nqplot(rwb, ref_ppm=170, groupby_col='IO', single_col_sub
     cond_list.sort()
     # cond_min = min(cond_list)
     # cond_max = max(cond_list)
+
+    tolerance = 1e-6  # Small value to avoid clipping to exactly 0 or 1
 
     for i in range(len(rwb)):
         # Extract column names (x-axis) and values (y-axis)
@@ -924,25 +1048,25 @@ def rwb_overlay_levels_nqplot(rwb, ref_ppm=170, groupby_col='IO', single_col_sub
 
         x[0] = [0] + x[0]
         y[0] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_0' in x]].iloc[i]
-        y[0] = [stats.norm.ppf(1/(64*1296))] + [stats.norm.ppf(x/1e6) for x in y[0]]
+        y[0] = [stats.norm.ppf(1/(64*1296))] + [stats.norm.ppf(np.clip(x/1e6, tolerance, 1 - tolerance)) for x in y[0]]
 
         y[1] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_1' in x]].iloc[i]
-        y[1] = [stats.norm.ppf(x/1e6) for x in y[1]]
+        y[1] = [stats.norm.ppf(np.clip(x/1e6, tolerance, 1 - tolerance)) for x in y[1]]
 
         y[2] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_2' in x]].iloc[i]
-        y[2] = [stats.norm.ppf(x/1e6) for x in y[2]]
+        y[2] = [stats.norm.ppf(np.clip(x/1e6, tolerance, 1 - tolerance)) for x in y[2]]
 
         # x[3] = cond_list
         # if window_ppm_data['LEVEL_3_63ADC'].iloc[i]==1e6:
         #     window_ppm_data.iloc[i,'LEVEL_3_63ADC'] = (64*1296-1)/(64*1296)
         y[3] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_3' in x]].iloc[i]
-        y[3] = [stats.norm.ppf(x/1e6) for x in y[3]]
+        y[3] = [stats.norm.ppf(np.clip(x/1e6, tolerance, 1 - tolerance)) for x in y[3]]
 
         # If all y_3 is np.inf, make last point lowest sigma then add point for highest sigma
-        for level in range(4):
+        for level in levels:
             # x_temp = x[level]
             # y_temp = y[level]
-            if np.all(np.abs(y[level])==np.inf):
+            if np.all(np.abs(y[level])==np.inf) and (np.inf not in np.diff(y[level])):
                 x[level] = [63,63]
                 y[level] = [stats.norm.ppf((1)/(64*1296)),stats.norm.ppf((64*1296-1)/(64*1296))]
 
@@ -950,7 +1074,7 @@ def rwb_overlay_levels_nqplot(rwb, ref_ppm=170, groupby_col='IO', single_col_sub
             elif np.any(np.abs(y[level])==np.inf):
                 reached_data = False
                 for j in range(len(y[level])):
-                    if abs(y[level][j])!=np.inf:
+                    if (y[level][j]>y[level][j-1]) and (j>0):
                         reached_data = True
 
                     if (reached_data==False) and (abs(y[level][j])==np.inf):
@@ -974,14 +1098,15 @@ def rwb_overlay_levels_nqplot(rwb, ref_ppm=170, groupby_col='IO', single_col_sub
         axs[i].set_ylim([-4,4])
         axs[i].axhline(stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
         axs[i].axhline(-stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
-        axs[i].legend()
+        # axs[i].legend()
         axs[i].grid(True)
 
     plt.tight_layout()
-    plt.show()
+    if interactive_mode:
+        plt.show()
 
 # Plot cond vs. bit sigma for level 0/1/2/3 seperately from RWB output. Overlay by custom column
-def rwb_groupby_level_nqplot(rwb, ref_ppm=170, overlay_col='IO', single_col_subplot=True, plot_level=-1, xlim=(-1,64)):
+def rwb_groupby_level_nqplot(rwb, ref_ppm=170, overlay_col='IO', single_col_subplot=True, plot_level=-1, xlim=(-1,64), legend=True, title=None, interactive_mode=True):
     if len(rwb) != rwb[overlay_col].nunique():
         raise Exception('Each row must be a unique value in the groupby column')
 
@@ -991,7 +1116,9 @@ def rwb_groupby_level_nqplot(rwb, ref_ppm=170, overlay_col='IO', single_col_subp
     if plot_level == -1:
         fig, axs = plt.subplots(2, 2, figsize=(12, 8))  # 2 row, 2 columns of subplots
         axs = axs.flatten()
-    elif plot_level < 4:
+    elif plot_level in [0,1,2,3]:
+        fig, axs = plt.subplots(1, 1, figsize=(8, 6))
+    elif plot_level == -2:
         fig, axs = plt.subplots(1, 1, figsize=(8, 6))
 
     # Find range of conductance
@@ -1003,31 +1130,44 @@ def rwb_groupby_level_nqplot(rwb, ref_ppm=170, overlay_col='IO', single_col_subp
     # cond_min = min(cond_list)
     # cond_max = max(cond_list)
 
+    # Color list for plot_level=-2
+    color_list = [
+        'blue', 'red', 'green', 'purple', 'orange', 'brown', 'cyan', 'gray', 'olive', 'pink',
+        'lime', 'navy', 'teal', 'magenta', 'gold', 'maroon', 'violet', 'indigo', 'darkgreen', 'dodgerblue'
+    ] * 5
+
     for i in range(len(rwb)):
         # Extract column names (x-axis) and values (y-axis)
         # x = window_ppm_data[[x for x in window_ppm_data if '01' in x]].columns
         x = {} # dict of x values
         y = {} # dict of y values
 
-        x[0] = [0] + cond_list
+        x[0] = cond_list
         y[0] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_0' in x]].iloc[i]
-        y[0] = [stats.norm.ppf(1/(64*1296))] + [stats.norm.ppf(x/1e6) for x in y[0]]
+        y[0] = [max(1, min(j, 1e6 - 1)) for j in y[0]]
+        y[0] = [stats.norm.ppf(j/1e6) for j in y[0]]
 
         x[1] = cond_list
         y[1] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_1' in x]].iloc[i]
-        y[1] = [stats.norm.ppf(x/1e6) for x in y[1]]
+        y[1] = [max(1, min(j, 1e6 - 1)) for j in y[1]]
+        y[1] = [stats.norm.ppf(j/1e6) for j in y[1]]
 
         x[2] = cond_list
         y[2] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_2' in x]].iloc[i]
-        y[2] = [stats.norm.ppf(x/1e6) for x in y[2]]
+        y[2] = [max(1, min(j, 1e6 - 1)) for j in y[2]]
+        y[2] = [stats.norm.ppf(j/1e6) for j in y[2]]
 
         x[3] = cond_list
         y[3] = window_ppm_data[[x for x in window_ppm_data if 'LEVEL_3' in x]].iloc[i]
-        y[3] = [stats.norm.ppf(x/1e6) for x in y[3]]
+        y[3] = [max(1, min(j, 1e6 - 1)) for j in y[3]]
+        y[3] = [stats.norm.ppf(j/1e6) for j in y[3]]
 
         for level in range(4):
             if np.all(np.abs(y[level])==np.inf):
-                x[level] = [63,63]
+                if level == 0:
+                    x[level] = [0,0]
+                else:
+                    x[level] = [63,63]
                 y[level] = [stats.norm.ppf((1)/(64*1296)),stats.norm.ppf((64*1296-1)/(64*1296))]
 
             # If there are np.inf values, pad the ones before the data with lowest sigma and the ones after the data with highest sigma
@@ -1041,10 +1181,14 @@ def rwb_groupby_level_nqplot(rwb, ref_ppm=170, overlay_col='IO', single_col_subp
                         y[level][j] = stats.norm.ppf((1)/(64*1296))
                     elif reached_data and (abs(y[level][j])==np.inf):
                         y[level][j] = stats.norm.ppf((64*1296-1)/(64*1296))
+            
+            if level==0:
+                x[level] = [0] + x[level]
+                y[level] = [stats.norm.ppf(1/(64*1296))] + y[level]
 
         if plot_level == -1:
             for level in range(4):
-                axs[level].plot(x[level], y[level], marker='o', linestyle='-', label = rwb[overlay_col].values[i])
+                axs[level].plot(x[level], y[level], marker='o', linestyle='-', label = rwb[overlay_col].values[i], color=color_list[i])
                 axs[level].set_title(f'Level{level}')
                 axs[level].set_xlabel("ADC Code")
                 axs[level].set_ylabel("Sigma")
@@ -1052,22 +1196,48 @@ def rwb_groupby_level_nqplot(rwb, ref_ppm=170, overlay_col='IO', single_col_subp
                 axs[level].set_ylim([-4,4])
                 axs[level].axhline(stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
                 axs[level].axhline(-stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
-                axs[level].legend()
+                if legend:
+                    axs[level].legend()
                 axs[level].grid(True)
-        else:
-            axs.plot(x[plot_level], y[plot_level], marker='o', linestyle='-', label = rwb[overlay_col].values[i])
-            axs.set_title(f'Level{plot_level}')
+        elif plot_level in [0,1,2,3]:
+            axs.plot(x[plot_level], y[plot_level], marker='o', linestyle='-', label = rwb[overlay_col].values[i], color=color_list[i])
+            if title is None:
+                axs.set_title(f'Level{plot_level}')
+            else:
+                axs.set_title(title)
             axs.set_xlabel("ADC Code")
             axs.set_ylabel("Sigma")
             axs.set_xlim(xlim)
             axs.set_ylim([-4,4])
             axs.axhline(stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
             axs.axhline(-stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
-            axs.legend()
+            if legend:
+                axs.legend()
             axs.grid(True)
+        elif plot_level == -2:
+            for level in range(4):
+                if level == 0:
+                    axs.plot(x[level], y[level], marker='o', linestyle='-', color=color_list[i], label = rwb[overlay_col].values[i])
+                else:
+                    axs.plot(x[level], y[level], marker='o', linestyle='-', color=color_list[i])
+            axs.set_xlabel("ADC Code")
+            axs.set_ylabel("Sigma")
+            axs.set_xlim(xlim)
+            axs.set_ylim([-4,4])
+            if title is not None:
+                axs.set_title(title)
+            else:
+                axs.set_title(f'Interpolated histos by {overlay_col}')
+            axs.axhline(stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
+            axs.axhline(-stats.norm.ppf(ref_ppm/1e6), color='gray', linestyle='--')
+            if legend:
+                axs.legend()
+            axs.grid(True)        
+
 
     plt.tight_layout()
-    plt.show()
+    if interactive_mode:
+        plt.show()
 
 def rwb_plot_window_ppm(rwb, mean=False):
     col_names = [x for x in rwb.columns if re.search('^LEVEL_(01|12|23)_.*US_PPM$',x)]
@@ -1130,22 +1300,9 @@ def rwb_plot_window_ppm(rwb, mean=False):
         plt.show()
 
 # This function pivots the RWB table by test to facilitate cross-test analysis on the same IOs
-def rwb_pivot_by_test(rwb):
+def rwb_pivot_by_test(rwb, index_cols = ['DIE_ID','MACRO','IO']):
     # Define index columns (assumes TEST_NAME is the last index column)
     tstnm_col = list(rwb.columns).index('TEST_NAME')
-    index_cols = list(rwb.columns)[:tstnm_col]
-    value_cols = list(rwb.columns)[tstnm_col + 1:]
-
-    rwb_split = rwb.pivot(index=index_cols, columns=['TEST_NAME'], values=value_cols).reset_index()
-    rwb_split.columns = [' - '.join(col[::-1]).strip() if col[1] != '' else col[0] for col in rwb_split.columns]
-
-    return rwb_split
-
-# This function pivots the RWB table by test to facilitate cross-test analysis on the same IOs
-def rwb_pivot_by_test(rwb):
-    # Define index columns (assumes TEST_NAME is the last index column)
-    tstnm_col = list(rwb.columns).index('TEST_NAME')
-    index_cols = ['DIE_ID','MACRO','IO']
     value_cols = list(rwb.columns)[tstnm_col + 1:]
 
     rwb_split = rwb.pivot(index=index_cols, columns=['TEST_NAME'], values=value_cols).reset_index()
@@ -1209,12 +1366,190 @@ def rwb_scatter_plot(rwb, x, y, overlay_var, autofit_axis_tol_perc=-1, y_scale =
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.show()
 
-def rwb_fetch_data(regex = False, regex_col = None):
+def ftparam_fetch_data_164(regex = False, regex_col = None):
+    # Define the server and login credentials
+    hostname = "192.168.68.164"
+    port = 22
+    username = "lenovoi7"
+    password = "40271234"
+
+    # Create an SSH client
+    ssh = paramiko.SSHClient()
+
+    # Automatically add the server's host key if it's not already in known_hosts
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        # Connect to the server
+        ssh.connect(hostname, port, username, password)
+
+        # Seed the random number generator with the current time
+        seed = int(time.time())  # Get the current time as an integer
+        # print(f"seed: {seed}")
+        random.seed(seed)
+
+        # Loop through ftparam db indexes
+        df = pd.DataFrame()
+        for db_index in [2,3]:
+            print(f'Looking at table ft_param_db_{db_index}')
+            # Generate an 8-digit random number
+            random_number = random.randint(10000000, 99999999)
+            temp_file_server = f"output_{random_number}.txt"
+
+            # Execute a command
+            if regex==False:
+                print('Pulling all FT param data, may take awhile')
+                stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D param -e 'SELECT * FROM ft_param_db_{db_index};' > {temp_file_server}", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+            elif regex_col is not None:
+                print(f'Fetching {regex} regular expression filter on FT param column {regex_col}')
+                stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D param -e \"SELECT * FROM ft_param_db_{db_index} WHERE {regex_col} REGEXP '{regex}';\" > {temp_file_server}", get_pty=True)
+            else:
+                raise Exception('Need to specify a column to filter the regualr expression')
+            # stdin, stdout, stderr = ssh.exec_command("sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+            
+            # Send password
+            stdin.write(password + "\n")
+            stdin.flush()
+
+            # Capture and display the command output or errors
+            # print("Output:")
+            # print(stdout.read().decode())
+            # print("Errors:")
+            # print(stderr.read().decode())
+
+            # Ensure enough time to pull data
+            time.sleep(1)
+
+            # Transfer output file by creating an SFTP client
+            sftp = ssh.open_sftp()
+
+            # Transfer the file
+            local_ftparam_file = 'ftparam_pull_temp.txt'
+            sftp.get(temp_file_server, local_ftparam_file) # temp_file_server
+            # print(f"File transferred successfully to {local_ftparam_file}")
+
+            # Close the SFTP client
+            sftp.close()
+
+            # Return loaded file as dataframe
+            try:
+                df_local = pd.read_csv(local_ftparam_file, delimiter='\t')
+                os.remove(local_ftparam_file)
+            except pd.errors.EmptyDataError:
+                print(f'No data pulled from ft_param_db_{db_index}')
+            else:
+                print(f'Data pulled from ft_param_db_{db_index}')
+                df = pd.concat([df, df_local], ignore_index=True)
+
+            # Delete the temporary file on the server
+            stdin, stdout, stderr = ssh.exec_command(f"rm {temp_file_server}")
+
+        print('Pull successful')
+
+    finally:
+        # Close the connection
+        ssh.close()
+
+    df = df.dropna(how='all', axis='columns') # remove empty columns
+    return df
+
+def ftparam_fetch_data(regex = False, regex_col = None):
     # Define the server and login credentials
     hostname = "192.168.68.215"
     port = 22
     username = "admin2"
     password = "tetra4027"
+
+    # Create an SSH client
+    ssh = paramiko.SSHClient()
+
+    # Automatically add the server's host key if it's not already in known_hosts
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        # Connect to the server
+        ssh.connect(hostname, port, username, password)
+
+        # Seed the random number generator with the current time
+        seed = int(time.time())  # Get the current time as an integer
+        # print(f"seed: {seed}")
+        random.seed(seed)
+
+        # Loop through ftparam db indexes
+        df = pd.DataFrame()
+        for db_index in [2,3]:
+            print(f'Looking at table ft_param_db_{db_index}')
+            # Generate an 8-digit random number
+            random_number = random.randint(10000000, 99999999)
+            temp_file_server = f"output_{random_number}.txt"
+
+            # Execute a command
+            if regex==False:
+                print('Pulling all FT param data, may take awhile')
+                stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D param -e 'SELECT * FROM ft_param_db_{db_index};' > {temp_file_server}", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+            elif regex_col is not None:
+                print(f'Fetching {regex} regular expression filter on FT param column {regex_col}')
+                stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D param -e \"SELECT * FROM ft_param_db_{db_index} WHERE {regex_col} REGEXP '{regex}';\" > {temp_file_server}", get_pty=True)
+            else:
+                raise Exception('Need to specify a column to filter the regualr expression')
+            # stdin, stdout, stderr = ssh.exec_command("sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+            
+            # Send password
+            stdin.write(password + "\n")
+            stdin.flush()
+
+            # Capture and display the command output or errors
+            # print("Output:")
+            # print(stdout.read().decode())
+            # print("Errors:")
+            # print(stderr.read().decode())
+
+            # Ensure enough time to pull data
+            time.sleep(1)
+
+            # Transfer output file by creating an SFTP client
+            sftp = ssh.open_sftp()
+
+            # Transfer the file
+            local_ftparam_file = 'ftparam_pull_temp.txt'
+            sftp.get(temp_file_server, local_ftparam_file) # temp_file_server
+            # print(f"File transferred successfully to {local_ftparam_file}")
+
+            # Close the SFTP client
+            sftp.close()
+
+            # Return loaded file as dataframe
+            try:
+                df_local = pd.read_csv(local_ftparam_file, delimiter='\t')
+                os.remove(local_ftparam_file)
+            except pd.errors.EmptyDataError:
+                print(f'No data pulled from ft_param_db_{db_index}')
+            else:
+                print(f'Data pulled from ft_param_db_{db_index}')
+                df = pd.concat([df, df_local], ignore_index=True)
+
+            # Delete the temporary file on the server
+            stdin, stdout, stderr = ssh.exec_command(f"rm {temp_file_server}")
+
+        print('Pull successful')
+
+    finally:
+        # Close the connection
+        ssh.close()
+
+    df = df.dropna(how='all', axis='columns') # remove empty columns
+    return df
+
+'''
+Function to pull data from RWB database, 'regex' is the regular expression to use for filtering the column 'regex_col'.
+'date' can be specified in this format: yyyy_mm_dd-hh_mm_ss
+'''
+def rwb_fetch_data_164(regex = False, regex_col = None, date = None):
+    # Define the server and login credentials
+    hostname = "192.168.68.164"
+    port = 22
+    username = "lenovoi7"
+    password = "40271234"
 
     # Create an SSH client
     ssh = paramiko.SSHClient()
@@ -1241,8 +1576,12 @@ def rwb_fetch_data(regex = False, regex_col = None):
 
             # Execute a command
             if regex==False:
-                print('Pulling all RWB data, may take awhile')
-                stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e 'SELECT * FROM rwb_db_{db_index};' > {temp_file_server}", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+                if date is not None:
+                    print(f'Pulling data after {date}')
+                    stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e \"SELECT * FROM rwb_db_{db_index} WHERE TEST_START_DATETIME > '{date}';\" > {temp_file_server}", get_pty=True)
+                else:
+                    print('Pulling all RWB data, may take awhile')
+                    stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e 'SELECT * FROM rwb_db_{db_index};' > {temp_file_server}", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
             elif regex_col is not None:
                 print(f'Fetching {regex} regular expression filter on RWB column {regex_col}')
                 stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e \"SELECT * FROM rwb_db_{db_index} WHERE {regex_col} REGEXP '{regex}';\" > {temp_file_server}", get_pty=True)
@@ -1293,15 +1632,107 @@ def rwb_fetch_data(regex = False, regex_col = None):
         # Close the connection
         ssh.close()
 
+    df = df.dropna(how='all', axis='columns') # remove empty columns
+    return df
+
+def rwb_fetch_data(regex = False, regex_col = None, date = None):
+    # Define the server and login credentials
+    hostname = "192.168.68.215"
+    port = 22
+    username = "admin2"
+    password = "tetra4027"
+
+    # Create an SSH client
+    ssh = paramiko.SSHClient()
+
+    # Automatically add the server's host key if it's not already in known_hosts
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    try:
+        # Connect to the server
+        ssh.connect(hostname, port, username, password)
+
+        # Seed the random number generator with the current time
+        seed = int(time.time())  # Get the current time as an integer
+        # print(f"seed: {seed}")
+        random.seed(seed)
+
+        # Loop through rwb db indexes
+        df = pd.DataFrame()
+        for db_index in [2,3]:
+            print(f'Looking at table rwb_db_{db_index}')
+            # Generate an 8-digit random number
+            random_number = random.randint(10000000, 99999999)
+            temp_file_server = f"output_{random_number}.txt"
+
+            # Execute a command
+            if regex==False:
+                if date is not None:
+                    print(f'Pulling data after {date}')
+                    stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e \"SELECT * FROM rwb_db_{db_index} WHERE TEST_START_DATETIME > '{date}';\" > {temp_file_server}", get_pty=True)
+                else:
+                    print('Pulling all RWB data, may take awhile')
+                    stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e 'SELECT * FROM rwb_db_{db_index};' > {temp_file_server}", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+            elif regex_col is not None:
+                print(f'Fetching {regex} regular expression filter on RWB column {regex_col}')
+                stdin, stdout, stderr = ssh.exec_command(f"sudo mysql -D rwb -e \"SELECT * FROM rwb_db_{db_index} WHERE {regex_col} REGEXP '{regex}';\" > {temp_file_server}", get_pty=True)
+            else:
+                raise Exception('Need to specify a column to filter the regualr expression')
+            # stdin, stdout, stderr = ssh.exec_command("sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt", get_pty=True) # sudo mysql -D rwb -e 'SELECT * FROM rwb_db_2;' > op.txt
+            
+            # Send password
+            stdin.write(password + "\n")
+            stdin.flush()
+
+            # Capture and display the command output or errors
+            # print("Output:")
+            # print(stdout.read().decode())
+            # print("Errors:")
+            # print(stderr.read().decode())
+
+            # Ensure enough time to pull data
+            time.sleep(1)
+
+            # Transfer output file by creating an SFTP client
+            sftp = ssh.open_sftp()
+
+            # Transfer the file
+            local_rwb_file = 'rwb_pull_temp.txt'
+            sftp.get(temp_file_server, local_rwb_file) # temp_file_server
+            # print(f"File transferred successfully to {local_rwb_file}")
+
+            # Close the SFTP client
+            sftp.close()
+
+            # Return loaded file as dataframe
+            try:
+                df_local = pd.read_csv(local_rwb_file, delimiter='\t')
+                os.remove(local_rwb_file)
+            except pd.errors.EmptyDataError:
+                print(f'No data pulled from rwb_db_{db_index}')
+            else:
+                print(f'Data pulled from rwb_db_{db_index}')
+                df = pd.concat([df, df_local], ignore_index=True)
+
+            # Delete the temporary file on the server
+            stdin, stdout, stderr = ssh.exec_command(f"rm {temp_file_server}")
+
+        print('Pull successful')
+
+    finally:
+        # Close the connection
+        ssh.close()
+
+    df = df.dropna(how='all', axis='columns') # remove empty columns
     return df
 
 # Function to retrieve DB names
 def get_dbnames():
     # Define the server and login credentials
-    hostname = "192.168.68.164"
+    hostname = "192.168.68.215"
     port = 22
     username = "admin2"
-    password = "40271234"
+    password = "tetra4027"
 
     # Create an SSH client
     ssh = paramiko.SSHClient()
@@ -1363,10 +1794,10 @@ def get_dbnames():
 # Function to retrieve table names
 def get_tablenames(db_name):
     # Define the server and login credentials
-    hostname = "192.168.68.164"
+    hostname = "192.168.68.215"
     port = 22
     username = "admin2"
-    password = "40271234"
+    password = "tetra4027"
 
     # Create an SSH client
     ssh = paramiko.SSHClient()
@@ -1427,10 +1858,10 @@ def get_tablenames(db_name):
 # This function retrieves the bit-level data for a given db/table
 def get_bitleveldata(db_name, table_name):
     # Define the server and login credentials
-    hostname = "192.168.68.164"
+    hostname = "192.168.68.215"
     port = 22
     username = "admin2"
-    password = "40271234"
+    password = "tetra4027"
 
     # Create an SSH client
     ssh = paramiko.SSHClient()
@@ -1529,8 +1960,10 @@ def bitlevel_npydict_to_df(npy_file_dict, pattern='rowbar'):
             df_temp['LEVEL'] = (df_temp.WL/324).astype(int)
 
         elif pattern == 'pr1':
+
             # Upload sub sample 64 BLs x 162 WLs pattern
-            pr1 = np.loadtxt(r"pseudorandom_mlm_pattern_1.csv", delimiter=',', dtype=int)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            pr1 = np.loadtxt(os.path.join(script_dir, 'pseudorandom_mlm_pattern_1.csv'), delimiter=',', dtype=int)
             pr1_rows, pr1_cols = pr1.shape
             pr1_stacked_sub = pd.DataFrame({
                 'BL': np.repeat(np.arange(pr1_rows), pr1_cols),
@@ -1541,16 +1974,34 @@ def bitlevel_npydict_to_df(npy_file_dict, pattern='rowbar'):
             # Expand to full 1296 WLs then merge with bit-level data
             pr1_stacked = pd.DataFrame()
             for j in range(8):
-                pr1_stacked_sub['WL'] = pr1_stacked_sub.WL + 162
                 pr1_stacked = pd.concat([pr1_stacked, pr1_stacked_sub])
-            df_temp['LEVEL'] = pd.merge(left=df_temp, right=pr1_stacked, on=['BL','WL'])
+                pr1_stacked_sub['WL'] = pr1_stacked_sub.WL + 162
+            df_temp = pd.merge(left=df_temp, right=pr1_stacked, on=['BL','WL'])
+
+            # PR0 (inverse pattern)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            pr0 = np.loadtxt(os.path.join(script_dir, 'pseudorandom_mlm_pattern_0.csv'), delimiter=',', dtype=int)
+            pr0_rows, pr0_cols = pr0.shape
+            pr0_stacked_sub = pd.DataFrame({
+                'BL': np.repeat(np.arange(pr0_rows), pr0_cols),
+                'WL': np.tile(np.arange(pr0_cols), pr0_rows),
+                'LEVEL': pr0.flatten()
+            })
+
+            # PR0 (inverse pattern): Expand to full 1296 WLs then merge with bit-level data
+            pr0_stacked = pd.DataFrame()
+            for j in range(8):
+                pr0_stacked = pd.concat([pr0_stacked, pr0_stacked_sub])
+                pr0_stacked_sub['WL'] = pr0_stacked_sub.WL + 162
+            pr0_stacked.rename(columns={'LEVEL': 'INV_WR_LEVEL'}, inplace=True)
+            df_temp = pd.merge(left=df_temp, right=pr0_stacked, on=['BL','WL'])
 
         df_stacked = pd.concat([df_stacked, df_temp], ignore_index=True)
 
         i += 1
 
     # Split df by 'TEST'
-    df = df_stacked.pivot(values=['ADC'], columns=['TEST'], index=['BL','WL','LEVEL']).reset_index()
+    df = df_stacked.pivot(values=['ADC'], columns=['TEST'], index=['BL','WL','LEVEL','INV_WR_LEVEL']).reset_index()
     
     # Flatten columns by joining levels with '_'
     df.columns = ['_'.join(col).strip() if col[1] != '' else col[0] for col in df.columns]
@@ -1559,7 +2010,7 @@ def bitlevel_npydict_to_df(npy_file_dict, pattern='rowbar'):
 
 # This function uses iterates through each row in an RWB dataframe and fetches the bit-level data.
 # The fetch db names, fetch table names, fetch bit-level data and npy-to-df post process functions are used in here
-def rwb_fetch_bitlevel_data(rwb, default_pattern='rowbar'):
+def rwb_fetch_bitlevel_data(rwb, default_pattern='pr1'):
     # Fetch database names
     print('Getting database names')
     df_db_names = get_dbnames()
@@ -1587,9 +2038,13 @@ def rwb_fetch_bitlevel_data(rwb, default_pattern='rowbar'):
         TEST_NAME = row.TEST_NAME
         PATTERN = row.PATTERN
         TEST_START_DATETIME = row.TEST_START_DATETIME.replace('_','').replace('-','')
+        print(RUN_NAME)
+        print(DIE_ID)
+        print(MACRO)
+        print(len(df_db_names))
 
         # Find matching db names
-        df_matching_dbs = df_db_names.loc[(df_db_names.Database.str.contains(RUN_NAME))&(df_db_names.Database.str.contains(f'{DIE_ID}-{MACRO}'))]
+        df_matching_dbs = df_db_names.loc[(df_db_names.Database.str.contains(RUN_NAME))&(df_db_names.Database.str.contains(f'{DIE_ID}(-|_){MACRO}'))]
         print(f' - Found {len(df_matching_dbs)} matching databases')
         
         # Search for matching output files in each db
@@ -1623,7 +2078,7 @@ def rwb_fetch_bitlevel_data(rwb, default_pattern='rowbar'):
             if df.empty:
                 df = df_temp_postproc.copy()
             else:
-                df = pd.merge(left=df, right=df_temp_postproc, how='outer', on=['DIE_ID','MACRO','IO','BL','WL','LEVEL'])
+                df = pd.merge(left=df, right=df_temp_postproc, how='outer', on=['DIE_ID','MACRO','IO','BL','WL','LEVEL','INV_WR_LEVEL'])
 
                 # Identify the column names with _x and _y
                 for col in df.columns:
@@ -1635,3 +2090,52 @@ def rwb_fetch_bitlevel_data(rwb, default_pattern='rowbar'):
                             df.drop([col, col_y], axis=1, inplace=True)  # Drop old columns
 
     return df
+
+def plot_nq_distribution(df, columns, title=None, fit=True, x_scale='linear'):
+    """
+    Generates a normal Q-Q plot (with swapped x and y axes) for multiple columns in a DataFrame.
+    
+    Parameters:
+        df (pd.DataFrame): DataFrame containing numerical data.
+        columns (list of str): List of column names to plot.
+    """
+    plt.figure(figsize=(8, 6))
+    colors = ['blue', 'green', 'purple', 'orange', 'cyan']  # Extend if needed
+    
+    for i, col in enumerate(columns):
+        if col not in df:
+            print(f"⚠ Warning: Column '{col}' not found in DataFrame. Skipping...")
+            continue  # Skip if column doesn't exist
+        
+        data = df[col].dropna()  # Drop NaN values
+        if data.empty:
+            print(f"⚠ Warning: Column '{col}' has no valid data. Skipping...")
+            continue
+
+        # Compute Q-Q plot data
+        res = stats.probplot(data, dist="norm")
+        x_vals = res[0][0]  # Theoretical quantiles (should be on y-axis)
+        y_vals = res[0][1]  # Observed quantiles (should be on x-axis)
+
+        # Scatter plot (swapped axes)
+        plt.scatter(y_vals, x_vals, alpha=0.6, label=col, color=colors[i % len(colors)], marker='o')
+
+        # Compute best-fit line
+        if fit:
+            slope, intercept = np.polyfit(y_vals, x_vals, 1)  # Swap x and y for fit line
+            fit_line = slope * y_vals + intercept
+
+            # Best-fit line for each dataset
+            plt.plot(y_vals, fit_line, color=colors[i % len(colors)], linestyle='solid', alpha=0.7)
+
+    # Labels, title, and legend
+    plt.xlabel("Value")
+    plt.ylabel("Theoretical Quantiles")
+    if title is None:
+        plt.title(f"Normal quantile plot of {', '.join(columns)}")
+    else:
+        plt.title(title)
+    if x_scale=='log':
+        plt.xscale('log')
+    plt.legend()
+    plt.show()

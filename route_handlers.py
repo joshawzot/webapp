@@ -1,4 +1,12 @@
 # route_handlers.py
+# Note: File Explorer functionality has been removed from this application
+# The following routes were removed:
+# - /file-explorer
+# - /api/list-directory
+# - /api/read-file
+# - /api/save-file
+# - /api/create-file
+# - /api/create-directory
 
 from run import app, cache, redis_client
 from db_operations import *
@@ -38,6 +46,8 @@ from io import BytesIO
 import scipy.io
 import shutil
 import socket
+import paramiko
+from datetime import datetime
 
 # Create a lock for thread-safe plotting
 #plot_lock = threading.Lock()
@@ -50,6 +60,46 @@ from generate_plot_read_stability import generate_plot_read_stability
 #from flask_caching import Cache
 #cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
+# Add this near the top of the file, with the other imports
+import json
+from datetime import datetime
+
+# Add this after the other Redis-related code
+def record_folder_visit(folder_name, username):
+    """Record a folder visit in Redis for tracking recent activity"""
+    try:
+        # Create a record with timestamp, folder name, and username
+        visit = {
+            'timestamp': datetime.now().isoformat(),
+            'folder_name': folder_name,
+            'username': username
+        }
+        
+        # Get the current list of recent visits from Redis
+        recent_visits_json = redis_client.get('recent_folder_visits')
+        if recent_visits_json:
+            recent_visits = json.loads(recent_visits_json)
+        else:
+            recent_visits = []
+        
+        # Check if this exact visit already exists (same user, same folder)
+        # If it does, remove it so we can add it again at the top (most recent)
+        recent_visits = [v for v in recent_visits if not (v['folder_name'] == folder_name and v['username'] == username)]
+        
+        # Add the new visit to the beginning
+        recent_visits.insert(0, visit)
+        
+        # Keep only the 5 most recent visits
+        recent_visits = recent_visits[:5]
+        
+        # Save back to Redis
+        redis_client.set('recent_folder_visits', json.dumps(recent_visits))
+        
+        return True
+    except Exception as e:
+        print(f"Error recording folder visit: {e}")
+        return False
+
 @app.route('/')
 def home():
     username = session.get('username')
@@ -60,20 +110,19 @@ def home():
             cursor = conn.cursor()
             databases = get_all_databases(cursor)
             
-            # Try to get cached size first
-            #total_size = cache.get('total_db_size')
-            total_size = None
-            if total_size is None:
-                # If not in cache, calculate and store it
-                _, total_size = get_total_database_size()
-                cache.set('total_db_size', total_size, timeout=3600)  # Cache for 1 hr
-                
-            # Get available disk space
-            available_space = get_disk_space()
+            # Retrieve recent folder visits
+            recent_visits_json = redis_client.get('recent_folder_visits')
+            recent_visits = []
+            if recent_visits_json:
+                try:
+                    recent_visits = json.loads(recent_visits_json)
+                except:
+                    # If JSON parsing fails, start with empty list
+                    recent_visits = []
                 
             cursor.close()
             conn.close()
-            return render_template('home_page.html', databases=databases, username=username, total_size=total_size, available_space=available_space)
+            return render_template('home_page.html', databases=databases, username=username, recent_visits=recent_visits)
         except mysql.connector.Error as err:
             return str(err), 500
     else:
@@ -120,10 +169,19 @@ def save_txt_content(database, table_name):
 
 @app.route('/list-tables', methods=['POST', 'GET'])
 def list_tables():
+    # Get the username from the session
+    username = session.get('username')
+    if not username:
+        return redirect(url_for('login'))
+        
     if request.method == 'POST':
         session['database'] = request.form.get('database')
 
     database = session.get('database')
+    
+    # Record this folder visit
+    if database:
+        record_folder_visit(database, username)
 
     tables = fetch_tables(database)  # Retrieve table data from the database
     table_names = ','.join(table['table_name'] for table in tables)
@@ -693,11 +751,41 @@ def generate_zip():
     return send_file(memory_file, attachment_filename='tables.zip', as_attachment=True)
 
 def rename_duplicate_columns(df):
-    cols = pd.Series(df.columns)
-    duplicates = df.columns[df.columns.duplicated()].unique()
-    for dup in duplicates:
-        cols[df.columns.get_loc(dup)] = [f"{dup}_{i}" if i != 0 else dup for i in range(sum(df.columns == dup))]
-    df.columns = cols
+    """
+    Rename duplicate columns in a dataframe to ensure all column names are unique.
+    If a column is already named like 'name_1', it will get a higher suffix number.
+    Handles both string and non-string (e.g., numeric) column names.
+    """
+    # Get list of all column names
+    columns = list(df.columns)
+    seen = {}
+    new_columns = []
+    
+    for col in columns:
+        # Convert column name to string if it's not already
+        col_str = str(col)
+        base_name = col_str
+        
+        # Check if column name already contains a suffix (like 'name_1')
+        suffix_match = re.search(r'^(.+)_(\d+)$', col_str)
+        if suffix_match:
+            base_name = suffix_match.group(1)
+        
+        # Track how many times we've seen this base name
+        if base_name in seen:
+            seen[base_name] += 1
+            new_col = f"{base_name}_{seen[base_name]}"
+            # Ensure uniqueness by incrementing suffix until we find an unused name
+            while new_col in new_columns:
+                seen[base_name] += 1
+                new_col = f"{base_name}_{seen[base_name]}"
+            new_columns.append(new_col)
+        else:
+            seen[base_name] = 0
+            new_columns.append(col_str)
+    
+    # Assign new column names to dataframe
+    df.columns = new_columns
     return df
 
 @app.route('/mergeTablesInput', methods=['POST'])
@@ -982,52 +1070,222 @@ def concatenate_tables():
     database = data.get('database')
     table_names = data.get('tableNames')
     new_table_name = data.get('newTableName')
+    
+    # Set a reasonable batch size for processing large tables
+    BATCH_SIZE = 5  # Process 5 tables at a time
 
     if not (database and table_names and new_table_name):
         return jsonify(success=False, message='Missing required information.')
 
+    # MySQL has a table name limit of 64 characters
+    MAX_TABLE_NAME_LENGTH = 64
+    
+    # Check if the new table name is too long for MySQL
+    if len(new_table_name) > MAX_TABLE_NAME_LENGTH:
+        return jsonify(
+            success=False, 
+            message=f'Table name "{new_table_name}" is too long. MySQL has a limit of {MAX_TABLE_NAME_LENGTH} characters.',
+            skipped=True
+        )
+
     try:
-        # Connect to the MySQL database using your existing function
-        connection = create_connection(database)
+        # Use our new long-running connection instead of the regular one
+        from db_operations import create_long_running_connection, create_long_running_engine
+        connection = create_long_running_connection(database)
         cursor = connection.cursor()
 
-        # Fetch data from each table
-        df_list = []
+        # First, check if all tables have the same row count
+        row_counts = {}
         for table_name in table_names:
-            cursor.execute(f"SELECT * FROM `{table_name}`")
-            rows = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            df = pd.DataFrame(rows, columns=columns)
-            df_list.append(df)
-
-        # Verify that all dataframes have the same number of rows
-        nrows = df_list[0].shape[0]
-        if not all(df.shape[0] == nrows for df in df_list):
+            try:
+                # Just get the count, not all data
+                cursor.execute(f"SELECT COUNT(*) FROM `{table_name}`")
+                count = cursor.fetchone()[0]
+                row_counts[table_name] = count
+            except Exception as e:
+                print(f"Error getting row count for table {table_name}: {e}")
+                connection.close()
+                return jsonify(success=False, message=f'Error accessing table {table_name}: {str(e)}')
+        
+        # If there are no tables with rows, we can't proceed
+        if not row_counts:
             connection.close()
-            return jsonify(success=False, message='Selected tables do not have the same number of rows.')
-
-        # Concatenate dataframes column-wise
-        concatenated_df = pd.concat(df_list, axis=1)
-
-        # Rename duplicate columns
-        concatenated_df = rename_duplicate_columns(concatenated_df)
-
-        # Check if the new table name already exists
+            return jsonify(success=False, message='No tables with data to concatenate.')
+        
+        # Check that all tables have the same count
+        if len(set(row_counts.values())) != 1:
+            connection.close()
+            return jsonify(success=False, 
+                           message='Tables have different row counts. All tables must have the same number of rows.',
+                           row_counts=row_counts)
+        
+        # Get the row count for processing
+        row_count = next(iter(row_counts.values()))
+        
+        # Check if the new table name already exists - do this early before processing
         cursor.execute("SHOW TABLES LIKE %s", (new_table_name,))
         if cursor.fetchone():
             connection.close()
             return jsonify(success=False, message='A table with the new name already exists.')
-
-        # Save the concatenated dataframe to a new table using SQLAlchemy engine
-        engine = create_db_engine(database)
-        concatenated_df.to_sql(new_table_name, con=engine, if_exists='fail', index=False)
-
+        
+        # Fetch data from each table and prepare for concatenation
+        print(f"Preparing to concatenate {len(table_names)} tables")
+        
+        # Create a dictionary to store column name mappings for each table
+        column_mappings = {}
+        all_df_columns = []
+        
+        # Load data from tables and track column names
+        for i, table_name in enumerate(table_names):
+            # Get column information for each table
+            cursor.execute(f"DESCRIBE `{table_name}`")
+            columns_info = cursor.fetchall()
+            
+            # Get column names and create prefixed versions
+            original_columns = [col[0] for col in columns_info]
+            prefixed_columns = [f"t{i}_{col}" for col in original_columns]
+            
+            # Store the mapping for this table
+            column_mappings[table_name] = {
+                'original': original_columns,
+                'prefixed': prefixed_columns
+            }
+            
+            # Add prefixed columns to the full list
+            all_df_columns.extend(prefixed_columns)
+        
+        # Create the empty dataframe for concatenation
+        print(f"Creating empty dataframe with {row_count} rows")
+        
+        # Efficiently build the dataframe by creating it just once with NaN values
+        import numpy as np
+        import pandas as pd
+        empty_df = pd.DataFrame(np.nan, index=range(row_count), columns=all_df_columns)
+        
+        # Now fill the dataframe with data from each table
+        for i, table_name in enumerate(table_names):
+            print(f"Loading data from table {i+1}/{len(table_names)}: {table_name}")
+            
+            # Efficiently fetch all data at once
+            cursor.execute(f"SELECT * FROM `{table_name}`")
+            rows = cursor.fetchall()
+            
+            # Get original column names
+            original_columns = column_mappings[table_name]['original']
+            prefixed_columns = column_mappings[table_name]['prefixed']
+            
+            # Convert to dataframe
+            table_df = pd.DataFrame(rows, columns=original_columns)
+            
+            # Efficiently copy data to the main dataframe
+            for orig_col, pref_col in zip(original_columns, prefixed_columns):
+                empty_df[pref_col] = table_df[orig_col].values
+            
+            # Clear memory
+            del table_df
+        
+        # Clean up column names - use our rename function to ensure uniqueness
+        # First, remove the temporary prefixes
+        renamed_columns = {}
+        for col in empty_df.columns:
+            if col.startswith('t') and '_' in col:
+                base_name = col.split('_', 1)[1]
+                renamed_columns[col] = base_name
+        
+        # Now handle duplicate column names using our improved function
+        seen = {}
+        final_column_mapping = {}
+        
+        for old_col, base_name in renamed_columns.items():
+            # Check if this base name has been seen before
+            if base_name in seen:
+                seen[base_name] += 1
+                new_col = f"{base_name}_{seen[base_name]}"
+                # Ensure uniqueness
+                while new_col in final_column_mapping.values():
+                    seen[base_name] += 1
+                    new_col = f"{base_name}_{seen[base_name]}"
+                final_column_mapping[old_col] = new_col
+            else:
+                seen[base_name] = 0
+                # Check if this name already exists in the final mapping values
+                if base_name in final_column_mapping.values():
+                    seen[base_name] = 1
+                    new_col = f"{base_name}_{seen[base_name]}"
+                    final_column_mapping[old_col] = new_col
+                else:
+                    final_column_mapping[old_col] = base_name
+        
+        # Rename columns in the dataframe
+        empty_df = empty_df.rename(columns=final_column_mapping)
+        
+        print(f"Saving concatenated data to table {new_table_name}")
+        
+        # Instead of using to_sql directly, we'll use create_table then insert in chunks
+        engine = create_long_running_engine(database)
+        
+        # First, create the table structure with one empty row to establish the schema
+        if row_count > 0:
+            # Use a small sample to create the table structure
+            sample_df = empty_df.head(1)
+            sample_df.to_sql(new_table_name, con=engine, if_exists='replace', index=False)
+            
+            # Drop the sample row if it was inserted
+            cursor.execute(f"TRUNCATE TABLE `{new_table_name}`")
+            connection.commit()
+            
+            # Now insert the data in chunks to avoid timeouts
+            CHUNK_SIZE = 1000  # Adjust based on your table size and server capacity
+            
+            # Use raw SQL for faster inserts
+            from sqlalchemy.dialects.mysql import insert
+            from sqlalchemy import Table, MetaData, select
+            from sqlalchemy.sql import text
+            
+            # Get the table metadata
+            metadata = MetaData()
+            metadata.reflect(bind=engine, only=[new_table_name])
+            table = metadata.tables[new_table_name]
+            
+            # Insert data in chunks
+            for start_idx in range(0, len(empty_df), CHUNK_SIZE):
+                end_idx = min(start_idx + CHUNK_SIZE, len(empty_df))
+                chunk = empty_df.iloc[start_idx:end_idx]
+                
+                try:
+                    # Convert DataFrame chunk to a list of dictionaries
+                    records = chunk.to_dict('records')
+                    
+                    if records:
+                        # Use the connection directly for better control
+                        with engine.begin() as conn:
+                            conn.execute(table.insert(), records)
+                        
+                    print(f"Inserted rows {start_idx} to {end_idx}")
+                except Exception as e:
+                    print(f"Error inserting chunk {start_idx}-{end_idx}: {e}")
+                    # Try an alternative approach if the first method fails
+                    try:
+                        # Try with pandas to_sql for this chunk, with lower chunksize
+                        chunk.to_sql(new_table_name, con=engine, if_exists='append', 
+                                     index=False, chunksize=100)
+                        print(f"Inserted rows {start_idx} to {end_idx} with alternative method")
+                    except Exception as inner_e:
+                        print(f"Alternative insert also failed: {inner_e}")
+                        # Continue with next chunk instead of failing completely
+        else:
+            # Just create an empty table with the right structure
+            empty_df.to_sql(new_table_name, con=engine, if_exists='replace', index=False)
+        
+        # Close the connection
+        cursor.close()
         connection.close()
 
-        return jsonify(success=True)
+        return jsonify(success=True, message=f"Successfully concatenated {len(table_names)} tables with {row_count} rows each.")
     except Exception as e:
-        print(f'Error: {e}')
-        return jsonify(success=False, message=str(e))
+        print(f'Error in concatenate_tables: {e}')
+        traceback.print_exc()  # Print the full traceback for debugging
+        return jsonify(success=False, message=f"Error: {str(e)}")
 
 @app.route('/rename-table', methods=['POST'])
 def rename_table():
@@ -1295,21 +1553,52 @@ def merge_schemas():
         data = request.get_json()
         new_schema_name = data.get('newSchemaName')
         selected_schemas = data.get('selectedSchemas')
+        use_existing_schema = data.get('useExistingSchema', False)
 
-        if not new_schema_name or not selected_schemas or len(selected_schemas) < 2:
-            return jsonify({'success': False, 'message': 'Invalid input parameters'})
+        # Validate input parameters
+        if not new_schema_name or not selected_schemas:
+            return jsonify({'success': False, 'message': 'Missing schema name or source folders'})
+        
+        # When using a new schema, require at least one source schema
+        # When using existing schema, require at least one source schema (can't merge a schema into itself)
+        if len(selected_schemas) < 1:
+            return jsonify({'success': False, 'message': 'Please select at least one source folder'})
 
-        # Create new schema
+        # MySQL has a table name limit of 64 characters
+        MAX_TABLE_NAME_LENGTH = 64
+        
+        # Create or use existing schema
         connection = create_connection()
         cursor = connection.cursor()
         
-        # Check if new schema already exists
+        # Check if schema exists
         cursor.execute("SHOW DATABASES LIKE %s", (new_schema_name,))
-        if cursor.fetchone():
-            return jsonify({'success': False, 'message': 'A folder with this name already exists'})
+        schema_exists = cursor.fetchone() is not None
+        
+        # Handle schema creation based on option
+        if not use_existing_schema:
+            # For new schemas, verify it doesn't exist
+            if schema_exists:
+                connection.close()
+                return jsonify({'success': False, 'message': 'A folder with this name already exists'})
+            
+            # Create new schema
+            cursor.execute(f"CREATE DATABASE `{new_schema_name}`")
+        else:
+            # For existing schemas, verify it does exist
+            if not schema_exists:
+                connection.close()
+                return jsonify({'success': False, 'message': 'Target folder does not exist'})
+            
+            # Make sure we're not trying to merge a schema into itself
+            if new_schema_name in selected_schemas:
+                connection.close()
+                return jsonify({'success': False, 'message': 'Cannot merge a folder into itself'})
 
-        # Create new schema
-        cursor.execute(f"CREATE DATABASE `{new_schema_name}`")
+        # Keep track of skipped tables
+        skipped_tables = []
+        processed_tables = []
+        duplicate_tables = []
 
         # Process each selected schema
         for schema in selected_schemas:
@@ -1321,6 +1610,17 @@ def merge_schemas():
                 # Create new table name with schema prefix
                 new_table_name = f"{schema}_{table_name}"
                 
+                # Check if the new table name exceeds MySQL's limit
+                if len(new_table_name) > MAX_TABLE_NAME_LENGTH:
+                    skipped_tables.append(f"{schema}.{table_name}")
+                    continue
+                
+                # Check if table already exists in target schema
+                cursor.execute(f"SHOW TABLES FROM `{new_schema_name}` LIKE %s", (new_table_name,))
+                if cursor.fetchone():
+                    duplicate_tables.append(f"{schema}.{table_name}")
+                    continue
+                
                 # Copy table structure and data to new schema
                 cursor.execute(f"""
                     CREATE TABLE `{new_schema_name}`.`{new_table_name}` 
@@ -1330,16 +1630,35 @@ def merge_schemas():
                     INSERT INTO `{new_schema_name}`.`{new_table_name}`
                     SELECT * FROM `{schema}`.`{table_name}`
                 """)
+                processed_tables.append(f"{schema}.{table_name}")
 
         connection.commit()
         cursor.close()
         connection.close()
-
-        return jsonify({'success': True, 'message': 'Folders merged successfully'})
-
+        
+        # Prepare response message
+        result = {'success': True}
+        message_parts = []
+        
+        if processed_tables:
+            message_parts.append(f'Successfully merged {len(processed_tables)} tables.')
+        else:
+            message_parts.append('No tables were merged.')
+            
+        if skipped_tables:
+            message_parts.append(f'{len(skipped_tables)} tables were skipped due to name length exceeding the 64-character limit.')
+            result['skipped_tables'] = skipped_tables
+            
+        if duplicate_tables:
+            message_parts.append(f'{len(duplicate_tables)} tables were skipped because they already exist in the target folder.')
+            result['duplicate_tables'] = duplicate_tables
+            
+        result['message'] = ' '.join(message_parts)
+        return jsonify(result)
+        
     except Exception as e:
-        print(f"Error in merge_schemas: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)})
+        print(f'Error merging schemas: {e}')
+        return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'})
 
 #------------------------------------------------------------------------------------------------------------
 
@@ -1664,10 +1983,22 @@ def get_disk_space():
                 unit_index += 1
             return f"{size:.2f} {units[unit_index]}"
         
-        return format_size(disk_stats.free)
+        # Format free and total space
+        free_space = format_size(disk_stats.free)
+        total_space = format_size(disk_stats.total)
+        used_space = format_size(disk_stats.used)
+        usage_percent = f"{(disk_stats.used / disk_stats.total) * 100:.1f}%"
+        
+        # Return a dictionary with all disk information
+        return {
+            "free_space": free_space,
+            "total_space": total_space,
+            "used_space": used_space,
+            "usage_percent": usage_percent
+        }
     except Exception as e:
         print(f"Error getting disk space: {e}")
-        return "Unknown"
+        return {"free_space": "Unknown", "total_space": "Unknown", "used_space": "Unknown", "usage_percent": "Unknown"}
 
 # Jupyter Notebook integration
 @app.route('/notebook')
@@ -1908,32 +2239,327 @@ def check_jupyter():
 @app.route('/test-machines')
 def test_machines():
     """
-    Display a page with test machine connections.
+    Page to display the available test machines
     """
     test_machines = [
-        {"ip": "192.168.68.206", "hostname": "192.168.68.206", "user": "nuc6"},
-        {"ip": "192.168.68.129", "hostname": "192.168.68.129", "user": "nuc14"},
-        #{"ip": "192.168.68.205", "hostname": "192.168.68.205", "user": "NUC5"},
-        #{"ip": "192.168.68.231", "hostname": "192.168.68.231", "user": "TC1"},
-        #{"ip": "192.168.68.235", "hostname": "192.168.68.235", "user": "TC5"},
-        {"ip": "192.168.68.124", "hostname": "192.168.68.124", "user": "slate"},
-        {"ip": "192.168.68.234", "hostname": "192.168.68.234", "user": "tc4"},
-        #{"ip": "192.168.68.120", "hostname": "192.168.68.120", "user": "tetramem"},
-        #{"ip": "192.168.68.200", "hostname": "192.168.68.200", "user": "nuc0"},
-        #{"ip": "192.168.68.164", "hostname": "192.168.68.164", "user": "lenovoi7"},
+        {'ip': '192.168.68.124', 'user': 'slate', 'hostname': 'ARM Tester'},
+        {'ip': '192.168.68.234', 'user': 'tc4', 'hostname': 'TC4'},
+        {'ip': '192.168.68.129', 'user': 'nuc14', 'hostname': 'NUC14'},
+        {'ip': '192.168.68.206', 'user': 'nuc6', 'hostname': 'NUC6'},
+        {'ip': '192.168.68.164', 'user': 'lenovoi7', 'hostname': 'lenovoi7'},
+        {'ip': '192.168.68.205', 'user': 'nuc5', 'hostname': 'NUC5'}
     ]
-    
     return render_template('test_machines.html', test_machines=test_machines)
 
 @app.route('/test-ssh-connection', methods=['POST'])
 def test_ssh_connection():
     """
-    Test SSH connection to a specified machine and return the result.
+    Test SSH connection to a remote machine
     """
     if request.method == 'POST':
         try:
             machine_ip = request.form.get('machine_ip')
             machine_user = request.form.get('machine_user')
+            
+            if not machine_ip or not machine_user:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing required parameters"
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            password = machine_passwords.get(machine_ip, '')
+            
+            # Try to connect via SSH
+            import paramiko
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=machine_ip,
+                username=machine_user,
+                password=password,
+                timeout=10
+            )
+            
+            # Run a simple command to verify connection
+            stdin, stdout, stderr = ssh_client.exec_command('hostname')
+            hostname = stdout.read().decode('utf-8').strip()
+            
+            # Close the connection
+            ssh_client.close()
+            
+            return jsonify({
+                "success": True,
+                "message": f"Successfully connected to {machine_user}@{machine_ip}",
+                "output": f"Machine hostname: {hostname}"
+            })
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": f"Failed to connect to {machine_user}@{machine_ip}",
+                "error": str(e)
+            })
+
+@app.route('/execute-ssh-command', methods=['POST'])
+def execute_ssh_command():
+    """
+    Execute a command on a remote machine via SSH and return the result as JSON.
+    This is used for the interactive terminal sessions.
+    """
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            command = request.form.get('command')
+            terminal_id = request.form.get('terminal_id', '1')  # Default to terminal 1
+            current_dir = request.form.get('current_directory', '~')  # Get current directory
+            
+            if not machine_ip or not machine_user or not command:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing required parameters"
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            # Check if command is a cd command, if so update the current directory
+            new_directory = None
+            if command.strip().startswith('cd '):
+                path = command.strip()[3:].strip()
+                # Handle relative paths
+                if not path.startswith('/') and not path.startswith('~'):
+                    if current_dir == '~':
+                        new_directory = f"~/{path}"
+                    else:
+                        new_directory = f"{current_dir}/{path}"
+                else:
+                    new_directory = path
+            
+            # Build the actual command to execute with the current directory
+            if new_directory:
+                # If cd command, change directory and show new location
+                actual_command = f"cd {new_directory} && pwd && echo ''"
+            else:
+                # For regular commands, execute them in the current directory
+                actual_command = f"cd {current_dir} && {command} && pwd"
+            
+            # For machines with password, use sshpass to run the command
+            if machine_ip in machine_passwords:
+                password = machine_passwords[machine_ip]
+                result = subprocess.run(
+                    ['sshpass', '-p', password, 'ssh', 
+                     '-o', 'StrictHostKeyChecking=no', 
+                     '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', actual_command],
+                    capture_output=True,
+                    text=True,
+                    timeout=30  # Longer timeout for commands
+                )
+                
+                # Extract the new working directory from the output (last line)
+                output_lines = result.stdout.strip().split('\n')
+                
+                if output_lines:
+                    # The last line is the current directory
+                    current_dir = output_lines[-1]
+                    # Remove the current directory from the output
+                    output = '\n'.join(output_lines[:-1])
+                else:
+                    output = ''
+                
+                # Special handling for 'cd' commands
+                if new_directory:
+                    output = f"Changed directory to: {current_dir}"
+                
+                return jsonify({
+                    "success": True,
+                    "output": output,
+                    "error": result.stderr if result.stderr else None,
+                    "current_directory": current_dir  # Return the current directory
+                })
+            else:
+                # For key-based authentication, try without password
+                result = subprocess.run(
+                    ['ssh', '-o', 'BatchMode=yes', 
+                     '-o', 'StrictHostKeyChecking=no', 
+                     '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', actual_command],
+                    capture_output=True,
+                    text=True,
+                    timeout=30  # Longer timeout for commands
+                )
+                
+                # Extract the new working directory from the output (last line)
+                output_lines = result.stdout.strip().split('\n')
+                
+                if output_lines:
+                    # The last line is the current directory
+                    current_dir = output_lines[-1]
+                    # Remove the current directory from the output
+                    output = '\n'.join(output_lines[:-1])
+                else:
+                    output = ''
+                
+                # Special handling for 'cd' commands
+                if new_directory:
+                    output = f"Changed directory to: {current_dir}"
+                
+                return jsonify({
+                    "success": True,
+                    "output": output,
+                    "error": result.stderr if result.stderr else None,
+                    "current_directory": current_dir  # Return the current directory
+                })
+                
+        except subprocess.TimeoutExpired:
+            return jsonify({
+                "success": False,
+                "message": "Command execution timed out"
+            })
+        except Exception as e:
+            # Handle general errors
+            return jsonify({
+                "success": False,
+                "message": f"Server Error: {str(e)}",
+                "error": str(e)
+            })
+
+@app.route('/remote-commands')
+def remote_commands():
+    """
+    Display the remote commands interface for a specific machine.
+    """
+    machine_ip = request.args.get('ip')
+    machine_user = request.args.get('user')
+    
+    if not machine_ip or not machine_user:
+        flash('Missing machine information', 'danger')
+        return redirect(url_for('test_machines'))
+        
+    return render_template('remote_commands.html', 
+                          machine_ip=machine_ip, 
+                          machine_user=machine_user)
+
+@app.route('/execute-remote-command', methods=['POST'])
+def execute_remote_command():
+    """
+    Execute a command on a remote machine via SSH
+    """
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            directory_1 = request.form.get('directory_1')
+            directory_2 = request.form.get('directory_2')
+            command_type = request.form.get('command_type')
+            
+            if not machine_ip or not machine_user or not (directory_1 or directory_2) or not command_type:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Missing required parameters'
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            # Determine which command to run based on the command type
+            if command_type == 'serial_run':
+                directory = directory_1
+                command = 'cd ' + directory + ' && python3 serial_run.py'
+            elif command_type == 'test_automation':
+                directory = directory_2
+                command = 'cd ' + directory + ' && source ~/testenv/bin/activate && bash select_run_test.sh'
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Invalid command type'
+                })
+            
+            # Execute the command on the remote machine
+            if machine_ip in machine_passwords:
+                password = machine_passwords[machine_ip]
+                result = subprocess.run(
+                    ['sshpass', '-p', password, 'ssh', 
+                     '-o', 'StrictHostKeyChecking=no', 
+                     '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', command],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+            else:
+                # Try without password
+                result = subprocess.run(
+                    ['ssh', '-o', 'BatchMode=yes', 
+                     '-o', 'StrictHostKeyChecking=no', 
+                     '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', command],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+            
+            # Return the result
+            if result.returncode == 0:
+                return jsonify({
+                    'success': True,
+                    'message': 'Command executed successfully',
+                    'output': result.stdout.strip()
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Command execution failed',
+                    'error': result.stderr.strip()
+                })
+                
+        except subprocess.TimeoutExpired:
+            return jsonify({
+                'success': False, 
+                'message': 'Command execution timed out'
+            })
+        except Exception as e:
+            return jsonify({
+                'success': False, 
+                'message': f'Error: {str(e)}'
+            })
+    
+    return jsonify({'success': False, 'message': 'Invalid request method'})
+
+@app.route('/browse-remote-directory', methods=['POST'])
+def browse_remote_directory():
+    """
+    Fetch directory contents from a remote machine for the file browser.
+    """
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            current_path = request.form.get('current_path', '~')
             
             if not machine_ip or not machine_user:
                 return jsonify({'success': False, 'message': 'Missing IP or username'})
@@ -1943,50 +2569,479 @@ def test_ssh_connection():
                 '192.168.68.124': 'slate',
                 '192.168.68.234': 'Tc4$$$',
                 '192.168.68.129': 'Nuc14$$$',
-                '192.168.68.206': 'Nuc6$$$'
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
             }
             
-            # Check if we have a password for this machine
+            # Build the command to list directories and their content
+            command = f"find {current_path} -maxdepth 1 -type d | sort"
+            
+            # Execute the command on the remote machine
             if machine_ip in machine_passwords:
                 password = machine_passwords[machine_ip]
-                # Use sshpass to provide the password non-interactively
                 result = subprocess.run(
                     ['sshpass', '-p', password, 'ssh', 
-                     '-o', 'ConnectTimeout=5', 
                      '-o', 'StrictHostKeyChecking=no', 
                      '-o', 'UserKnownHostsFile=/dev/null',
-                     f'{machine_user}@{machine_ip}', 'echo Connection successful'],
+                     f'{machine_user}@{machine_ip}', command],
                     capture_output=True,
                     text=True,
-                    timeout=10
+                    timeout=15
                 )
             else:
-                # For other machines, try without password (key-based auth)
+                # Try without password
                 result = subprocess.run(
-                    ['ssh', '-o', 'ConnectTimeout=5', '-o', 'BatchMode=yes', 
-                     '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null',
-                     f'{machine_user}@{machine_ip}', 'echo Connection successful'],
+                    ['ssh', '-o', 'BatchMode=yes', 
+                     '-o', 'StrictHostKeyChecking=no', 
+                     '-o', 'UserKnownHostsFile=/dev/null',
+                     f'{machine_user}@{machine_ip}', command],
                     capture_output=True,
                     text=True,
-                    timeout=10
+                    timeout=15
                 )
             
+            # Return the result
             if result.returncode == 0:
+                directories = result.stdout.strip().split('\n')
+                
+                # Filter out the current directory from the list
+                directories = [d for d in directories if d != current_path]
+                
+                # Check for parent directory
+                parent_path = ""
+                if current_path != "~" and current_path != "/":
+                    parent_path = os.path.dirname(current_path)
+                    if not parent_path:
+                        parent_path = "/"
+                
                 return jsonify({
-                    'success': True, 
-                    'message': 'Connection successful',
-                    'output': result.stdout.strip()
+                    'success': True,
+                    'directories': directories,
+                    'current_path': current_path,
+                    'parent_path': parent_path
                 })
             else:
                 return jsonify({
-                    'success': False, 
-                    'message': 'Connection failed',
+                    'success': False,
+                    'message': 'Failed to list directories',
                     'error': result.stderr.strip()
                 })
                 
         except subprocess.TimeoutExpired:
-            return jsonify({'success': False, 'message': 'Connection timed out'})
+            return jsonify({'success': False, 'message': 'Command execution timed out'})
         except Exception as e:
             return jsonify({'success': False, 'message': f'Error: {str(e)}'})
     
     return jsonify({'success': False, 'message': 'Invalid request method'})
+
+@app.route('/tab-completion', methods=['POST'])
+def tab_completion():
+    """
+    Handle tab completion requests for the terminal.
+    This function executes a command on the remote machine to get possible completions.
+    """
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            command = request.form.get('command', '')
+            current_dir = request.form.get('current_directory', '~')
+            
+            if not machine_ip or not machine_user:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing required parameters"
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            # Get the token for completion
+            tokens = command.strip().split()
+            completion_token = ''
+            
+            if command.endswith(' '):
+                # If command ends with space, we complete from the current directory
+                completion_token = ''
+            elif len(tokens) > 0:
+                # Get the last token for completion
+                completion_token = tokens[-1]
+                
+            # Create a bash script that uses compgen to get completions
+            completion_script = f'''
+            cd {current_dir} 2>/dev/null || cd ~
+            
+            # If the token contains a slash, we need to complete a path
+            if [[ "{completion_token}" == *"/"* ]]; then
+                # Get the directory part and the file part
+                dir_part=$(dirname "{completion_token}")
+                file_part=$(basename "{completion_token}")
+                
+                # Handle relative path
+                if [[ ! "$dir_part" == /* && ! "$dir_part" == ~* ]]; then
+                    # Current directory + dir_part
+                    if [[ "$dir_part" == "." ]]; then
+                        dir_part="$(pwd)"
+                    else
+                        dir_part="$(pwd)/$dir_part"
+                    fi
+                fi
+                
+                # List files in the directory matching the file part
+                cd "$dir_part" 2>/dev/null && find . -maxdepth 1 -name "$file_part*" | cut -c3- | sort
+                
+                # Add trailing slash to directories
+                cd "$dir_part" 2>/dev/null && find . -maxdepth 1 -type d -name "$file_part*" | cut -c3- | awk '{{ print $0"/" }}' | sort
+            else
+                # Use compgen for general command completion
+                if [ -z "{completion_token}" ]; then
+                    # No token, complete commands
+                    compgen -c | sort | uniq
+                else
+                    # Try to complete commands first
+                    compgen -c "{completion_token}" | sort | uniq
+                    
+                    # If in home directory, complete with tilde
+                    if [[ "$(pwd)" == "$HOME" || "$(pwd)" == "/home/$USER" ]]; then
+                        find . -maxdepth 1 -name "{completion_token}*" | cut -c3- | sort
+                        # Add trailing slash to directories
+                        find . -maxdepth 1 -type d -name "{completion_token}*" | cut -c3- | awk '{{ print $0"/" }}' | sort
+                    else
+                        # Complete files in the current directory
+                        find . -maxdepth 1 -name "{completion_token}*" | cut -c3- | sort
+                        # Add trailing slash to directories
+                        find . -maxdepth 1 -type d -name "{completion_token}*" | cut -c3- | awk '{{ print $0"/" }}' | sort
+                    fi
+                fi
+            fi
+            '''
+            
+            # Use Paramiko for SSH connection
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            password = machine_passwords.get(machine_ip, '')
+            
+            try:
+                ssh_client.connect(
+                    hostname=machine_ip,
+                    username=machine_user,
+                    password=password,
+                    timeout=10
+                )
+                
+                # Execute the completion script
+                stdin, stdout, stderr = ssh_client.exec_command(completion_script)
+                
+                # Get the completions
+                completions = stdout.read().decode('utf-8').splitlines()
+                error = stderr.read().decode('utf-8')
+                
+                # Close connection
+                ssh_client.close()
+                
+                # Clean up the completions (remove duplicates and empty strings)
+                completions = [c for c in completions if c.strip()]
+                completions = list(dict.fromkeys(completions))  # Remove duplicates while preserving order
+                
+                # Return the completions
+                return jsonify({
+                    "success": True,
+                    "completions": completions
+                })
+                
+            except Exception as e:
+                if ssh_client:
+                    ssh_client.close()
+                return jsonify({
+                    "success": False,
+                    "message": "Error during SSH connection",
+                    "error": str(e)
+                })
+                
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": "Error processing tab completion",
+                "error": str(e)
+            })
+
+@app.route('/list-remote-files', methods=['POST'])
+def list_remote_files():
+    """List files and directories on a remote machine"""
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            directory = request.form.get('directory', '.')
+            
+            if not machine_ip or not machine_user:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing required parameters"
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            password = machine_passwords.get(machine_ip, '')
+            
+            # Connect to remote machine
+            import paramiko
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=machine_ip,
+                username=machine_user,
+                password=password,
+                timeout=10
+            )
+            
+            # Get directory listing
+            command = f'ls -la "{directory}"'
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+            files_output = stdout.read().decode('utf-8')
+            error_output = stderr.read().decode('utf-8')
+            
+            # Parse ls output to get file information
+            files = []
+            lines = files_output.strip().split('\n')
+            
+            # Skip the first line (total)
+            if lines and lines[0].startswith('total'):
+                lines = lines[1:]
+                
+            for line in lines:
+                parts = line.split(None, 8)  # Split by whitespace, max 8 splits
+                if len(parts) >= 9:
+                    file_type = parts[0][0]  # First character of the permissions string
+                    permissions = parts[0]
+                    owner = parts[2]
+                    group = parts[3]
+                    size = parts[4]
+                    date = ' '.join(parts[5:8])
+                    name = parts[8]
+                    
+                    # Skip . and .. entries
+                    if name == '.' or name == '..':
+                        continue
+                        
+                    files.append({
+                        'name': name,
+                        'type': 'directory' if file_type == 'd' else 'file',
+                        'permissions': permissions,
+                        'owner': owner,
+                        'group': group,
+                        'size': size,
+                        'date': date,
+                        'path': os.path.join(directory, name).replace('\\', '/')
+                    })
+            
+            # Get parent directory
+            parent_dir = os.path.dirname(directory) if directory != '/' else '/'
+            
+            # Get current directory type using pwd
+            stdin, stdout, stderr = ssh_client.exec_command('pwd')
+            current_path = stdout.read().decode('utf-8').strip()
+            
+            # Get home directory 
+            stdin, stdout, stderr = ssh_client.exec_command('echo $HOME')
+            home_dir = stdout.read().decode('utf-8').strip()
+            
+            # Close connection
+            ssh_client.close()
+            
+            return jsonify({
+                "success": True,
+                "files": files,
+                "current_dir": directory,
+                "parent_dir": parent_dir,
+                "current_path": current_path,
+                "home_dir": home_dir
+            })
+            
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            })
+
+@app.route('/get-remote-file', methods=['POST'])
+def get_remote_file():
+    """Get the contents of a file on a remote machine"""
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            file_path = request.form.get('file_path')
+            
+            if not machine_ip or not machine_user or not file_path:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing required parameters"
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            password = machine_passwords.get(machine_ip, '')
+            
+            # Connect to remote machine
+            import paramiko
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=machine_ip,
+                username=machine_user,
+                password=password,
+                timeout=10
+            )
+            
+            # Get file contents using cat
+            command = f'cat "{file_path}"'
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+            file_content = stdout.read().decode('utf-8', errors='replace')
+            error_output = stderr.read().decode('utf-8')
+            
+            # Get file info
+            command = f'file -b --mime-type "{file_path}"'
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+            mime_type = stdout.read().decode('utf-8').strip()
+            
+            # Close connection
+            ssh_client.close()
+            
+            # Check for errors
+            if error_output:
+                return jsonify({
+                    "success": False,
+                    "message": error_output
+                })
+            
+            return jsonify({
+                "success": True,
+                "content": file_content,
+                "path": file_path,
+                "mime_type": mime_type,
+                "filename": os.path.basename(file_path)
+            })
+            
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            })
+
+@app.route('/save-remote-file', methods=['POST'])
+def save_remote_file():
+    """Save contents to a file on a remote machine"""
+    if request.method == 'POST':
+        try:
+            machine_ip = request.form.get('machine_ip')
+            machine_user = request.form.get('machine_user')
+            file_path = request.form.get('file_path')
+            content = request.form.get('content')
+            
+            if not machine_ip or not machine_user or not file_path or content is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Missing required parameters"
+                })
+            
+            # Define machine-specific passwords
+            machine_passwords = {
+                '192.168.68.124': 'slate',
+                '192.168.68.234': 'Tc4$$$',
+                '192.168.68.129': 'Nuc14$$$',
+                '192.168.68.206': 'Nuc6$$$',
+                '192.168.68.164': '40271234',
+                '192.168.68.205': '2222'
+            }
+            
+            password = machine_passwords.get(machine_ip, '')
+            
+            # Connect to remote machine
+            import paramiko
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=machine_ip,
+                username=machine_user,
+                password=password,
+                timeout=10
+            )
+            
+            # Create SFTP client
+            sftp_client = ssh_client.open_sftp()
+            
+            # Write the content to the file
+            with sftp_client.open(file_path, 'w') as f:
+                f.write(content)
+            
+            # Close connection
+            sftp_client.close()
+            ssh_client.close()
+            
+            return jsonify({
+                "success": True,
+                "message": f"File {file_path} saved successfully"
+            })
+            
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            })
+
+@app.route('/database-stats')
+def database_stats():
+    """Separate page for displaying database statistics."""
+    try:
+        # Get all database information
+        conn = create_connection()
+        cursor = conn.cursor()
+        databases = get_all_databases(cursor)
+        cursor.close()
+        conn.close()
+        
+        # Get disk space information - now returns a dictionary
+        disk_info = get_disk_space()
+        available_space = disk_info["free_space"]
+        
+        # Get total database size - it returns (total_size_bytes, formatted_size)
+        try:
+            _, total_db_size = get_total_database_size()
+        except Exception as e:
+            print(f"Error getting database size: {e}")
+            total_db_size = "Unknown"
+            
+        return render_template('database_stats.html', 
+                              databases=databases,
+                              total_size=total_db_size,
+                              available_space=available_space,
+                              disk_info=disk_info)
+                              
+    except Exception as e:
+        print(f"Error in database_stats: {e}")
+        return f"Error loading database statistics: {str(e)}"

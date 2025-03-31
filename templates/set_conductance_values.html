@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <a href="javascript:history.back()" class="btn btn-primary mb-3">Back to Previous Page</a>
+    <h3>Set Conductance Calculation Parameters</h3>
+    <p>Enter the values for conductance calculation:</p>
+    
+    <form action="/calculate-conductance/{{ database }}/{{ table_name }}" method="POST">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="Observed_VCM_BUF_on_UGB33">Observed VCM BUF on UGB33:</label>
+                    <input type="number" step="any" class="form-control" id="Observed_VCM_BUF_on_UGB33" name="Observed_VCM_BUF_on_UGB33" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Observed_VREF_BUF_on_UGB3">Observed VREF BUF on UGB3:</label>
+                    <input type="number" step="any" class="form-control" id="Observed_VREF_BUF_on_UGB3" name="Observed_VREF_BUF_on_UGB3" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Observed_BL_FB_on_UGB11">Observed BL FB on UGB11:</label>
+                    <input type="number" step="any" class="form-control" id="Observed_BL_FB_on_UGB11" name="Observed_BL_FB_on_UGB11" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Observed_1p1V_LDO_output_on_UGB33">Observed 1.1V LDO output on UGB33:</label>
+                    <input type="number" step="any" class="form-control" id="Observed_1p1V_LDO_output_on_UGB33" name="Observed_1p1V_LDO_output_on_UGB33" required>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="UGB33_offset">UGB33 offset:</label>
+                    <input type="number" step="any" class="form-control" id="UGB33_offset" name="UGB33_offset" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="UGB11_offset">UGB11 offset:</label>
+                    <input type="number" step="any" class="form-control" id="UGB11_offset" name="UGB11_offset" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="ADC_offset">ADC offset:</label>
+                    <input type="number" step="any" class="form-control" id="ADC_offset" name="ADC_offset" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Setting_for_BLDRV_BL_R">Setting for BLDRV BL R:</label>
+                    <select class="form-control" id="Setting_for_BLDRV_BL_R" name="Setting_for_BLDRV_BL_R" required>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="Setting_for_BLDRV_BLEED_RD">Setting for BLDRV BLEED RD:</label>
+                    <select class="form-control" id="Setting_for_BLDRV_BLEED_RD" name="Setting_for_BLDRV_BLEED_RD" required>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary mt-3">Calculate Conductance</button>
+    </form>
+</div>
+
+{% endblock %} 

@@ -235,7 +235,8 @@ def handle_list_terminals(data):
             'users_count': len(connected_users),
             'creator': creator_username,  # Use the stored creator username
             'connected_users': user_list,
-            'current_user': current_user  # Add the current user field - whoever is actually connected
+            'current_user': current_user,  # Add the current user field - whoever is actually connected
+            'session_name': session.get('session_name'),  # Include custom session name if available
         })
     
     # Sort by terminal ID
@@ -259,6 +260,7 @@ def handle_open_terminal(data):
     machine_ip = data.get('machine_ip')
     machine_user = data.get('machine_user')
     terminal_id = data.get('terminal_id', '1')
+    session_name = data.get('session_name')  # Get custom session name
     
     if not machine_ip or not machine_user:
         socketio.emit('terminal_error', {
@@ -274,7 +276,10 @@ def handle_open_terminal(data):
         '192.168.68.129': 'Nuc14$$$',
         '192.168.68.206': 'Nuc6$$$',
         '192.168.68.164': '40271234',
-        '192.168.68.205': '2222'
+        '192.168.68.205': '2222',
+        '192.168.68.235': 'Tc5$$$',
+        '192.168.68.231': 'Tc1$$$',
+        '192.168.68.232': 'Tc2$$$'
     }
     
     password = machine_passwords.get(machine_ip, '')
@@ -358,7 +363,8 @@ def handle_open_terminal(data):
                 'terminal_id': terminal_id,
                 'reused': True,
                 'exclusive': True,
-                'creator': original_creator  # Send creator info to the client
+                'creator': original_creator,  # Send creator info to the client
+                'session_name': session.get('session_name')  # Send session name if it exists
             }, room=client_id)
             
             # Emit updated user count to all connected clients for this session
@@ -369,7 +375,8 @@ def handle_open_terminal(data):
                 'terminal_id': terminal_id,
                 'session_id': session_id,
                 'machine_ip': machine_ip,
-                'machine_user': machine_user
+                'machine_user': machine_user,
+                'session_name': session_name  # Include session name
             })
             
             print(f"Reused existing session {session_id} for client {client_id} with exclusive access")
@@ -424,7 +431,8 @@ def handle_open_terminal(data):
             'creator_client_id': client_id,
             'exclusive_access': True,  # Mark session as exclusive access
             'client_usernames': {},  # Initialize client_usernames
-            'current_user': connecting_username  # Set current_user
+            'current_user': connecting_username,  # Set current_user
+            'session_name': session_name  # Store custom session name if provided
         }
         
         # Add session to client's subscriptions
@@ -440,7 +448,8 @@ def handle_open_terminal(data):
             'terminal_id': terminal_id,
             'session_id': session_id,
             'machine_ip': machine_ip,
-            'machine_user': machine_user
+            'machine_user': machine_user,
+            'session_name': session_name  # Include session name
         })
         
         # Start thread to read output
@@ -517,7 +526,8 @@ def handle_open_terminal(data):
             'success': True,
             'terminal_id': terminal_id,
             'reused': False,
-            'exclusive': True
+            'exclusive': True,
+            'session_name': session_name  # Include session name in response
         }, room=client_id)
         
         print(f"Created new session {session_id} for client {client_id} with exclusive access")

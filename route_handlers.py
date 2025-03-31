@@ -12,6 +12,9 @@ from run import app, cache, redis_client
 from db_operations import *
 from tools_for_plots import get_full_table_data, plot_individual_points_map  # Add plot_individual_points_map to the import
 from flask_caching import Cache
+from conductance_calculator import run_flint_conductance_calculator, convert_table_to_conductance, get_unique_original_values_and_conductance, get_unique_original_values_and_linear_conversion
+from sqlalchemy import text
+import pandas as pd
 
 # Standard library imports
 import os, base64, json, time
@@ -20,7 +23,7 @@ from io import BytesIO
 # External libraries
 import pandas as pd
 import mysql.connector
-from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify
+from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash
 from pptx import Presentation
 import zipfile
 import numpy as np
@@ -490,6 +493,17 @@ def view_plot(database, table_name, plot_function):
                     #elif plot_function == "generate_plot_ber_by_bls":
                         #form_data = get_form_data_generate_plot_ber_by_bls(request.form)
         
+                # Check if we should use conductance values
+                using_conductance = session.get('using_conductance', False)
+                if using_conductance:
+                    form_data['using_conductance'] = True
+                    form_data['conductance_params'] = session.get('conductance_params', {})
+                
+                # Check if we should use linear conversion
+                using_linear_conversion = session.get('using_linear_conversion', False)
+                if using_linear_conversion:
+                    form_data['using_linear_conversion'] = True
+        
                 # Convert form data to JSON
                 form_data_json = json.dumps(form_data)
 
@@ -503,10 +517,82 @@ def view_plot(database, table_name, plot_function):
         table_names = table_name.split(',')
         print(table_names)
         print("GET:::::::::::::::::::::::::::::::::")
-        return render_template('choose_plot_function_form.html')
+        
+        # Check if we're using conductance or linear conversion
+        using_conductance = session.get('using_conductance', False)
+        conductance_comparison = session.get('conductance_comparison', None)
+        using_linear_conversion = session.get('using_linear_conversion', False)
+        linear_conversion_comparison = session.get('linear_conversion_comparison', None)
+        
+        return render_template('choose_plot_function_form.html', 
+                              database=database, 
+                              table_name=table_name,
+                              using_conductance=using_conductance,
+                              conductance_comparison=conductance_comparison,
+                              using_linear_conversion=using_linear_conversion,
+                              linear_conversion_comparison=linear_conversion_comparison)
 
-from sqlalchemy import text
-import pandas as pd
+@app.route('/set-conductance-values/<database>/<table_name>')
+def set_conductance_values(database, table_name):
+    """Route to display the form for setting conductance calculation values."""
+    return render_template('set_conductance_values.html', 
+                          database=database, 
+                          table_name=table_name)
+
+@app.route('/calculate-conductance/<database>/<table_name>', methods=['POST'])
+def calculate_conductance(database, table_name):
+    """Route to calculate conductance values based on form inputs."""
+    try:
+        # Get the form data
+        input_params = {
+            'Observed_VCM_BUF_on_UGB33': float(request.form.get('Observed_VCM_BUF_on_UGB33')),
+            'Observed_VREF_BUF_on_UGB3': float(request.form.get('Observed_VREF_BUF_on_UGB3')),
+            'Observed_BL_FB_on_UGB11': float(request.form.get('Observed_BL_FB_on_UGB11')),
+            'Observed_1p1V_LDO_output_on_UGB33': float(request.form.get('Observed_1p1V_LDO_output_on_UGB33')),
+            'UGB33_offset': float(request.form.get('UGB33_offset')),
+            'UGB11_offset': float(request.form.get('UGB11_offset')),
+            'ADC_offset': float(request.form.get('ADC_offset')),
+            'Setting_for_BLDRV_BL_R': int(request.form.get('Setting_for_BLDRV_BL_R')),
+            'Setting_for_BLDRV_BLEED_RD': int(request.form.get('Setting_for_BLDRV_BLEED_RD')),
+            'Observed_ADC_Output_code': 0  # Placeholder, will be replaced for each actual value
+        }
+        
+        # Store the conductance parameters in the session
+        session['conductance_params'] = input_params
+        session['using_conductance'] = True
+        
+        # Get original data for tables to create comparison
+        table_names = table_name.split(',')
+        comparison_tables = []
+        
+        for single_table in table_names:
+            data_matrix, _ = get_full_table_data(single_table, database)
+            comparison = get_unique_original_values_and_conductance(data_matrix, input_params)
+            comparison_tables.extend(comparison)
+        
+        # Remove duplicates and sort by original value
+        unique_comparison = []
+        seen = set()
+        for item in comparison_tables:
+            if item['original'] not in seen:
+                unique_comparison.append(item)
+                seen.add(item['original'])
+        
+        unique_comparison.sort(key=lambda x: x['original'])
+        
+        # Store the comparison in the session
+        session['conductance_comparison'] = unique_comparison
+        
+        # Add a flash message for user feedback
+        flash('Precise conversion enabled. Precise Conductance values will be used for plotting.', 'success')
+        
+        # Redirect back to the Choose Plot Function page
+        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        
+    except Exception as e:
+        print(f"Error calculating conductance: {str(e)}")
+        flash(f"Error calculating conductance: {str(e)}", 'danger')
+        return redirect(f'/view-plot/{database}/{table_name}/choose')
 
 @app.route('/upload-file', methods=['POST'])
 def upload_file():   #auto upload
@@ -2242,12 +2328,15 @@ def test_machines():
     Page to display the available test machines
     """
     test_machines = [
-        {'ip': '192.168.68.124', 'user': 'slate', 'hostname': 'ARM Tester'},
+        {'ip': '192.168.68.124', 'user': 'slate', 'hostname': 'slate'},
         {'ip': '192.168.68.234', 'user': 'tc4', 'hostname': 'TC4'},
         {'ip': '192.168.68.129', 'user': 'nuc14', 'hostname': 'NUC14'},
         {'ip': '192.168.68.206', 'user': 'nuc6', 'hostname': 'NUC6'},
         {'ip': '192.168.68.164', 'user': 'lenovoi7', 'hostname': 'lenovoi7'},
-        {'ip': '192.168.68.205', 'user': 'nuc5', 'hostname': 'NUC5'}
+        {'ip': '192.168.68.205', 'user': 'nuc5', 'hostname': 'NUC5'},
+        {'ip': '192.168.68.235', 'user': 'tc5', 'hostname': 'TC5'},
+        {'ip': '192.168.68.231', 'user': 'tc1', 'hostname': 'TC1'},
+        {'ip': '192.168.68.232', 'user': 'tc2', 'hostname': 'TC2'}
     ]
     return render_template('test_machines.html', test_machines=test_machines)
 
@@ -2274,7 +2363,10 @@ def test_ssh_connection():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -2336,7 +2428,10 @@ def execute_ssh_command():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             # Check if command is a cd command, if so update the current directory
@@ -2483,7 +2578,10 @@ def execute_remote_command():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             # Determine which command to run based on the command type
@@ -2571,7 +2669,10 @@ def browse_remote_directory():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             # Build the command to list directories and their content
@@ -2661,7 +2762,10 @@ def tab_completion():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             # Get the token for completion
@@ -2795,7 +2899,10 @@ def list_remote_files():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -2902,7 +3009,10 @@ def get_remote_file():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -2976,7 +3086,10 @@ def save_remote_file():
                 '192.168.68.129': 'Nuc14$$$',
                 '192.168.68.206': 'Nuc6$$$',
                 '192.168.68.164': '40271234',
-                '192.168.68.205': '2222'
+                '192.168.68.205': '2222',
+                '192.168.68.235': 'Tc5$$$',
+                '192.168.68.231': 'Tc1$$$', 
+                '192.168.68.232': 'Tc2$$$'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -3045,3 +3158,58 @@ def database_stats():
     except Exception as e:
         print(f"Error in database_stats: {e}")
         return f"Error loading database statistics: {str(e)}"
+
+@app.route('/reset-conductance/<database>/<table_name>')
+def reset_conductance(database, table_name):
+    """Route to reset to original values by clearing conversion settings from the session."""
+    # Clear conversion-related session variables
+    session.pop('using_conductance', None)
+    session.pop('conductance_params', None)
+    session.pop('conductance_comparison', None)
+    session.pop('using_linear_conversion', None)
+    session.pop('linear_conversion_comparison', None)
+    
+    # Add a flash message for user feedback
+    flash('Reset to original values successful. Original data will be used for plotting.', 'success')
+    
+    # Redirect back to the Choose Plot Function page
+    return redirect(f'/view-plot/{database}/{table_name}/choose')
+
+@app.route('/linear-conversion/<database>/<table_name>')
+def linear_conversion(database, table_name):
+    """Route to convert values using linear mapping from 0-63 to 60-170 range."""
+    try:
+        # Get original data for tables to create comparison
+        table_names = table_name.split(',')
+        comparison_tables = []
+        
+        for single_table in table_names:
+            data_matrix, _ = get_full_table_data(single_table, database)
+            comparison = get_unique_original_values_and_linear_conversion(data_matrix)
+            comparison_tables.extend(comparison)
+        
+        # Remove duplicates and sort by original value
+        unique_comparison = []
+        seen = set()
+        for item in comparison_tables:
+            if item['original'] not in seen:
+                unique_comparison.append(item)
+                seen.add(item['original'])
+        
+        unique_comparison.sort(key=lambda x: x['original'])
+        
+        # Store settings in the session
+        session['using_linear_conversion'] = True
+        session['using_conductance'] = False  # Ensure conductance is turned off
+        session['linear_conversion_comparison'] = unique_comparison
+        
+        # Add a flash message for user feedback
+        flash('Linear conversion enabled. Values will be mapped from 0-63 to 60-170 range for plotting.', 'success')
+        
+        # Redirect back to the Choose Plot Function page
+        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        
+    except Exception as e:
+        print(f"Error applying linear conversion: {str(e)}")
+        flash(f"Error applying linear conversion: {str(e)}", 'danger')
+        return redirect(f'/view-plot/{database}/{table_name}/choose')

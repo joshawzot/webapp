@@ -16,7 +16,10 @@ DB_CONFIG = {
 }
 
 # NAS Configuration
-NAS_BACKUP_DIR = "/mnt/tetramem/dump"  # Example, ensure this is the correct path
+NAS_BACKUP_DIR = "/databk/dumps_2025_3_27"  # Updated to use the correct mount point where the device is mounted
+#NAS_BACKUP_DIR = "/mnt/nvme2/home/dumps"  # This path doesn't exist
+#NAS_BACKUP_DIR = "/dev/nvme2n1p1/home/dumps"  # Direct device path (not usable for filesystem operations)
+#NAS_BACKUP_DIR = "/mnt/tetramem/dump"  # Example, ensure this is the correct path
 
 # Local Configuration
 LOCAL_DUMP_DIR = '/home/admin2/webapp_2/dump'  # Directory for local dumps
@@ -81,34 +84,26 @@ def transfer_to_nas(dump_file):
         print(f"Creating directory: {NAS_BACKUP_DIR}")
         try:
             os.makedirs(NAS_BACKUP_DIR, exist_ok=True)
-        except PermissionError as e:
-            print(f"Permission denied while creating NAS directory {NAS_BACKUP_DIR}: {e}")
+        except Exception as e:
+            print(f"Error creating NAS directory {NAS_BACKUP_DIR}: {e}")
+            print("You may need to manually create the directory with proper permissions:")
+            print(f"sudo mkdir -p {NAS_BACKUP_DIR}")
+            print(f"sudo chown admin2:admin2 {NAS_BACKUP_DIR}")
+            print(f"sudo chmod 755 {NAS_BACKUP_DIR}")
             raise
 
     print(f"Transferring {dump_file} to NAS at {destination}...")
     try:
-        # Use subprocess with timeout to copy the file
+        # Use subprocess with timeout to copy the file (no sudo)
         subprocess.run(['timeout', '180', 'cp', dump_file, destination], check=True)
         print(f"{dump_file} has been copied to {destination}.")
         os.remove(dump_file)  # Remove the local dump file after successful copy
     except subprocess.TimeoutExpired:
         print(f"Transferring {dump_file} took more than 3 minutes and has been skipped.")
         log_skipped_transfer(dump_file)
-    except PermissionError as e:
-        print(f"Permission denied while transferring {dump_file} to {destination}: {e}")
-        print("Trying with root privileges via 'sudo timeout 180 cp' due to permission issues.")
-        try:
-            subprocess.run(['sudo', 'timeout', '180', 'cp', dump_file, destination], check=True)
-            print("File copied with root privileges.")
-            os.remove(dump_file)
-        except subprocess.TimeoutExpired:
-            print(f"Transferring {dump_file} as root took more than 3 minutes and has been skipped.")
-            log_skipped_transfer(dump_file)
-        except Exception as e2:
-            print(f"Failed to copy as root: {e2}")
-            raise
     except Exception as e:
         print(f"Failed to transfer {dump_file} to {destination}: {e}")
+        # We'll leave the file in the local directory rather than deleting it
         raise
 
 def log_skipped_schema(database):
@@ -158,8 +153,12 @@ def main():
         # Filter databases to process
         databases_to_process = []
         for db in databases:
-            if '2025' in db:
-                print(f"Skipping database containing '2025': {db}")
+            if '202503' in db or '202502' in db:
+                print(f"Skipping database containing '202503' or '202502': {db}")
+                continue
+                
+            if 'MaxZhang' in db:
+                print(f"Skipping database containing 'MaxZhang': {db}")
                 continue
 
             if db in EXCLUDED_DATABASES:

@@ -20,9 +20,11 @@
                 <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states" onchange="checkCustomDivision()">
             </div>
             <div class="form-group" id="custom_division_container" style="display:block;">
-                <label for="custom_division">Use Custom Division [21080, 19880, 21072, 20912]:</label>
-                <input type="checkbox" name="custom_division" id="custom_division" value="True">
-                <small class="form-text text-muted">Only applicable when number of states is 4</small>
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="custom_division" id="custom_division" value="True" onclick="toggleCustomDivision()">
+                    <label class="form-check-label" for="custom_division">Use Custom Division [21080, 19880, 21072, 20912]</label>
+                    <small class="form-text text-muted d-block">Only applicable when number of states is 4</small>
+                </div>
             </div>
             <div class="form-group">
                 <label for="selected_groups_1D">Selected States:</label>
@@ -173,9 +175,12 @@
         
         if (numberOfStates === '4') {
             customDivisionContainer.style.display = 'block';
+            // Ensure the checkbox is responsive to clicks
+            customDivisionCheckbox.disabled = false;
         } else {
             customDivisionContainer.style.display = 'none';
             customDivisionCheckbox.checked = false;
+            customDivisionCheckbox.disabled = true;
         }
     }
 
@@ -196,6 +201,15 @@
             fields1D.style.display = 'none';
             fieldsPredefined.style.display = 'block';
         }
+    }
+
+    // Function to handle custom division checkbox toggle
+    function toggleCustomDivision() {
+        var checkbox = document.getElementById('custom_division');
+        console.log("Custom Division Checkbox state changed to: " + checkbox.checked);
+        // Force the checkbox to visibly update
+        checkbox.blur();
+        checkbox.focus();
     }
 </script>
 

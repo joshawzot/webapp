@@ -3,6 +3,7 @@ import io
 import base64
 import pandas as pd
 import re
+from conductance_calculator import convert_table_to_conductance, convert_table_to_linear
 
 def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array):
     connection = create_connection(database_name)
@@ -12,8 +13,10 @@ def get_group_data_1124(table_name, selected_groups, database_name, pattern_file
     data = cursor.fetchall()
         
     # Convert fetched data to a NumPy array for easier manipulation
-    data_np = np.array(data)
-    data_np[data_np == 0] = 0.001
+    data_np = np.array(data, dtype=float)  # Ensure data is converted to float
+    
+    # Replace zeros with a small value to avoid issues - use np.where for safer comparison
+    data_np = np.where(data_np == 0, 0.001, data_np)
 
     # if np.mean(data_np) < 1:
     #     data_np = data_np * 1e6
@@ -33,10 +36,11 @@ def get_group_data_1124(table_name, selected_groups, database_name, pattern_file
     for group_idx in group_indices:
         if group_idx in selected_groups:
             # Get the mask where pattern_file_array equals group_idx
-            group_mask = pattern_file_array == group_idx
+            group_mask = np.equal(pattern_file_array, group_idx)  # Use np.equal instead of == for better array handling
             group_data = data_np[group_mask]
-            # Filter out negative values
-            positive_group_data = group_data[group_data >= 0]
+            
+            # Filter out negative values - use np.greater_equal for safer comparison
+            positive_group_data = group_data[np.greater_equal(group_data, 0)]
 
             group_idx_to_position[group_idx] = len(groups)
             groups.append(positive_group_data)
@@ -78,8 +82,10 @@ def get_group_data_1124_2(target_ranges, table_name, selected_groups, database_n
     cursor.execute(query)
     data = cursor.fetchall()
 
-    data_np = np.array(data)
-    data_np[data_np == 0] = 0.001  # Replace zeros with a small value to avoid issues
+    data_np = np.array(data, dtype=float)  # Ensure data is converted to float
+    
+    # Replace zeros with a small value to avoid issues - use np.where for safer comparison
+    data_np = np.where(data_np == 0, 0.001, data_np)  
 
     # if np.mean(data_np) < 1:
     #     data_np = data_np * 1e6
@@ -103,12 +109,12 @@ def get_group_data_1124_2(target_ranges, table_name, selected_groups, database_n
 
             try:
                 # Create a mask where pattern_file_array equals group_idx
-                group_mask = pattern_file_array == group_idx
+                group_mask = np.equal(pattern_file_array, group_idx)  # Use np.equal instead of == for better comparison
                 group = data_np[group_mask]
                 flattened_group = group.flatten()
 
-                # Filter out negative values
-                positive_flattened_group = flattened_group[flattened_group >= 0]
+                # Filter out negative values - use np.greater_equal for safer comparison
+                positive_flattened_group = flattened_group[np.greater_equal(flattened_group, 0)]
                 groups.append(positive_flattened_group)
 
                 # Calculate statistics for the positive values
@@ -120,14 +126,19 @@ def get_group_data_1124_2(target_ranges, table_name, selected_groups, database_n
                     lower_bound, upper_bound = target_ranges[count * 2], target_ranges[count * 2 + 1]
 
                     # Calculate the BER (ppm value of data outside the target range)
-                    out_of_range_data = group[
-                        (group < lower_bound) | (group > upper_bound)
-                    ]
+                    # Use np.logical_or with np.less/np.greater for safer comparison
+                    out_of_range_condition = np.logical_or(
+                        np.less(group, lower_bound),
+                        np.greater(group, upper_bound)
+                    )
+                    out_of_range_data = group[out_of_range_condition]
                     ber_value = round(len(out_of_range_data) / len(group) * 1e6)  # Calculate ppm
 
                     # Store statistics including BER value and target ranges
+                    # Use np.greater instead of > for safer comparison
+                    outlier_condition = np.greater(np.abs(group - average), 2.698 * std_dev)
                     outlier_percentage = round(
-                        np.sum(np.abs(group - average) > 2.698 * std_dev) / len(group) * 100, 0
+                        np.sum(outlier_condition) / len(group) * 100, 0
                     )
 
                     groups_stats.append((
@@ -425,6 +436,11 @@ def generate_plot(table_names, database_name, form_data):
     target_values = form_data.get('target_values', [])  # Get target values from form_data
     custom_division = form_data.get('custom_division', False)  # Get custom_division flag, default to False
     
+    # Check if we should use conductance values or linear conversion
+    using_conductance = form_data.get('using_conductance', False)
+    using_linear_conversion = form_data.get('using_linear_conversion', False)
+    conductance_params = form_data.get('conductance_params', {})
+    
     # Initialize sigma_distances and num_states at the start
     sigma_distances = {}
     num_states = 0
@@ -433,6 +449,8 @@ def generate_plot(table_names, database_name, form_data):
     print("outlier_analysis_flag:", outlier_analysis_flag)
     print("target_values:", target_values)  # Print target values for debugging
     print("custom_division:", custom_division)  # Print custom_division for debugging
+    print("using_conductance:", using_conductance)  # Print using_conductance for debugging
+    print("using_linear_conversion:", using_linear_conversion)  # Print using_linear_conversion for debugging
 
     print("table_names:", table_names)
     table_names = reorder_tables_fuxi(table_names)
@@ -444,7 +462,7 @@ def generate_plot(table_names, database_name, form_data):
     # Initialize variables for outlier analysis
     outlier_coordinates = []
     correlation_analysis = None
-    cluster_map = None  # Initialize cluster_map as None
+    cluster_map = None
     
     if form_data['state_pattern_type'] == 'predefined':
         # Define the path to your state pattern files directory
@@ -509,6 +527,16 @@ def generate_plot(table_names, database_name, form_data):
     data_matrices = []
     for table_name in table_names:
         data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
+        
+        # Apply conductance conversion if enabled
+        if using_conductance and conductance_params:
+            print(f"Converting table {table_name} to conductance values")
+            data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+        # Apply linear conversion if enabled
+        elif using_linear_conversion:
+            print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
+            data_matrix = convert_table_to_linear(data_matrix)
+            
         data_matrices.append((table_name, data_matrix))
     
     # Ensure all data matrices are converted to float
@@ -520,17 +548,28 @@ def generate_plot(table_names, database_name, form_data):
     g_range = (global_min, global_max)
     print("min")
 
-    for table_name in table_names:
+    for i, table_name in enumerate(table_names):
+        # Use the already processed data matrix
+        data_matrix = data_matrices[i][1]
+        
         if target_range_flag == 0:
             if form_data['state_pattern_type'] == '1D':
-                groups, stats, selected_groups = get_group_data_new(table_name, selected_groups, database_name, number_of_states, custom_division)
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups = get_group_data_new_from_matrix(
+                    data_matrix, selected_groups, number_of_states, custom_division)
             elif form_data['state_pattern_type'] == 'predefined':
-                groups, stats, selected_groups = get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array)
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups = get_group_data_from_matrix(
+                    data_matrix, selected_groups, pattern_file_array)
         elif target_range_flag == 1:
             if form_data['state_pattern_type'] == '1D':
-                groups, stats, selected_groups, table_miao_ber = get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states, custom_division)
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
+                    target_ranges, data_matrix, selected_groups, number_of_states, custom_division)
             elif form_data['state_pattern_type'] == 'predefined':
-                groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2(target_ranges, table_name, selected_groups, database_name, pattern_file_array)
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                    target_ranges, data_matrix, selected_groups, pattern_file_array)
             miao_ber.append(table_miao_ber)
 
         # Extract average and standard deviation values for each selected group
@@ -788,3 +827,168 @@ def generate_plot(table_names, database_name, form_data):
             table_names,
             sigma_table,  # Add sigma intersections table
             sigma_points)  # Add sigma points
+
+# Add helper functions to work with matrices directly instead of fetching from database
+
+def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array):
+    """Modified version of get_group_data_1124 that works with a data matrix directly."""
+    # Replace zeros with a small value to avoid issues - use np.where for safer comparison
+    data_np = np.where(data_matrix == 0, 0.001, data_matrix)
+
+    groups = []
+    groups_stats = []  # List to store statistics for each group
+    group_idx_to_position = {}
+
+    # Ensure that pattern_file_array has the same shape as data_np
+    if pattern_file_array.shape != data_np.shape:
+        raise ValueError("pattern_file_array must have the same shape as the data array.")
+
+    unique_groups = np.unique(pattern_file_array)
+    group_indices = unique_groups.tolist()
+    print("group_indices:", group_indices)
+
+    # Parse the selected_groups
+    if selected_groups:
+        try:
+            if isinstance(selected_groups, str):
+                selected_groups = [int(g) for g in selected_groups.split(',')]
+            elif isinstance(selected_groups, list):
+                selected_groups = [int(g) for g in selected_groups]
+        except ValueError:
+            selected_groups = group_indices
+    else:
+        selected_groups = group_indices
+
+    # Filter out selected_groups that don't exist in the dataset
+    selected_groups = [g for g in selected_groups if g in group_indices]
+
+    for group_idx in selected_groups:
+        # Find positions where pattern_file_array equals the current group index
+        positions = np.where(pattern_file_array == group_idx)
+        values = [data_np[pos] for pos in zip(positions[0], positions[1])]
+        
+        # Store the group data for later use
+        groups.append(values)
+        
+        # Compute statistics for the group
+        if values:
+            min_val = np.min(values)
+            max_val = np.max(values)
+            avg_val = np.mean(values)
+            std_val = np.std(values)
+            groups_stats.append((min_val, max_val, avg_val, std_val))
+        else:
+            # Default values if the group has no data points
+            groups_stats.append((0, 0, 0, 0))
+            
+        # Map group index to its position in the selected_groups list
+        group_idx_to_position[group_idx] = len(groups) - 1
+
+    return groups, groups_stats, selected_groups
+
+def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division=False):
+    """Modified version of get_group_data_new that works with a data matrix directly."""
+    # Debug prints to diagnose custom_division usage
+    print(f"get_group_data_new_from_matrix called with custom_division={custom_division}, type={type(custom_division)}")
+    print(f"number_of_states={number_of_states}, type={type(number_of_states)}")
+    
+    # Flatten the data matrix
+    flattened_data = data_matrix.flatten()
+    
+    # Replace zeros with a small value
+    flattened_data = np.where(flattened_data == 0, 0.001, flattened_data)
+    
+    # Sort the data
+    #sorted_data = np.sort(flattened_data)
+    sorted_data = flattened_data
+    
+    # Calculate the number of elements per group
+    total_elements = len(sorted_data)
+    elements_per_group = total_elements // int(number_of_states)
+    
+    # Initialize groups
+    groups = []
+    groups_stats = []
+    
+    if custom_division and (number_of_states == 4 or number_of_states == "4"):
+        # Use the custom division values - these are absolute sizes, not indices
+        division_points = [21080, 19880, 21072, 20912]
+        # Total up all elements
+        total_division_points = sum(division_points)
+        
+        print(f"Using custom division with points: {division_points}")
+        print(f"Total custom division elements: {total_division_points}")
+        print(f"Total data elements: {len(sorted_data)}")
+        
+        # Create groups based on custom division sizes
+        start_idx = 0
+        for i, size in enumerate(division_points):
+            # Calculate what percentage of the data this division should use
+            size_ratio = size / total_division_points
+            # Calculate how many elements that corresponds to in our actual data
+            actual_size = int(size_ratio * len(sorted_data))
+            end_idx = min(start_idx + actual_size, len(sorted_data))  # Ensure we don't go beyond array bounds
+            
+            print(f"Group {i}: start_idx={start_idx}, end_idx={end_idx}, size={actual_size}")
+            
+            # Get the group data
+            group_data = sorted_data[start_idx:end_idx]
+            groups.append(group_data.tolist())
+            
+            # Calculate statistics
+            min_val = np.min(group_data)
+            max_val = np.max(group_data)
+            avg_val = np.mean(group_data)
+            std_val = np.std(group_data)
+            groups_stats.append((min_val, max_val, avg_val, std_val))
+            
+            # Update start index for next group
+            start_idx = end_idx
+    else:
+        # Create groups with equal number of elements
+        for i in range(int(number_of_states)):
+            start_idx = i * elements_per_group
+            end_idx = (i + 1) * elements_per_group if i < int(number_of_states) - 1 else total_elements
+            group_data = sorted_data[start_idx:end_idx]
+            groups.append(group_data.tolist())
+            
+            # Calculate statistics
+            min_val = np.min(group_data)
+            max_val = np.max(group_data)
+            avg_val = np.mean(group_data)
+            std_val = np.std(group_data)
+            groups_stats.append((min_val, max_val, avg_val, std_val))
+
+    # Parse selected_groups or use default
+    if selected_groups:
+        try:
+            if isinstance(selected_groups, str):
+                selected_groups = [int(g) for g in selected_groups.split(',')]
+            elif isinstance(selected_groups, list):
+                selected_groups = [int(g) for g in selected_groups]
+        except ValueError:
+            selected_groups = list(range(int(number_of_states)))
+    else:
+        selected_groups = list(range(int(number_of_states)))
+    
+    return groups, groups_stats, selected_groups
+
+def get_group_data_1124_2_from_matrix(target_ranges, data_matrix, selected_groups, pattern_file_array):
+    """Modified version of get_group_data_1124_2 that works with a data matrix directly."""
+    # Get groups data using existing function
+    groups, groups_stats, selected_groups = get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
+    
+    # Calculate BER using target ranges
+    table_miao_ber = calculate_ber_with_target_ranges(groups, target_ranges)
+    
+    return groups, groups_stats, selected_groups, table_miao_ber
+
+def get_group_data_latest_from_matrix(target_ranges, data_matrix, selected_groups, number_of_states, custom_division=False):
+    """Modified version of get_group_data_latest that works with a data matrix directly."""
+    # Get groups data using existing function
+    groups, groups_stats, selected_groups = get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division)
+    
+    # Calculate BER using target ranges
+    table_miao_ber = calculate_ber_with_target_ranges(groups, target_ranges)
+    
+    return groups, groups_stats, selected_groups, table_miao_ber

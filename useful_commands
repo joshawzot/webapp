@@ -17,6 +17,7 @@ sudo kill -9 $(sudo netstat -tulpn | grep 3000 | awk '{print $7}' | cut -d'/' -f
 
 cd /app
 sudo rm -rf /app/*
+rm -rf /path/to/folder/*
 
 cd /databk
 

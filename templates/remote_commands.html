@@ -57,6 +57,12 @@
                             </div>
                             <small class="form-text text-muted">You can create up to 4 terminal sessions to run different commands simultaneously.</small>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="terminal_name">Custom Session Name (optional):</label>
+                            <input type="text" class="form-control" id="terminal_name" placeholder="e.g., DB-Server, Log-Monitor, etc.">
+                            <small class="form-text text-muted">Give your terminal session a meaningful name to easily identify it later.</small>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -75,7 +81,7 @@
             <div class="card">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="mb-0">Terminal Session <span class="terminal-number"></span> <small class="session-info text-light ml-2"></small></h5>
+                        <h5 class="mb-0">Terminal Session <span class="terminal-number"></span> <span class="session-name"></span> <small class="session-info text-light ml-2"></small></h5>
                         <small class="text-warning"><i class="fas fa-lock"></i> Exclusive Access Mode - Only one user can control this terminal at a time</small>
                     </div>
                     <div>
@@ -104,7 +110,7 @@
         <div class="card session-card">
             <div class="card-header bg-dark text-white">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Terminal <span class="session-terminal-id"></span></h5>
+                    <h5 class="mb-0">Terminal <span class="session-terminal-id"></span> <span class="existing-session-name"></span></h5>
                     <span class="badge badge-warning"><i class="fas fa-lock"></i> Exclusive Access</span>
                 </div>
             </div>
@@ -347,6 +353,14 @@
                     sessionElement.querySelector('.session-terminal-id').textContent = displayId;
                     sessionElement.querySelector('.session-created-at').textContent = formatDate(session.created_at);
                     
+                    // Set custom session name if available
+                    if (session.session_name) {
+                        const nameElement = sessionElement.querySelector('.existing-session-name');
+                        if (nameElement) {
+                            nameElement.textContent = `- ${session.session_name}`;
+                        }
+                    }
+                    
                     // Set creator information
                     const creatorElement = sessionElement.querySelector('.session-creator');
                     if (creatorElement) {
@@ -532,10 +546,18 @@
                 return;
             }
             
+            // Get the custom session name if provided
+            const customSessionName = document.getElementById('terminal_name').value.trim();
+            
             // Create the requested number of terminals
             for (let i = 0; i < numTerminals; i++) {
                 const terminalId = generateUniqueTerminalId();
-                createTerminalSession(terminalId, false);
+                // If multiple terminals and a custom name is provided, append a number to make each unique
+                let sessionName = customSessionName;
+                if (customSessionName && numTerminals > 1) {
+                    sessionName = `${customSessionName}-${i+1}`;
+                }
+                createTerminalSession(terminalId, false, sessionName);
             }
         });
         }
@@ -579,16 +601,16 @@
         // Warn user about exclusive access mode
         if (confirm("This terminal uses exclusive access mode. Connecting will disconnect any current user. Continue?")) {
             // Create a new terminal view for this session
-            createTerminalSession(terminalId, true);
+            createTerminalSession(terminalId, true, null);
         }
     }
     
     // Removed system sessions related functions
     
     // Function to create a new terminal session
-    function createTerminalSession(terminalId, isExisting) {
+    function createTerminalSession(terminalId, isExisting, sessionName) {
         try {
-            console.log("Creating terminal session", terminalId, "isExisting:", isExisting);
+            console.log("Creating terminal session", terminalId, "isExisting:", isExisting, "sessionName:", sessionName);
             
             // Get terminal container and template
             const terminalsContainer = document.getElementById('terminals-container');
@@ -607,6 +629,12 @@
                 ? terminalId.split('_')[0] 
                 : terminalId;
             terminalContent.querySelector('.terminal-number').textContent = displayId;
+            
+            // Set custom session name if provided
+            const sessionNameSpan = terminalContent.querySelector('.session-name');
+            if (sessionName && sessionNameSpan) {
+                sessionNameSpan.textContent = `- ${sessionName}`;
+            }
             
             // Add new terminal to the container
             terminalsContainer.appendChild(terminalContent);
@@ -688,7 +716,8 @@
                     terminal_id: terminalId,
                     rows: xterm.rows,
                     cols: xterm.cols,
-                    type: 'connect'
+                    type: 'connect',
+                    session_name: sessionName
                 });
             } else {
                 xterm.write('Creating new terminal session...\r\n');
@@ -700,7 +729,8 @@
                     terminal_id: terminalId,
                     rows: xterm.rows,
                     cols: xterm.cols,
-                    type: 'create'
+                    type: 'create',
+                    session_name: sessionName
                 });
             }
             

@@ -12,7 +12,7 @@ from run import app, cache, redis_client
 from db_operations import *
 from tools_for_plots import get_full_table_data, plot_individual_points_map  # Add plot_individual_points_map to the import
 from flask_caching import Cache
-from conductance_calculator import run_flint_conductance_calculator, convert_table_to_conductance, get_unique_original_values_and_conductance, get_unique_original_values_and_linear_conversion
+from conductance_calculator import run_flint_conductance_calculator, convert_table_to_conductance, get_unique_original_values_and_conductance, get_unique_original_values_and_linear_conversion, update_linear_conversion_params
 from sqlalchemy import text
 import pandas as pd
 
@@ -122,10 +122,23 @@ def home():
                 except:
                     # If JSON parsing fails, start with empty list
                     recent_visits = []
+            
+            # Check disk space
+            disk_info = get_disk_space()
+            
+            # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
+            disk_stats = shutil.disk_usage("/var/lib/mysql")  # Same path as in get_disk_space function
+            free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
+            low_disk_space = free_space_gb < 10  # True if less than 10GB
                 
             cursor.close()
             conn.close()
-            return render_template('home_page.html', databases=databases, username=username, recent_visits=recent_visits)
+            return render_template('home_page.html', 
+                                  databases=databases, 
+                                  username=username, 
+                                  recent_visits=recent_visits,
+                                  disk_info=disk_info,
+                                  low_disk_space=low_disk_space)
         except mysql.connector.Error as err:
             return str(err), 500
     else:
@@ -524,13 +537,20 @@ def view_plot(database, table_name, plot_function):
         using_linear_conversion = session.get('using_linear_conversion', False)
         linear_conversion_comparison = session.get('linear_conversion_comparison', None)
         
+        # Get current linear conversion parameters for the banner
+        from conductance_calculator import LINEAR_CONVERSION
+        linear_min = LINEAR_CONVERSION["output_min"]
+        linear_max = LINEAR_CONVERSION["output_max"]
+        
         return render_template('choose_plot_function_form.html', 
                               database=database, 
                               table_name=table_name,
                               using_conductance=using_conductance,
                               conductance_comparison=conductance_comparison,
                               using_linear_conversion=using_linear_conversion,
-                              linear_conversion_comparison=linear_conversion_comparison)
+                              linear_conversion_comparison=linear_conversion_comparison,
+                              linear_min=linear_min,
+                              linear_max=linear_max)
 
 @app.route('/set-conductance-values/<database>/<table_name>')
 def set_conductance_values(database, table_name):
@@ -957,7 +977,8 @@ def merge_tables_process():
             "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
             "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
-            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy"
+            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy"
         }
 
         file_path = pattern_files.get(state_pattern)
@@ -968,6 +989,12 @@ def merge_tables_process():
         # Load the pattern array and flatten it
         print(f"DEBUG: Loading pattern file from: {file_path}")
         pattern_array = np.load(file_path)
+        
+        # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
+        if state_pattern == "82944x78_ecc_fuxi":
+            # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+            pattern_array = pattern_array.reshape(78, 82944).T
+        
         print(f"DEBUG: Pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
         
         a, b = pattern_array.shape
@@ -1830,6 +1857,13 @@ def get_form_data_generate_plot(form):
             form_data['target_values'] = []
     else:
         form_data['target_values'] = []
+    
+    # Process target_x_diff value
+    target_x_diff_str = form_data.get('target_x_diff', '2')
+    try:
+        form_data['target_x_diff'] = float(target_x_diff_str) if target_x_diff_str else 2.0
+    except ValueError:
+        form_data['target_x_diff'] = 2.0  # Default to 2.0 if conversion fails
 
     print("Final Form Data:", form_data)  # Debug print
     return form_data
@@ -3142,18 +3176,30 @@ def database_stats():
         disk_info = get_disk_space()
         available_space = disk_info["free_space"]
         
-        # Get total database size - it returns (total_size_bytes, formatted_size)
+        # Get total database size - without system databases
         try:
-            _, total_db_size = get_total_database_size()
+            _, total_db_size = get_total_database_size(include_system_dbs=False)
         except Exception as e:
             print(f"Error getting database size: {e}")
             total_db_size = "Unknown"
             
+        # Get total database size - with system databases included
+        try:
+            _, total_with_system_db_size = get_total_database_size(include_system_dbs=True)
+        except Exception as e:
+            print(f"Error getting total size with system DBs: {e}")
+            total_with_system_db_size = "Unknown"
+        
+        # Get actual MySQL directory size from disk
+        mysql_dir_size = get_mysql_directory_size()
+            
         return render_template('database_stats.html', 
                               databases=databases,
                               total_size=total_db_size,
+                              total_with_system=total_with_system_db_size,
                               available_space=available_space,
-                              disk_info=disk_info)
+                              disk_info=disk_info,
+                              mysql_dir_size=mysql_dir_size)
                               
     except Exception as e:
         print(f"Error in database_stats: {e}")
@@ -3177,8 +3223,37 @@ def reset_conductance(database, table_name):
 
 @app.route('/linear-conversion/<database>/<table_name>')
 def linear_conversion(database, table_name):
-    """Route to convert values using linear mapping from 0-63 to 60-170 range."""
+    """Route to show custom linear conversion form."""
     try:
+        # Get current linear conversion parameters
+        from conductance_calculator import LINEAR_CONVERSION
+        output_min = LINEAR_CONVERSION["output_min"]
+        output_max = LINEAR_CONVERSION["output_max"]
+        
+        # Redirect to the custom linear conversion form
+        return render_template('custom_linear_conversion.html', 
+                              database=database, 
+                              table_name=table_name,
+                              output_min=output_min,
+                              output_max=output_max)
+        
+    except Exception as e:
+        print(f"Error showing linear conversion form: {str(e)}")
+        flash(f"Error showing linear conversion form: {str(e)}", 'danger')
+        return redirect(f'/view-plot/{database}/{table_name}/choose')
+
+@app.route('/apply-custom-linear-conversion/<database>/<table_name>', methods=['POST'])
+def apply_custom_linear_conversion(database, table_name):
+    """Apply custom linear conversion with user-provided values."""
+    try:
+        # Get the form data
+        output_min = float(request.form.get('output_min', 60))
+        output_max = float(request.form.get('output_max', 170))
+        
+        # Update the global conversion parameters in the conductance calculator
+        from conductance_calculator import update_linear_conversion_params
+        update_linear_conversion_params(output_min, output_max)
+        
         # Get original data for tables to create comparison
         table_names = table_name.split(',')
         comparison_tables = []
@@ -3204,12 +3279,92 @@ def linear_conversion(database, table_name):
         session['linear_conversion_comparison'] = unique_comparison
         
         # Add a flash message for user feedback
-        flash('Linear conversion enabled. Values will be mapped from 0-63 to 60-170 range for plotting.', 'success')
+        flash(f'Linear conversion enabled. Values will be mapped from 0-63 to {output_min}-{output_max} range for plotting.', 'success')
         
         # Redirect back to the Choose Plot Function page
         return redirect(f'/view-plot/{database}/{table_name}/choose')
         
     except Exception as e:
-        print(f"Error applying linear conversion: {str(e)}")
-        flash(f"Error applying linear conversion: {str(e)}", 'danger')
+        print(f"Error applying custom linear conversion: {str(e)}")
+        flash(f"Error applying custom linear conversion: {str(e)}", 'danger')
         return redirect(f'/view-plot/{database}/{table_name}/choose')
+
+@app.route('/top-schemas-by-size')
+def top_schemas_by_size():
+    """Display all schemas by size with search filtering."""
+    try:
+        # Check if user is logged in
+        username = session.get('username')
+        if not username:
+            return redirect(url_for('login'))
+            
+        # Get schema sizes
+        from db_operations import get_schema_sizes
+        schema_sizes = get_schema_sizes()
+        
+        # Use all schemas instead of limiting to top 100
+        all_schemas = schema_sizes
+        
+        # Calculate total size of all schemas for percentage calculation
+        total_size_bytes = sum(schema['size_bytes'] for schema in schema_sizes)
+        
+        # Add percentage to each schema
+        for schema in all_schemas:
+            if total_size_bytes > 0:
+                percentage = (schema['size_bytes'] / total_size_bytes) * 100
+                schema['percentage'] = f"{percentage:.2f}%"
+            else:
+                schema['percentage'] = "0.00%"
+        
+        # Get disk space information
+        disk_info = get_disk_space()
+        
+        # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
+        disk_stats = shutil.disk_usage("/var/lib/mysql")  # Same path as in get_disk_space function
+        free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
+        # Add free_space_gb to disk_info dictionary
+        disk_info['free_space_gb'] = free_space_gb
+        
+        return render_template('top_schemas.html', 
+                              schemas=all_schemas, 
+                              username=username,
+                              disk_info=disk_info,
+                              total_schemas=len(schema_sizes),
+                              total_size_bytes=total_size_bytes)
+                              
+    except Exception as e:
+        print(f"Error in top_schemas_by_size: {e}")
+        return f"Error loading top schemas by size: {str(e)}"
+
+def get_mysql_directory_size():
+    """Get the actual disk space used by the MySQL data directory."""
+    try:
+        # Get MySQL data directory path
+        mysql_path = "/var/lib/mysql"
+        
+        # Use du command to get the actual disk usage
+        result = subprocess.run(['du', '-sh', mysql_path], capture_output=True, text=True)
+        if result.returncode == 0:
+            # Parse the output (format: "348G /var/lib/mysql")
+            output = result.stdout.strip()
+            size_str = output.split()[0]
+            
+            # Convert to standardized format (e.g., "348.00 GB")
+            if size_str.endswith('G'):
+                value = float(size_str[:-1])
+                formatted_size = f"{value:.2f} GB"
+            elif size_str.endswith('M'):
+                value = float(size_str[:-1])
+                formatted_size = f"{value:.2f} MB"
+            elif size_str.endswith('T'):
+                value = float(size_str[:-1])
+                formatted_size = f"{value:.2f} TB"
+            else:
+                formatted_size = size_str
+                
+            return formatted_size
+        else:
+            return "348.00 GB"  # Default value if command fails
+    except Exception as e:
+        print(f"Error getting MySQL directory size: {e}")
+        return "348.00 GB"  # Default value if exception occurs

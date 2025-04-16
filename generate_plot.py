@@ -436,6 +436,9 @@ def generate_plot(table_names, database_name, form_data):
     target_values = form_data.get('target_values', [])  # Get target values from form_data
     custom_division = form_data.get('custom_division', False)  # Get custom_division flag, default to False
     
+    # Get the user-defined target_x_diff value with a default of 2
+    target_x_diff = float(form_data.get('target_x_diff', 2))  # Get target_x_diff from form_data
+    
     # Check if we should use conductance values or linear conversion
     using_conductance = form_data.get('using_conductance', False)
     using_linear_conversion = form_data.get('using_linear_conversion', False)
@@ -477,7 +480,8 @@ def generate_plot(table_names, database_name, form_data):
             "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
             "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
-            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy"
+            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy"
         }
 
         # Fetch the file path based on the state pattern using a dictionary lookup
@@ -486,6 +490,10 @@ def generate_plot(table_names, database_name, form_data):
         # Load the pattern file array if the file path is found
         if file_path:
             pattern_file_array = np.load(file_path)
+            # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
+            if state_pattern == "82944x78_ecc_fuxi":
+                # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+                pattern_file_array = pattern_file_array.reshape(78, 82944).T
         else:
             print("Invalid state pattern or file path not found.")
     elif form_data['state_pattern_type'] == '1D':
@@ -629,7 +637,7 @@ def generate_plot(table_names, database_name, form_data):
     encoded_plots.append(plot_average_values_table(avg_values, table_names, selected_groups))
     encoded_plots.append(plot_std_values_table(std_values, table_names, selected_groups))
 
-    plot_data_sigma, plot_data_cdf, plot_data_interpo, ber_results, sigma_intersections = plot_transformed_cdf_2(group_data, table_names, selected_groups, colors)
+    plot_data_sigma, plot_data_cdf, plot_data_interpo, ber_results, sigma_intersections = plot_transformed_cdf_2(group_data, table_names, selected_groups, colors, target_x_diff)
     encoded_plots.append(plot_data_sigma)
     encoded_plots.append(plot_data_cdf)
     encoded_plots.append(plot_data_interpo)

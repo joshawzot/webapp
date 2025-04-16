@@ -32,7 +32,7 @@ if not os.path.exists(LOCAL_DUMP_DIR):
 EXCLUDED_DATABASES = [
     'mysql', 'information_schema', 'performance_schema', 'sys',
     # Add any other databases you want to exclude
-    'rwb', 'param'
+    'rwb', 'param', 'all',
 ]
 
 def get_databases(cursor):
@@ -153,8 +153,9 @@ def main():
         # Filter databases to process
         databases_to_process = []
         for db in databases:
-            if '202503' in db or '202502' in db:
-                print(f"Skipping database containing '202503' or '202502': {db}")
+            dates_to_skip = ['20250407','20250408', '20250409', '20250410', '20250411', '20250412', '20250413', '20250414', '20250415']
+            if any(date in db for date in dates_to_skip):
+            #if '202504' in db:
                 continue
                 
             if 'MaxZhang' in db:

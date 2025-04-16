@@ -36,7 +36,8 @@ def generate_plot_read_stability(table_names, database_name, form_data):
         "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
         "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
-        "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy"
+        "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+        "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy"
     }
 
     # Fetch the file path based on the state pattern
@@ -45,6 +46,10 @@ def generate_plot_read_stability(table_names, database_name, form_data):
     # Load the pattern file array if the file path is found
     if file_path:
         pattern_file_array = np.load(file_path)
+        # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
+        if state_pattern == "82944x78_ecc_fuxi":
+            # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+            pattern_file_array = pattern_file_array.reshape(78, 82944).T
     else:
         print("Invalid state pattern or file path not found.")
         return []

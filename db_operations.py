@@ -332,8 +332,15 @@ def rename_table_in_database(database, old_name, new_name):
         cursor.close()
         connection.close()
 
-def get_total_database_size():
-    """Calculate the total size of all databases in bytes, excluding system databases."""
+def get_total_database_size(include_system_dbs=False):
+    """Calculate the total size of all databases in bytes.
+    
+    Args:
+        include_system_dbs (bool): Whether to include system databases in the calculation
+        
+    Returns:
+        tuple: (total_size_bytes, formatted_size)
+    """
     connection = create_connection()
     if connection is None:
         return 0, "0 B"
@@ -343,15 +350,24 @@ def get_total_database_size():
         # Define restricted databases to exclude
         restricted_dbs = ['performance_schema', 'mysql', 'information_schema', 'sys']
         
-        # Query to get database sizes
-        query = """
-        SELECT 
-            SUM(data_length + index_length) as total_size
-        FROM information_schema.TABLES
-        WHERE table_schema NOT IN ({})
-        """.format(','.join(['%s'] * len(restricted_dbs)))
+        if include_system_dbs:
+            # Include all databases
+            query = """
+            SELECT 
+                SUM(data_length + index_length) as total_size
+            FROM information_schema.TABLES
+            """
+            cursor.execute(query)
+        else:
+            # Exclude system databases
+            query = """
+            SELECT 
+                SUM(data_length + index_length) as total_size
+            FROM information_schema.TABLES
+            WHERE table_schema NOT IN ({})
+            """.format(','.join(['%s'] * len(restricted_dbs)))
+            cursor.execute(query, restricted_dbs)
         
-        cursor.execute(query, restricted_dbs)
         result = cursor.fetchone()
         total_size = result[0] if result[0] else 0
         
@@ -423,3 +439,57 @@ def create_long_running_engine(db_name):
     )
     
     return engine
+
+def get_schema_sizes():
+    """Get all schemas/databases sorted by their size in descending order.
+    
+    Returns:
+        list: A list of dictionaries with 'schema_name', 'size_bytes', and 'formatted_size'
+    """
+    connection = create_connection()
+    cursor = connection.cursor()
+    try:
+        # Define restricted databases to exclude
+        restricted_dbs = ['performance_schema', 'mysql', 'information_schema', 'sys']
+        
+        # Query to get individual database sizes
+        query = """
+        SELECT 
+            table_schema as 'schema_name',
+            SUM(data_length + index_length) as 'total_size'
+        FROM information_schema.TABLES
+        WHERE table_schema NOT IN ({})
+        GROUP BY table_schema
+        ORDER BY total_size DESC
+        """.format(','.join(['%s'] * len(restricted_dbs)))
+        
+        cursor.execute(query, restricted_dbs)
+        results = cursor.fetchall()
+        
+        # Format the results
+        schema_sizes = []
+        for schema_name, total_size in results:
+            # Convert bytes to human readable format
+            units = ['B', 'KB', 'MB', 'GB', 'TB']
+            size = float(total_size)
+            unit_index = 0
+            while size >= 1024 and unit_index < len(units) - 1:
+                size /= 1024
+                unit_index += 1
+            
+            formatted_size = f"{size:.2f} {units[unit_index]}"
+            
+            schema_sizes.append({
+                'schema_name': schema_name,
+                'size_bytes': total_size,
+                'formatted_size': formatted_size
+            })
+        
+        return schema_sizes
+        
+    except mysql.connector.Error as err:
+        print(f"Error calculating schema sizes: {err}")
+        return []
+    finally:
+        cursor.close()
+        connection.close()

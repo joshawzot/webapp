@@ -28,6 +28,20 @@
 
 <script>
     document.getElementById('downloadPPTX').addEventListener('click', function() {
+        // Prompt user for filename
+        var filename = prompt("Enter a filename for your presentation:");
+        
+        // If user cancels or enters empty string, use default filename
+        if (filename === null) {
+            // User clicked cancel, abort download
+            return;
+        }
+        
+        // Ensure filename has .pptx extension
+        if (!filename.toLowerCase().endsWith('.pptx')) {
+            filename += '.pptx';
+        }
+        
         var plots = Array.from(document.querySelectorAll('.plot-container img')).map(function(img) {
             return img.src; // This is the Base64 encoded image
         });
@@ -45,7 +59,7 @@
             var url = window.URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
-            a.download = 'Downloaded_Presentation.pptx';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             a.remove();

@@ -60,7 +60,7 @@
     </div>
     {% elif using_linear_conversion %}
     <div class="alert alert-info">
-        <strong>Current Mode:</strong> Using linear conversion values (0-63 → 60-170) for plotting.
+        <strong>Current Mode:</strong> Using linear conversion values (0-63 → {{ linear_min }}-{{ linear_max }}) for plotting.
     </div>
     {% else %}
     <div class="alert alert-light border">
@@ -73,7 +73,7 @@
     <p>Choose between original values or converted values for plotting:</p>
     <div>
         <a href="/set-conductance-values/{{ database }}/{{ table_name }}" class="btn btn-primary">Use precise conversion</a>
-        <a href="/linear-conversion/{{ database }}/{{ table_name }}" class="btn btn-primary ml-2">Use linear conversion</a>
+        <a href="/linear-conversion/{{ database }}/{{ table_name }}" class="btn btn-primary ml-2">Use custom linear conversion</a>
         {% if using_conductance or using_linear_conversion %}
         <a href="/reset-conductance/{{ database }}/{{ table_name }}" class="btn btn-secondary ml-2">Reset to Original Values</a>
         {% endif %}

@@ -2,6 +2,14 @@
 
 {% block content %}
 <div class="container">
+    <!-- Low Disk Space Alert -->
+    {% if low_disk_space %}
+    <div class="alert alert-danger mb-3" role="alert">
+        <strong><i class="fas fa-exclamation-triangle"></i> Warning:</strong> Available disk space is less than 10GB ({{ disk_info.free_space }} remaining). 
+        Please free up some space to ensure system stability.
+    </div>
+    {% endif %}
+
     <!-- Display a welcome message if the user is logged in -->
     {% if username %}
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -31,6 +39,10 @@
         <!-- Database Statistics Button -->
         <a href="{{ url_for('database_stats') }}" class="btn btn-info">
             <i class="fas fa-chart-bar"></i> Database Statistics
+        </a>
+        <!-- New Button for Top Schemas by Size -->
+        <a href="{{ url_for('top_schemas_by_size') }}" class="btn btn-dark">
+            <i class="fas fa-hdd"></i> Top 100 Folders by Size
         </a>
     </div>
 

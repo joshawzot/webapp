@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Custom Linear Conversion</h2>
+    <p class="text-muted">Set custom values for the linear conversion range</p>
+    
+    <div class="card">
+        <div class="card-body">
+            <form action="{{ url_for('apply_custom_linear_conversion', database=database, table_name=table_name) }}" method="post">
+                <div class="form-group">
+                    <label for="output_min">Minimum Output Value:</label>
+                    <input type="number" class="form-control" id="output_min" name="output_min" value="{{ output_min }}" required>
+                    <small class="form-text text-muted">Default: 60</small>
+                </div>
+                
+                <div class="form-group mt-3">
+                    <label for="output_max">Maximum Output Value:</label>
+                    <input type="number" class="form-control" id="output_max" name="output_max" value="{{ output_max }}" required>
+                    <small class="form-text text-muted">Default: 170</small>
+                </div>
+                
+                <div class="form-text text-muted mb-3">
+                    <p>These values define the output range for linear conversion. Input range is fixed at 0-63.</p>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Apply Custom Conversion</button>
+                <a href="{{ url_for('view_plot', database=database, table_name=table_name, plot_function='choose') }}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

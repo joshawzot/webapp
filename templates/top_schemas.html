@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Low Disk Space Alert -->
+    {% if disk_info and disk_info.free_space_gb < 10 %}
+    <div class="alert alert-danger mb-3" role="alert">
+        <strong><i class="fas fa-exclamation-triangle"></i> Warning:</strong> Available disk space is less than 10GB ({{ disk_info.free_space }} remaining). 
+        Please free up some space to ensure system stability.
+    </div>
+    {% endif %}
+
+    <!-- User info and logout button -->
+    {% if username %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5>Current user, {{ username }}</h5>
+        <!-- Logout button -->
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+            <h5 class="mb-0">All Folders by Size</h5>
+            <a href="{{ url_for('home') }}" class="btn btn-light btn-sm">Back to Home</a>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <div class="row">
+                    <div class="col-md-8">
+                        <i class="fas fa-info-circle"></i> Showing all {{ total_schemas }} folders (use search to filter)
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <strong>Total Size of All Folders:</strong> 
+                        {% set total_gb = total_size_bytes / 1024 / 1024 / 1024 %}
+                        {{ "%.2f"|format(total_gb) }} GB
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Search input -->
+            <div class="form-group mb-3">
+                <input type="text" id="schemaSearch" class="form-control" placeholder="Search folder names...">
+                <small class="text-muted">Type to filter the list below</small>
+            </div>
+            
+            <table class="table table-striped table-hover" id="schemaTable">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Folder Name</th>
+                        <th>Size</th>
+                        <th>Percentage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for schema in schemas %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ schema.schema_name }}</td>
+                        <td>{{ schema.formatted_size }}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ schema.percentage }};" 
+                                     aria-valuenow="{{ schema.percentage|replace('%', '') }}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {{ schema.percentage }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <form action="/list-tables" method="post" class="d-inline">
+                                <input type="hidden" name="database" value="{{ schema.schema_name }}">
+                                <button type="submit" class="btn btn-sm btn-primary">Open</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add search functionality
+    const searchInput = document.getElementById('schemaSearch');
+    const schemaTable = document.getElementById('schemaTable');
+    const rows = schemaTable.querySelectorAll('tbody tr');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        rows.forEach(row => {
+            const schemaName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            if (schemaName.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

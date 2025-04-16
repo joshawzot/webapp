@@ -44,6 +44,19 @@ LINEAR_CONVERSION = {
     "output_max": 170
 }
 
+# Function to update linear conversion parameters at runtime
+def update_linear_conversion_params(output_min, output_max):
+    """
+    Update the linear conversion parameters at runtime.
+    
+    Args:
+        output_min (float): The minimum output value.
+        output_max (float): The maximum output value.
+    """
+    LINEAR_CONVERSION["output_min"] = output_min
+    LINEAR_CONVERSION["output_max"] = output_max
+    return LINEAR_CONVERSION
+
 def run_flint_conductance_calculator(input_params):
     """
     Calculate conductance based on the input parameters.

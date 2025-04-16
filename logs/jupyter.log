@@ -1,0 +1,15 @@
+[W 2025-04-14 14:19:42.881 LabApp] 'notebook_dir' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'token' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2025-04-14 14:19:42.881 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[I 2025-04-14 14:19:42.884 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
+[I 2025-04-14 14:19:42.884 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
+[I 14:19:42.886 NotebookApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
+[I 14:19:42.886 NotebookApp] Jupyter Notebook 6.1.5 is running at:
+[I 14:19:42.886 NotebookApp] http://hawaii:8888/?token=...
+[I 14:19:42.886 NotebookApp]  or http://127.0.0.1:8888/?token=...
+[I 14:19:42.886 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).

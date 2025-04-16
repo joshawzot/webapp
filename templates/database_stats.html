@@ -59,6 +59,40 @@
         </div>
     </div>
     
+    <!-- Add MySQL data directory size information -->
+    <div class="card mb-4 border-warning">
+        <div class="card-header bg-warning text-dark">
+            <h4>MySQL Size Statistics</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="alert alert-warning">
+                        <!-- <strong>Note:</strong> The actual MySQL data directory size ({{ mysql_dir_size }}) is larger than the total database size reported by MySQL ({{ total_with_system }}).  -->
+                        <!-- This is because the directory contains temporary databases and files that are not counted in MySQL's internal statistics. -->
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <h5>Actual MySQL Directory Size</h5>
+                            <div class="display-4">{{ mysql_dir_size }}</div>
+                            <small class="text-muted">Disk space used by /var/lib/mysql</small>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>All Schemas (Incl. System)</h5>
+                            <div class="display-4">{{ total_with_system }}</div>
+                            <small class="text-muted">MySQL's account including system schemas</small>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>User Schemas Only</h5>
+                            <div class="display-4">{{ total_size }}</div>
+                            <small class="text-muted">Excluding system schemas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="mt-4">
         <h4>System Information</h4>
         <div id="loading-indicator" class="text-center">

@@ -57,6 +57,7 @@
                     <option value="248x248_1state">248x248_1state</option>
                     <option value="1296x64_1state">1296x64_1state</option>
                     <option value="248x1_1state">248x1_1state</option>
+                    <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
                 </select>
             </div>
             <div class="form-group">
@@ -96,6 +97,13 @@
             <input type="text" class="form-control" name="target_values" id="target_values" placeholder="Enter target values (e.g., 1,50,100,150)">
         </div>
 
+        <!-- Add the new target_x_diff input field -->
+        <div class="form-group">
+            <label for="target_x_diff">Window Value for BER:</label>
+            <input type="number" class="form-control" name="target_x_diff" id="target_x_diff" value="2" step="0.1" min="0.1" placeholder="Enter window width (default: 2)">
+            <small class="form-text text-muted">Has to be a number greater or equal to 0.</small>
+        </div>
+
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 </div>
@@ -114,6 +122,9 @@
         var fieldsPredefined = document.getElementById('predefined-fields');
         var numberOfStates = document.getElementById('number_of_states');
         var outlierAnalysis = document.getElementById('outlier_analysis_flag');
+        
+        // Reset the target_x_diff to its default value of 2
+        document.getElementById('target_x_diff').value = '2';
         
         // Reset custom inputs
         document.getElementById('custom_selected_groups_1D').style.display = 'none';

@@ -145,7 +145,7 @@ def calculate_sigma_intersections(sorted_data, sigma_values, target_sigmas=[-4, 
     
     return x_at_sigmas
 
-def plot_transformed_cdf_2(data, table_names, selected_groups, colors, figsize=(15, 10)):
+def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_diff=2, figsize=(15, 10)):
     # Initialize variables
     added_to_legend = set()
     ber_results = []
@@ -283,7 +283,6 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, figsize=(
                         ppm_ber = sigma_to_ppm(ber)
 
                         # Draw horizontal lines for divergence analysis
-                        target_x_diff = 2
                         tolerance = 0.2
                         line_drawn = False
 

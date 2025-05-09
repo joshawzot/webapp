@@ -1025,7 +1025,7 @@ def get_full_table_data(table_name, database_name):
 
     return data_matrix, data_matrix_size
     
-def plot_ber_tables(ber_results):
+def plot_ber_tables(ber_results, target_x_diff=2):
     # Extract unique table names and state transitions
     table_names = sorted(set(entry[0] for entry in ber_results))
     state_transitions = sorted(set(entry[1] for entry in ber_results))
@@ -1108,9 +1108,9 @@ def plot_ber_tables(ber_results):
     images = {}
     titles = {
         'sigma': "Sigma Values at Intersection",
-        'ppm': "BER PPM",
-        'uS': "BER at Windows = 2",
-        'additional': "Y Values at Windows = 2"
+        'ppm': f"BER PPM (Window = {target_x_diff})",
+        'uS': f"BER at Windows = {target_x_diff}",
+        'additional': f"Y Values at Windows = {target_x_diff}"
     }
 
     for key, title in titles.items():

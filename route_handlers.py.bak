@@ -57,6 +57,7 @@ from datetime import datetime
 
 # Custom module imports
 from generate_plot import generate_plot
+from generate_plot_tcr import generate_plot_tcr
 from generate_plot_read_stability import generate_plot_read_stability
 
 #from flask_caching import Cache
@@ -91,8 +92,8 @@ def record_folder_visit(folder_name, username):
         # Add the new visit to the beginning
         recent_visits.insert(0, visit)
         
-        # Keep only the 10 most recent visits
-        recent_visits = recent_visits[:10]
+        # Keep only the 5 most recent visits
+        recent_visits = recent_visits[:5]
         
         # Save back to Redis
         redis_client.set('recent_folder_visits', json.dumps(recent_visits))
@@ -234,6 +235,7 @@ def view_table(database, table_name):
 # Define a dictionary to map plot function names to their corresponding functions
 generate_plot_functions = {
     "generate_plot": generate_plot,
+    "generate_plot_tcr": generate_plot_tcr,
     "generate_plot_read_stability": generate_plot_read_stability,
 }
 
@@ -254,6 +256,7 @@ def render_plot(database, table_name, plot_function):
         plot_functions = {
             'generate_plot': generate_plot,
             'generate_plot_read_stability': generate_plot_read_stability,
+            'generate_plot_tcr': generate_plot_tcr,
         }
 
         # Validate plot function
@@ -483,6 +486,8 @@ def view_plot(database, table_name, plot_function):
                     return render_template('input_form_generate_plot.html', database=database, table_name=table_name, plot_function=plot_function)
                 elif plot_function == "generate_plot_read_stability":
                     return render_template('input_form_generate_plot_read_stability.html', database=database, table_name=table_name, plot_function=plot_function)
+                elif plot_function == "generate_plot_tcr":
+                    return render_template('input_form_generate_plot_tcr.html', database=database, table_name=table_name, plot_function=plot_function)
             else:
                 return f"Invalid plot function selection", 400
 
@@ -492,12 +497,14 @@ def view_plot(database, table_name, plot_function):
             #     form_data = get_form_data_generate_plot(request.form)
             #     form_data_json = json.dumps(form_data)
 
-            if plot_function in ["generate_plot", "generate_plot_read_stability"]:
+            if plot_function in ["generate_plot", "generate_plot_read_stability", "generate_plot_tcr"]:
                 # Determine the appropriate function to call based on plot_function
                 if plot_function == "generate_plot":
                     form_data = get_form_data_generate_plot(request.form)
                 elif plot_function == "generate_plot_read_stability":
                     form_data = get_form_data_generate_plot_read_stability(request.form)
+                elif plot_function == "generate_plot_tcr":
+                    form_data = get_form_data_generate_plot_tcr(request.form)
         
                 # Check if we should use conductance values
                 using_conductance = session.get('using_conductance', False)
@@ -700,9 +707,13 @@ def delete_records(database):
         try:
             from db_operations import create_long_running_connection
             connection = create_long_running_connection(database)
-
             cursor = connection.cursor()
             
+            # Set MySQL optimization settings to help with wide tables
+            cursor.execute("SET SESSION innodb_strict_mode=OFF")
+            cursor.execute("SET SESSION sql_mode=''")
+            connection.commit()
+
             successful_drops = []
             failed_drops = []
 
@@ -719,7 +730,6 @@ def delete_records(database):
                             is_partitioned = True
                             # It's a view - drop it first
                             cursor.execute(f"DROP VIEW `{table_name}`")
-
                             connection.commit()
                             
                             # Now check for associated part tables
@@ -1397,7 +1407,7 @@ def copy_tables():
                         end_col = min((part_index + 1) * MAX_COLUMNS_PER_TABLE, num_columns)
                         
                         # Create a unique name for this part
-                        part_table_name = f"_{table}_part{part_index+1}"  # Add underscore prefix to hide tables
+                        part_table_name = f"{table}_part{part_index+1}"
                         
                         # Check if this part table already exists
                         target_cursor.execute(f"SHOW TABLES LIKE '{part_table_name}'")
@@ -1460,7 +1470,7 @@ def copy_tables():
                                 # For subsequent parts, we need to match with the already created IDs
                                 
                                 # First get the existing row IDs
-                                first_part_name = f"_{table}_part1"  # Using updated name with underscore prefix
+                                first_part_name = f"{table}_part1"
                                 target_cursor.execute(f"SELECT `{id_col_name}` FROM `{first_part_name}` ORDER BY `{id_col_name}` LIMIT {limit} OFFSET {offset}")
                                 existing_ids = [row[0] for row in target_cursor.fetchall()]
                                 
@@ -1517,12 +1527,12 @@ def copy_tables():
                         view_sql += ", ".join(all_column_selects)
                         
                         # Add FROM clause
-                        view_sql += f" FROM `_{table}_part1` p1"
+                        view_sql += f" FROM `{table}_part1` p1"
                         
                         # Add JOIN clauses for all other parts
                         for part_index in range(1, total_parts):
                             part_name = f"p{part_index+1}"
-                            part_table = f"_{table}_part{part_index+1}"  # Using updated name with underscore prefix
+                            part_table = f"{table}_part{part_index+1}"
                             view_sql += f" JOIN `{part_table}` {part_name} ON p1.`{id_col_name}` = {part_name}.`{id_col_name}`"
                         
                         # Create the view
@@ -1532,74 +1542,7 @@ def copy_tables():
                         
                         # Success message mentioning the special case
                         print(f"Successfully copied wide table {table} using vertical partitioning with a unified view")
-                        
-                        # NEW CONSOLIDATION STEP: Extract data from view and create a single table
-                        try:
-                            print(f"Starting consolidation: Converting partitioned view into a single physical table")
-                            
-                            # First, create a new table with the _single suffix as a temporary name
-                            consolidated_temp_name = f"{table}_single_temp"
-                            
-                            # Drop the temp table if it exists
-                            target_cursor.execute(f"DROP TABLE IF EXISTS `{consolidated_temp_name}`")
-                            target_conn.commit()
-                            
-                            # Get column definitions for the consolidated table (all TEXT to be safe)
-                            col_defs = [f"`{col}` TEXT" for col in column_names]
-                            create_consolidated_sql = f"CREATE TABLE `{consolidated_temp_name}` ({', '.join(col_defs)})"
-                            
-                            # Create the consolidated table
-                            target_cursor.execute(create_consolidated_sql)
-                            target_conn.commit()
-                            print(f"Created consolidated temporary table {consolidated_temp_name}")
-                            
-                            # Insert data from the view into the consolidated table
-                            # Use a low batch size for large tables
-                            SAFE_BATCH_SIZE = 500
-                            
-                            # Get the total number of rows
-                            view_count = row_count  # We already know this
-                            
-                            # Process in chunks to avoid memory issues
-                            for offset in range(0, view_count, SAFE_BATCH_SIZE):
-                                # Only select the actual columns (not the row_id used for joining)
-                                cols_sql = ", ".join([f"`{col}`" for col in column_names])
-                                
-                                # Get data from view
-                                target_cursor.execute(f"SELECT {cols_sql} FROM `{view_name}` LIMIT {SAFE_BATCH_SIZE} OFFSET {offset}")
-                                view_data = target_cursor.fetchall()
-                                
-                                if view_data:
-                                    # Insert into consolidated table
-                                    placeholders = ", ".join(["%s"] * len(column_names))
-                                    insert_sql = f"INSERT INTO `{consolidated_temp_name}` ({cols_sql}) VALUES ({placeholders})"
-                                    
-                                    target_cursor.executemany(insert_sql, view_data)
-                                    target_conn.commit()
-                                    print(f"Inserted batch {offset//SAFE_BATCH_SIZE + 1} of {(view_count + SAFE_BATCH_SIZE - 1)//SAFE_BATCH_SIZE} into consolidated table")
-                            
-                            # Drop the view
-                            target_cursor.execute(f"DROP VIEW `{view_name}`")
-                            target_conn.commit()
-                            print(f"Dropped view {view_name}")
-                            
-                            # Drop all the part tables
-                            for i in range(1, total_parts + 1):
-                                part_name = f"_{table}_part{i}"
-                                target_cursor.execute(f"DROP TABLE IF EXISTS `{part_name}`")
-                                target_conn.commit()
-                                print(f"Dropped part table {part_name}")
-                            
-                            # Rename the consolidated table to the final name
-                            target_cursor.execute(f"RENAME TABLE `{consolidated_temp_name}` TO `{table}`")
-                            target_conn.commit()
-                            print(f"Renamed consolidated table to {table}")
-                            
-                            print(f"Consolidation complete: Segmented tables have been replaced with a single physical table")
-                            
-                        except Exception as consolidation_error:
-                            print(f"Warning: Could not consolidate into a single table: {consolidation_error}")
-                            print(f"The view and segment tables will remain as they are.")
+                        print(f"Note: Table '{table}' is actually a VIEW in the target database that joins multiple underlying tables")
                     except Exception as view_error:
                         print(f"Warning: Could not create the unified view: {view_error}")
                         print(f"Table is split into multiple parts. Use the part tables directly.")
@@ -1611,25 +1554,22 @@ def copy_tables():
                 source_conn.close()
                 target_conn.close()
                 return jsonify({'message': f'Error copying table {table}: {str(e)}'}), 500
+    finally:
+                if 'source_cursor' in locals() and source_cursor:
+                    source_cursor.close()
+                if 'target_cursor' in locals() and target_cursor:
+                    target_cursor.close()
+
+        # Close database connections
+        source_conn.close()
+        target_conn.close()
+        return jsonify({'message': 'Tables copied successfully.'}), 200
 
     except Exception as e:
         print(f'Error copying tables: {e}')
         import traceback
         traceback.print_exc()
         return jsonify({'message': f'An error occurred while copying tables: {str(e)}'}), 500
-
-    finally:
-        if 'source_cursor' in locals() and source_cursor:
-            source_cursor.close()
-        if 'target_cursor' in locals() and target_cursor:
-            target_cursor.close()
-
-        # Close database connections
-        source_conn.close()
-        target_conn.close()
-        
-    # Return success message at the end of try block (after the for loop)
-    return jsonify({'message': 'Tables copied successfully.'}), 200
 
 def copy_wide_table_in_chunks(source_cursor, target_cursor, table, column_names, row_count, 
                              column_chunk_size, batch_size, target_conn):
@@ -1666,102 +1606,19 @@ def copy_wide_table_in_chunks(source_cursor, target_cursor, table, column_names,
                         insert_sql = f"INSERT INTO `{table}` ({insert_cols}) VALUES ({placeholders})"
                         target_cursor.executemany(insert_sql, batch_data)
                     else:
-                        # For other chunks, we need a different approach
-                        # First, let's grab the primary key if it exists
-                        try:
-                            target_cursor.execute(f"SHOW KEYS FROM `{table}` WHERE Key_name = 'PRIMARY'")
-                            pk_info = target_cursor.fetchall()
+                        # For other chunks, do UPDATE row by row
+                        for row_idx, row_data in enumerate(batch_data):
+                            absolute_row_idx = offset + row_idx
                             
-                            if pk_info and len(pk_info) > 0:
-                                # We have a primary key, use that for efficient updates
-                                pk_column = pk_info[0][4]  # Column_name is usually at index 4
-                                
-                                # Get the primary key values for the current batch
-                                target_cursor.execute(f"SELECT `{pk_column}` FROM `{table}` LIMIT {limit} OFFSET {offset}")
-                                pk_values = target_cursor.fetchall()
-                                
-                                # Now do batch update using CASE statements
-                                # This is much more efficient than row-by-row updates
-                                for i, col in enumerate(chunk_columns):
-                                    # Build CASE statement for this column
-                                    case_parts = []
-                                    params = []
-                                    
-                                    for j, (pk_value,) in enumerate(pk_values):
-                                        case_parts.append(f"WHEN `{pk_column}` = %s THEN %s")
-                                        params.append(pk_value)
-                                        params.append(batch_data[j][i])
-                                    
-                                    # Construct the full update query
-                                    update_sql = f"UPDATE `{table}` SET `{col}` = CASE {' '.join(case_parts)} ELSE `{col}` END"
-                                    
-                                    # Add WHERE clause to limit to just these PKs
-                                    pk_placeholders = ", ".join(["%s"] * len(pk_values))
-                                    update_sql += f" WHERE `{pk_column}` IN ({pk_placeholders})"
-                                    
-                                    # Add the PK values again for the WHERE clause
-                                    for pk_value, in pk_values:
-                                        params.append(pk_value)
-                                    
-                                    # Execute the update
-                                    target_cursor.execute(update_sql, params)
-                            else:
-                                # No primary key, use simple row-by-row updates
-                                print("No primary key found, using simpler update approach")
-                                # Fall back to just replacing the table one column at a time
-                                for i, col in enumerate(chunk_columns):
-                                    # Create a temporary table for this column
-                                    temp_table = f"_temp_{table}_{col}"
-                                    try:
-                                        target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
-                                        target_cursor.execute(f"CREATE TABLE `{temp_table}` (`id` INT AUTO_INCREMENT PRIMARY KEY, `value` TEXT)")
-                                        
-                                        # Insert the values into the temp table
-                                        insert_sql = f"INSERT INTO `{temp_table}` (`value`) VALUES (%s)"
-                                        values = [(row[i],) for row in batch_data]
-                                        target_cursor.executemany(insert_sql, values)
-                                        
-                                        # Update the main table using a join
-                                        update_sql = f"""
-                                            UPDATE `{table}` t1
-                                            JOIN (
-                                                SELECT id, value FROM `{temp_table}`
-                                            ) t2 ON t1.id = t2.id
-                                            SET t1.`{col}` = t2.value
-                                        """
-                                        target_cursor.execute(update_sql)
-                                        
-                                        # Drop the temp table
-                                        target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
-                                    except Exception as e:
-                                        print(f"Error with temp table approach: {e}")
-                                        # Fall back to extremely simple updates one row at a time
-                                        for row_idx, row_data in enumerate(batch_data):
-                                            update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1 OFFSET {offset + row_idx}"
-                                            try:
-                                                target_cursor.execute(update_sql, (row_data[i],))
-                                            except Exception as e2:
-                                                if "OFFSET" in str(e2):
-                                                    # If OFFSET isn't supported, use the absolute simplest approach
-                                                    update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1"
-                                                    target_cursor.execute(update_sql, (row_data[i],))
-                                                else:
-                                                    raise
-                        except Exception as e:
-                            print(f"Error determining update approach: {e}")
-                            # Fall back to extremely simple updates one column at a time
+                            # Build UPDATE statement
+                            set_clauses = []
+                            values = []
                             for i, col in enumerate(chunk_columns):
-                                for row_idx, row_data in enumerate(batch_data):
-                                    try:
-                                        update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1 OFFSET {offset + row_idx}"
-                                        target_cursor.execute(update_sql, (row_data[i],))
-                                    except Exception as e2:
-                                        if "OFFSET" in str(e2):
-                                            # If OFFSET isn't supported, use the absolute simplest approach
-                                            update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1"
-                                            target_cursor.execute(update_sql, (row_data[i],))
-                                        else:
-                                            raise
+                                set_clauses.append(f"`{col}` = %s")
+                                values.append(row_data[i])
+                            
+                            update_sql = f"UPDATE `{table}` SET {', '.join(set_clauses)} LIMIT 1 OFFSET {absolute_row_idx}"
+                            target_cursor.execute(update_sql, values)
                     
                     target_conn.commit()
                     print(f"Processed batch: rows {offset} to {offset + len(batch_data) - 1}")
@@ -2910,6 +2767,44 @@ def get_form_data_generate_plot(form):
         print(f"Failed to convert target_x_diff, using default: {form_data['target_x_diff']}")
 
     print("Final Form Data:", form_data)  # Debug print
+    return form_data
+
+def get_form_data_generate_plot_tcr(form):
+    # Initialize form_data dictionary
+    form_data = {}
+    
+    # Set state pattern type to predefined
+    form_data['state_pattern_type'] = 'predefined'
+    
+    # Handle predefined state pattern
+    form_data['state_pattern'] = form.get('state_pattern', '1296x64_rowbar_4states')
+    
+    # Handle selected_groups
+    selected_groups_value = form.get('selected_groups', '')
+    
+    # Check if custom option was selected
+    if selected_groups_value == 'custom' and form.get('custom_selected_groups'):
+        selected_groups_str = form.get('custom_selected_groups', '')
+    else:
+        selected_groups_str = selected_groups_value
+    
+    # Convert comma-separated string to list of integers
+    # if selected_groups_str:
+    #     try:
+    #         form_data['selected_groups'] = [int(num.strip()) for num in selected_groups_str.split(',') if num.strip()]
+    #     except ValueError:
+    #         # Default to all states if conversion fails
+    #         form_data['selected_groups'] = [0, 1, 2, 3]
+    # else:
+    #     # Default to all states if nothing is selected
+    #     form_data['selected_groups'] = [0, 1, 2, 3]
+    form_data['selected_groups'] = [0, 1, 2, 3]
+    # Get database_name if present
+    form_data['database_name'] = form.get('database_name', None)
+    
+    # Debug output
+    print("TCR Plot Form Data:", form_data)
+    
     return form_data
 
 def get_form_data_generate_plot_read_stability(form):

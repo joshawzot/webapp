@@ -68,14 +68,13 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="alert alert-warning">
-                        <!-- <strong>Note:</strong> The actual MySQL data directory size ({{ mysql_dir_size }}) is larger than the total database size reported by MySQL ({{ total_with_system }}).  -->
-                        <!-- This is because the directory contains temporary databases and files that are not counted in MySQL's internal statistics. -->
+                        <strong>Note:</strong> If "(estimated)" appears in the MySQL directory size, this indicates the application doesn't have direct access to the MySQL directory. The size is estimated based on disk usage of the /app partition.
                     </div>
                     <div class="row mt-3">
                         <div class="col-md-4">
                             <h5>Actual MySQL Directory Size</h5>
                             <div class="display-4">{{ mysql_dir_size }}</div>
-                            <small class="text-muted">Disk space used by /var/lib/mysql</small>
+                            <small class="text-muted">Disk space used by MySQL on /app partition</small>
                         </div>
                         <div class="col-md-4">
                             <h5>All Schemas (Incl. System)</h5>

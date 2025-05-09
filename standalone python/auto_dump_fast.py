@@ -153,7 +153,7 @@ def main():
         # Filter databases to process
         databases_to_process = []
         for db in databases:
-            dates_to_skip = ['20250407','20250408', '20250409', '20250410', '20250411', '20250412', '20250413', '20250414', '20250415']
+            dates_to_skip = ['20250409', '20250410', '20250411', '20250412', '20250413', '20250414', '20250415']
             if any(date in db for date in dates_to_skip):
             #if '202504' in db:
                 continue

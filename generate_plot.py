@@ -438,7 +438,8 @@ def generate_plot(table_names, database_name, form_data):
     
     # Get the user-defined target_x_diff value with a default of 2
     target_x_diff = float(form_data.get('target_x_diff', 2))  # Get target_x_diff from form_data
-    
+    print("target_x_diff:", target_x_diff)
+    #target_x_diff = 0
     # Check if we should use conductance values or linear conversion
     using_conductance = form_data.get('using_conductance', False)
     using_linear_conversion = form_data.get('using_linear_conversion', False)
@@ -759,7 +760,7 @@ def generate_plot(table_names, database_name, form_data):
          sorted_table_names_100ppm,
          sorted_table_names_200ppm,
          sorted_table_names_500ppm,
-         sorted_table_names_1000ppm) = plot_ber_tables(ber_results)
+         sorted_table_names_1000ppm) = plot_ber_tables(ber_results, target_x_diff)
 
         # Since we now have a combined image, append it to the plots
         encoded_plots.append(ppm_image)

@@ -128,6 +128,7 @@ def fetch_tables(database):
     SELECT TABLE_NAME, CREATE_TIME
     FROM information_schema.tables
     WHERE table_schema = %s
+    AND LEFT(TABLE_NAME, 1) != '_'
     ORDER BY CREATE_TIME DESC;
     """
     cursor.execute(table_query, (database,))
@@ -136,22 +137,27 @@ def fetch_tables(database):
     # Dictionary to store table information with dimensions
     tables = []
     for name, time in table_info:
-        # Count the number of columns
-        column_query = """
-        SELECT COUNT(*)
-        FROM information_schema.columns
-        WHERE table_schema = %s AND table_name = %s;
-        """
-        cursor.execute(column_query, (database, name))
-        column_count = cursor.fetchone()[0]
+        try:
+            # Count the number of columns
+            column_query = """
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = %s AND table_name = %s;
+            """
+            cursor.execute(column_query, (database, name))
+            column_count = cursor.fetchone()[0]
 
-        # Count the number of rows
-        row_query = f"SELECT COUNT(*) FROM `{name}`;"
-        cursor.execute(row_query)
-        row_count = cursor.fetchone()[0]
+            # Count the number of rows
+            row_query = f"SELECT COUNT(*) FROM `{name}`;"
+            cursor.execute(row_query)
+            row_count = cursor.fetchone()[0]
 
-        # Store table info
-        tables.append({'table_name': name, 'creation_time': time, 'dimensions': f"{row_count}x{column_count}"})
+            # Store table info
+            tables.append({'table_name': name, 'creation_time': time, 'dimensions': f"{row_count}x{column_count}"})
+        except Exception as e:
+            print(f"Error processing table/view '{name}': {e}")
+            # Still include the table in the list, but mark it as having an error
+            tables.append({'table_name': name, 'creation_time': time, 'dimensions': 'ERROR: Invalid view or table'})
 
     cursor.close()
     connection.close()
@@ -289,8 +295,11 @@ def get_csv_from_table(database, table_name):
 
 def get_table_names(connection):
     cursor = connection.cursor()
+    # Filter out tables that start with underscore
     cursor.execute("SHOW TABLES")
-    tables = [row[0] for row in cursor.fetchall()]
+    all_tables = cursor.fetchall()
+    # Filter in Python instead of SQL to avoid escape issues
+    tables = [row[0] for row in all_tables if not row[0].startswith('_')]
     cursor.close()
     return tables
 

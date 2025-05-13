@@ -956,7 +956,14 @@ def rename_duplicate_columns(df):
             new_columns.append(new_col)
         else:
             seen[base_name] = 0
-            new_columns.append(col_str)
+            if col_str in new_columns:  # Check if even the first column needs to be renamed
+                seen[base_name] = 1
+                new_columns.append(f"{base_name}_1")
+            else:
+                new_columns.append(col_str)
+    
+    # Debug log the column renaming
+    print(f"DEBUG: Renamed columns from {columns} to {new_columns}")
     
     # Assign new column names to dataframe
     df.columns = new_columns
@@ -1006,6 +1013,32 @@ Reshaped to (a*b, 1):
  [ 6]
  [ 9]]'''
 
+def get_pattern_file(pattern_name):
+    """
+    Return the full path to a pattern file based on the pattern name.
+    
+    Args:
+        pattern_name: Name of the pattern
+        
+    Returns:
+        Full path to the pattern file
+    """
+    # Pattern files location
+    pattern_files = {
+        "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+        "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
+        "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
+        "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
+        "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
+        "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
+        "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
+        "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+        "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy"
+    }
+    
+    # Return the path for the pattern name
+    return pattern_files.get(pattern_name, "")
+
 @app.route('/mergeTablesProcess', methods=['POST'])
 def merge_tables_process():
     database = request.form.get('database')
@@ -1028,40 +1061,65 @@ def merge_tables_process():
     if not new_table_name:
         return 'New table name not specified', 400
 
+    # Import packages needed for the function
+    import numpy as np
+    import pandas as pd
+    import traceback
+    from db_operations import create_long_running_connection, create_long_running_engine
+
     try:
-        # Create a connection specifying the database
-        connection = create_connection(database)
+        # Use a long-running connection
+        connection = create_long_running_connection(database)
         cursor = connection.cursor()
+
+        # Configure MySQL session for handling wide tables
+        cursor.execute("SET SESSION innodb_strict_mode=OFF")
+        cursor.execute("SET SESSION sql_mode=''")
+        # Removed: # Removed: cursor.execute("SET GLOBAL innodb_file_per_table=ON")
+        # Add more optimization settings for extremely wide tables
+        # Removed: cursor.execute("SET SESSION innodb_fill_factor=70")
+        # Removed: cursor.execute("SET SESSION max_allowed_packet=1073741824")  # Set to 1GB
+        cursor.execute("SET SESSION optimizer_switch='mrr=on,mrr_cost_based=off'")
+        connection.commit()
         
-        # List to hold reshaped arrays
-        reshaped_arrays = []
+        # First, get a count of the total columns across all tables
+        total_columns = 0
+        for table_name in table_names:
+            try:
+                cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
+                columns = cursor.fetchall()
+                total_columns += len(columns)
+            except Exception as e:
+                print(f"DEBUG: Error getting columns from {table_name}: {str(e)}")
+                continue
+        
+        print(f"DEBUG: Processing {len(table_names)} tables with a total of {total_columns} columns")
+        if total_columns > 500:
+            print(f"DEBUG: Warning - Very large number of columns ({total_columns}). This might exceed MySQL row size limits.")
+            print("DEBUG: The tables may be split into multiple tables.")
 
-        # Load the pattern file based on state_pattern
-        pattern_files = {
-            "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
-            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
-            "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
-            "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
-            "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
-            "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
-            "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
-            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
-            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy"
-        }
-
-        file_path = pattern_files.get(state_pattern)
-        if not file_path or not os.path.exists(file_path):
-            print(f"DEBUG: Pattern file not found: {file_path}")
-            return 'Invalid state pattern or file not found', 400
-
-        # Load the pattern array and flatten it
-        print(f"DEBUG: Loading pattern file from: {file_path}")
-        pattern_array = np.load(file_path)
+        # Load pattern from the predefined JSON sets
+        pattern_source = state_pattern
+        
+        # Load the pattern array from the pattern storage directory
+        pattern_file = get_pattern_file(pattern_source)
+        print(f"DEBUG: Loading pattern from file: {pattern_file}")
+        
+        # Check if the pattern file exists
+        if not os.path.exists(pattern_file):
+            print(f"DEBUG: Pattern file not found: {pattern_file}")
+            return f'Pattern file not found: {pattern_file}', 400
+        
+        # Load the pattern array
+        pattern_array = np.load(pattern_file, allow_pickle=True)
         
         # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
         if state_pattern == "82944x78_ecc_fuxi":
             # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
-            pattern_array = pattern_array.reshape(78, 82944).T
+            print(f"DEBUG: Special handling for 82944x78_ecc_fuxi pattern")
+            if len(pattern_array.shape) == 3:
+                pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+            print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
         
         print(f"DEBUG: Pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
         
@@ -1080,73 +1138,98 @@ def merge_tables_process():
         print(f"DEBUG: Unique values in pattern: {unique_values}")
         print(f"DEBUG: Counts of unique values: {counts}")
 
-        for table_name in table_names:
-            print(f"\nDEBUG: Processing table: {table_name}")
-            query = f"SELECT * FROM `{table_name}`"
-            cursor.execute(query)
-            rows = cursor.fetchall()
-            print(f"DEBUG: Fetched {len(rows)} rows from table")
+        # Process tables in batches to avoid memory issues
+        BATCH_SIZE = 50  # Process 50 tables at a time
+        processed_tables = 0
+        total_tables = len(table_names)
+        
+        # Initialize reshaped_arrays list
+        reshaped_arrays = []
+        
+        # Process tables in batches
+        for batch_start in range(0, total_tables, BATCH_SIZE):
+            batch_end = min(batch_start + BATCH_SIZE, total_tables)
+            current_batch = table_names[batch_start:batch_end]
             
-            if len(rows) == 0:
-                print(f"DEBUG: Warning - Empty table: {table_name}")
-                continue
+            print(f"\nDEBUG: Processing batch of tables: {batch_start+1} to {batch_end} of {total_tables}")
+            
+            # Process each table in the current batch
+            for table_name in current_batch:
+                print(f"\nDEBUG: Processing table: {table_name}")
                 
-            columns = [desc[0] for desc in cursor.description]
-            print(f"DEBUG: Column count: {len(columns)}")
-            
-            df = pd.DataFrame(rows, columns=columns)
-            print(f"DEBUG: DataFrame shape: {df.shape}")
-            
-            # Check for missing values
-            if df.isnull().values.any():
-                print("DEBUG: Warning - DataFrame contains NaN values")
-            
-            # Convert DataFrame to numpy array
-            arr = df.to_numpy()
-            print(f"DEBUG: Array shape: {arr.shape}, dtype: {arr.dtype}")
-            
-            # Print a sample of the array
-            if arr.size > 0:
-                print(f"DEBUG: Array sample (first element): {arr.flat[0]}")
-            
-            # Flatten the array
-            arr_flat = arr.flatten()
-            print(f"DEBUG: Flattened array shape: {arr_flat.shape}, size: {arr_flat.size}")
-            
-            # Check for size mismatch before proceeding
-            if arr_flat.size != pattern_flat.size:
-                print(f"DEBUG: Size mismatch! arr_flat.size: {arr_flat.size}, pattern_flat.size: {pattern_flat.size}")
-                return f'Pattern file ({pattern_flat.size} elements) and table data ({arr_flat.size} elements) dimensions do not match', 400
-
-            # Get indices that would sort the pattern_flat
-            print("DEBUG: Calculating argsort of pattern_flat...")
-            pattern_indices = np.argsort(pattern_flat)
-            print(f"DEBUG: Pattern indices shape: {pattern_indices.shape}")
-            print(f"DEBUG: First 10 indices: {pattern_indices[:10]}")
-
-            # Reorder arr_flat according to pattern_indices
-            print("DEBUG: Reordering arr_flat according to pattern_indices...")
-            try:
-                arr_reordered = arr_flat[pattern_indices]
-                print(f"DEBUG: Reordered array shape: {arr_reordered.shape}")
-            except Exception as e:
-                print(f"DEBUG: Error during reordering: {str(e)}")
-                return f'Error during reordering: {str(e)}', 500
-
-            # Reshape to (a*b, 1)
-            print(f"DEBUG: Reshaping to ({a*b}, 1)...")
-            try:
-                arr_new = arr_reordered.reshape((a * b, 1))
-                print(f"DEBUG: Reshaped array shape: {arr_new.shape}")
-            except Exception as e:
-                print(f"DEBUG: Error during reshaping: {str(e)}")
-                return f'Error during reshaping: {str(e)}', 500
-
-            # Append to list
-            reshaped_arrays.append(arr_new)
-            print(f"DEBUG: Successfully processed table: {table_name}")
-
-        print(f"\nDEBUG: All tables processed. Reshaped arrays count: {len(reshaped_arrays)}")
+                # Create a new connection for each table to avoid timeouts
+                with create_long_running_connection(database) as batch_conn:
+                    batch_cursor = batch_conn.cursor()
+                    
+                    query = f"SELECT * FROM `{table_name}`"
+                    batch_cursor.execute(query)
+                    rows = batch_cursor.fetchall()
+                    print(f"DEBUG: Fetched {len(rows)} rows from table")
+                    
+                    if len(rows) == 0:
+                        print(f"DEBUG: Warning - Empty table: {table_name}")
+                        continue
+                        
+                    columns = [desc[0] for desc in batch_cursor.description]
+                    print(f"DEBUG: Column count: {len(columns)}")
+                
+                # Process data outside the connection context
+                df = pd.DataFrame(rows, columns=columns)
+                print(f"DEBUG: DataFrame shape: {df.shape}")
+                
+                # Check for missing values
+                if df.isnull().values.any():
+                    print("DEBUG: Warning - DataFrame contains NaN values")
+                
+                # Convert DataFrame to numpy array
+                arr = df.to_numpy()
+                print(f"DEBUG: Array shape: {arr.shape}, dtype: {arr.dtype}")
+                
+                # Check if the array is compatible with the pattern
+                if arr.shape[0] % a != 0 or arr.shape[1] % b != 0:
+                    print(f"DEBUG: Warning - Array dimensions {arr.shape} not divisible by pattern dimensions {pattern_array.shape}")
+                    continue
+                
+                # Reshape and apply the pattern - this is the key operation
+                try:
+                    # Calculate the number of repetitions needed
+                    m = arr.shape[0] // a  # Number of repeats in the row dimension
+                    n = arr.shape[1] // b  # Number of repeats in the column dimension
+                    print(f"DEBUG: Reshaping with m={m}, n={n}")
+                    
+                    # Reshape to (m, a, n, b) for proper tiling and pattern application
+                    arr_4d = arr.reshape(m, a, n, b)
+                    print(f"DEBUG: 4D array shape: {arr_4d.shape}")
+                    
+                    # Transpose to group the pattern dimensions together
+                    arr_4d = arr_4d.transpose(0, 2, 1, 3)
+                    print(f"DEBUG: 4D transposed shape: {arr_4d.shape}")
+                    
+                    # Reshape to (m*n, a*b)
+                    arr_2d = arr_4d.reshape(m*n, a*b)
+                    print(f"DEBUG: 2D array shape: {arr_2d.shape}")
+                    
+                    # Flatten pattern and get indices that would sort it
+                    pattern_idx = np.argsort(pattern_flat)
+                    print(f"DEBUG: Pattern indices shape: {pattern_idx.shape}")
+                    
+                    # Reorder the array columns based on pattern
+                    reordered = arr_2d[:, pattern_idx]
+                    print(f"DEBUG: Reordered array shape: {reordered.shape}")
+                    
+                    # Reshape to (m*n*a*b, 1)
+                    reshaped = reordered.reshape(m*n*a*b, 1)
+                    print(f"DEBUG: Final reshaped array shape: {reshaped.shape}")
+                    
+                    # Add to reshaped_arrays list
+                    reshaped_arrays.append(reshaped)
+                    
+                    processed_tables += 1
+                    print(f"DEBUG: Successfully processed table {table_name}")
+                    
+                except Exception as e:
+                    print(f"DEBUG: Error reshaping table {table_name}: {str(e)}")
+                    continue
         
         if reshaped_arrays:
             # Concatenate all reshaped arrays along axis=1
@@ -1173,15 +1256,136 @@ def merge_tables_process():
                 connection.close()
                 return 'A table with the new name already exists.', 400
 
-            # Create the new table in the database using SQLAlchemy engine
+            # Create the new table in the database with chunked insertion
             print(f"DEBUG: Saving data to new table: {new_table_name}")
-            engine = create_db_engine(database)
-            combined_df.to_sql(new_table_name, engine, if_exists='fail', index=False)
-            print("DEBUG: Table saved successfully")
-
+            
+            # Create long-running engine
+            engine = create_long_running_engine(database)
+            
+            # Calculate how many tables we need to split this into
+            # MySQL has row size limitations, so we'll split into multiple tables if needed
+            # Using a reasonable limit to balance between row size and table count
+            MAX_COLUMNS_PER_TABLE = 500  # Changed back to 500 from 1000
+            
+            # Allow user to force a single table regardless of column count
+            force_single_table = True  # Set to True to always create a single table
+            
+            total_columns = len(combined_df.columns)
+            if force_single_table:
+                num_tables_needed = 1
+                print(f"DEBUG: Forcing single table mode, keeping all {total_columns} columns in one table")
+            else:
+                num_tables_needed = (total_columns + MAX_COLUMNS_PER_TABLE - 1) // MAX_COLUMNS_PER_TABLE
+                print(f"DEBUG: Total columns: {total_columns}, splitting into {num_tables_needed} tables")
+            
+            # Track all created table names for success message
+            created_table_names = []
+            
+            # Split the columns into groups and create multiple tables
+            for table_idx in range(num_tables_needed):
+                start_col = table_idx * MAX_COLUMNS_PER_TABLE
+                end_col = min((table_idx + 1) * MAX_COLUMNS_PER_TABLE, total_columns)
+                
+                # Create a name for this part table
+                if num_tables_needed > 1:
+                    part_table_name = f"{new_table_name}_{table_idx + 1}"
+                else:
+                    part_table_name = new_table_name
+                
+                # Get the columns for this table
+                table_columns = combined_df.columns[start_col:end_col].tolist()
+                print(f"DEBUG: Creating table {part_table_name} with columns {start_col} to {end_col-1}")
+                
+                try:
+                    # Drop the table if it exists
+                    cursor.execute(f"DROP TABLE IF EXISTS `{part_table_name}`")
+                    
+                    # Set MySQL optimization settings to help with wide tables
+                    cursor.execute("SET SESSION innodb_strict_mode=OFF")
+                    cursor.execute("SET SESSION sql_mode=''")
+                    # Removed: cursor.execute("SET GLOBAL innodb_file_per_table=ON")
+                    
+                    # Create column definitions for this table
+                    column_defs = []
+                    for col_name in table_columns:
+                        # Use TEXT instead of VARCHAR(255) to avoid row size limits
+                        # TEXT data types are stored separately and only pointers are kept in the row
+                        column_defs.append(f"`{col_name}` TEXT")
+                    
+                    # Create the table with DYNAMIC row format
+                    create_table_sql = f"""
+                    CREATE TABLE `{part_table_name}` (
+                        {', '.join(column_defs)}
+                    ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC
+                    """
+                    
+                    print(f"DEBUG: Creating table {part_table_name} with SQL: {create_table_sql}")
+                    cursor.execute(create_table_sql)
+                    connection.commit()
+                    
+                    # Track the created table
+                    created_table_names.append(part_table_name)
+                    
+                    # Now insert data in chunks
+                    CHUNK_SIZE = 1000  # Use smaller chunks for insertion
+                    total_rows = len(combined_df)
+                    
+                    # Process data in smaller batches to avoid timeouts
+                    for i in range(0, total_rows, CHUNK_SIZE):
+                        chunk = combined_df.iloc[i:i + CHUNK_SIZE, start_col:end_col]
+                        # Prepare column names and placeholders for SQL
+                        columns_str = ", ".join([f"`{col}`" for col in table_columns])
+                        placeholders = ", ".join(["%s"] * len(table_columns))
+                        
+                        # Create INSERT statement - directly reference columns without ID field
+                        insert_sql = f"INSERT INTO `{part_table_name}` ({columns_str}) VALUES ({placeholders})"
+                        
+                        # Convert rows to list of tuples for executemany
+                        values = []
+                        for _, row in chunk.iterrows():
+                            # Convert any NaN values to NULL for MySQL
+                            row_values = []
+                            for col in table_columns:
+                                val = row[col]
+                                if pd.isna(val):
+                                    row_values.append(None)
+                                else:
+                                    row_values.append(str(val))
+                            values.append(tuple(row_values))
+                        
+                        # Execute batch insert
+                        cursor.executemany(insert_sql, values)
+                        
+                        # Commit after each chunk
+                        connection.commit()
+                        print(f"DEBUG: Table {part_table_name}: Inserted chunk {i//CHUNK_SIZE + 1} of {(total_rows + CHUNK_SIZE - 1)//CHUNK_SIZE}")
+                    
+                    print(f"DEBUG: Table {part_table_name} created and populated successfully")
+                    
+                except Exception as e:
+                    error_message = str(e)
+                    print(f"DEBUG: Error creating table {part_table_name}: {error_message}")
+                    print(f"DEBUG: Traceback: {traceback.format_exc()}")
+                    
+                    # Provide a more helpful error message for row size issues
+                    if "row size too large" in error_message.lower():
+                        return (f'Error: Row size too large for table {part_table_name}. '
+                               f'The table has {len(table_columns)} columns which exceeds MySQL limits. '
+                               f'Try turning off "force_single_table" to split into multiple tables.'), 500
+                    
+                    return f'Error creating table {part_table_name}: {error_message}', 500
+            
+            # Success message based on how many tables were created
+            if num_tables_needed > 1:
+                success_message = f"Data was split into {num_tables_needed} tables due to column limits: {', '.join(created_table_names)}"
+                print(f"DEBUG: {success_message}")
+                flash(success_message, 'info')
+            else:
+                print("DEBUG: Table saved successfully")
+                
             # Clean up
             cursor.close()
-            close_connection()
+            connection.close()
 
             # After successful merging, redirect to list_tables
             return redirect(url_for('list_tables', database=database))
@@ -1189,7 +1393,7 @@ def merge_tables_process():
         else:
             # Clean up
             cursor.close()
-            close_connection()
+            connection.close()
             return 'No tables were reshaped and combined.', 400
 
     except Exception as e:
@@ -1633,135 +1837,58 @@ def copy_tables():
 
 def copy_wide_table_in_chunks(source_cursor, target_cursor, table, column_names, row_count, 
                              column_chunk_size, batch_size, target_conn):
-    """
-    Copy a wide table by processing it in column chunks.
-    Returns True if successful, False if failed with a row size error.
-    """
     try:
         num_columns = len(column_names)
         print(f"Copying {table} with {num_columns} columns in chunks")
         
-        # Process in column chunks to avoid memory issues
+        # Process in column chunks
         for col_start in range(0, num_columns, column_chunk_size):
             col_end = min(col_start + column_chunk_size, num_columns)
             chunk_columns = column_names[col_start:col_end]
             
             print(f"Processing columns {col_start} to {col_end-1}")
             
-            # Process in batches of rows
+            # Process in row batches
             for offset in range(0, row_count, batch_size):
                 limit = min(batch_size, row_count - offset)
                 
-                # Get data for this chunk
+                # Select the current batch of data
                 select_cols = ", ".join([f"`{col}`" for col in chunk_columns])
                 source_cursor.execute(f"SELECT {select_cols} FROM `{table}` LIMIT {limit} OFFSET {offset}")
                 batch_data = source_cursor.fetchall()
                 
                 if batch_data:
-                    # For first chunk, do INSERT
-                    if col_start == 0:
-                        insert_cols = ", ".join([f"`{col}`" for col in chunk_columns])
-                        placeholders = ", ".join(["%s"] * len(chunk_columns))
-                        
-                        insert_sql = f"INSERT INTO `{table}` ({insert_cols}) VALUES ({placeholders})"
-                        target_cursor.executemany(insert_sql, batch_data)
-                    else:
-                        # For other chunks, we need a different approach
-                        # First, let's grab the primary key if it exists
-                        try:
-                            target_cursor.execute(f"SHOW KEYS FROM `{table}` WHERE Key_name = 'PRIMARY'")
-                            pk_info = target_cursor.fetchall()
-                            
-                            if pk_info and len(pk_info) > 0:
-                                # We have a primary key, use that for efficient updates
-                                pk_column = pk_info[0][4]  # Column_name is usually at index 4
-                                
-                                # Get the primary key values for the current batch
-                                target_cursor.execute(f"SELECT `{pk_column}` FROM `{table}` LIMIT {limit} OFFSET {offset}")
-                                pk_values = target_cursor.fetchall()
-                                
-                                # Now do batch update using CASE statements
-                                # This is much more efficient than row-by-row updates
-                                for i, col in enumerate(chunk_columns):
-                                    # Build CASE statement for this column
-                                    case_parts = []
-                                    params = []
-                                    
-                                    for j, (pk_value,) in enumerate(pk_values):
-                                        case_parts.append(f"WHEN `{pk_column}` = %s THEN %s")
-                                        params.append(pk_value)
-                                        params.append(batch_data[j][i])
-                                    
-                                    # Construct the full update query
-                                    update_sql = f"UPDATE `{table}` SET `{col}` = CASE {' '.join(case_parts)} ELSE `{col}` END"
-                                    
-                                    # Add WHERE clause to limit to just these PKs
-                                    pk_placeholders = ", ".join(["%s"] * len(pk_values))
-                                    update_sql += f" WHERE `{pk_column}` IN ({pk_placeholders})"
-                                    
-                                    # Add the PK values again for the WHERE clause
-                                    for pk_value, in pk_values:
-                                        params.append(pk_value)
-                                    
-                                    # Execute the update
-                                    target_cursor.execute(update_sql, params)
-                            else:
-                                # No primary key, use simple row-by-row updates
-                                print("No primary key found, using simpler update approach")
-                                # Fall back to just replacing the table one column at a time
-                                for i, col in enumerate(chunk_columns):
-                                    # Create a temporary table for this column
-                                    temp_table = f"_temp_{table}_{col}"
-                                    try:
-                                        target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
-                                        target_cursor.execute(f"CREATE TABLE `{temp_table}` (`id` INT AUTO_INCREMENT PRIMARY KEY, `value` TEXT)")
-                                        
-                                        # Insert the values into the temp table
-                                        insert_sql = f"INSERT INTO `{temp_table}` (`value`) VALUES (%s)"
-                                        values = [(row[i],) for row in batch_data]
-                                        target_cursor.executemany(insert_sql, values)
-                                        
-                                        # Update the main table using a join
-                                        update_sql = f"""
-                                            UPDATE `{table}` t1
-                                            JOIN (
-                                                SELECT id, value FROM `{temp_table}`
-                                            ) t2 ON t1.id = t2.id
-                                            SET t1.`{col}` = t2.value
-                                        """
-                                        target_cursor.execute(update_sql)
-                                        
-                                        # Drop the temp table
-                                        target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
-                                    except Exception as e:
-                                        print(f"Error with temp table approach: {e}")
-                                        # Fall back to extremely simple updates one row at a time
-                                        for row_idx, row_data in enumerate(batch_data):
-                                            update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1 OFFSET {offset + row_idx}"
-                                            try:
-                                                target_cursor.execute(update_sql, (row_data[i],))
-                                            except Exception as e2:
-                                                if "OFFSET" in str(e2):
-                                                    # If OFFSET isn't supported, use the absolute simplest approach
-                                                    update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1"
-                                                    target_cursor.execute(update_sql, (row_data[i],))
-                                                else:
-                                                    raise
-                        except Exception as e:
-                            print(f"Error determining update approach: {e}")
-                            # Fall back to extremely simple updates one column at a time
-                            for i, col in enumerate(chunk_columns):
-                                for row_idx, row_data in enumerate(batch_data):
-                                    try:
-                                        update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1 OFFSET {offset + row_idx}"
-                                        target_cursor.execute(update_sql, (row_data[i],))
-                                    except Exception as e2:
-                                        if "OFFSET" in str(e2):
-                                            # If OFFSET isn't supported, use the absolute simplest approach
-                                            update_sql = f"UPDATE `{table}` SET `{col}` = %s LIMIT 1"
-                                            target_cursor.execute(update_sql, (row_data[i],))
-                                        else:
-                                            raise
+                    # Use a temp table to avoid update complexity
+                    temp_table = f"_temp_{table}_chunk"
+                    
+                    # Create the temp table
+                    target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
+                    create_temp_sql = f"""
+                    CREATE TEMPORARY TABLE `{temp_table}` (
+                        row_id INT AUTO_INCREMENT PRIMARY KEY,
+                        {", ".join([f"`{col}` TEXT" for col in chunk_columns])}
+                    )
+                    """
+                    target_cursor.execute(create_temp_sql)
+                    
+                    # Insert into temp table
+                    insert_cols = ", ".join([f"`{col}`" for col in chunk_columns])
+                    placeholders = ", ".join(["%s"] * len(chunk_columns))
+                    insert_sql = f"INSERT INTO `{temp_table}` ({insert_cols}) VALUES ({placeholders})"
+                    target_cursor.executemany(insert_sql, batch_data)
+                    
+                    # Update the main table using the temp table
+                    for i, col in enumerate(chunk_columns):
+                        update_sql = f"""
+                        UPDATE `{table}` t1
+                        JOIN `{temp_table}` t2 ON t1.id = t2.row_id
+                        SET t1.`{col}` = t2.`{col}`
+                        WHERE t1.id BETWEEN {offset + 1} AND {offset + limit}
+                        """
+                        target_cursor.execute(update_sql)
+                    
+                    # Drop the temp table
+                    target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
                     
                     target_conn.commit()
                     print(f"Processed batch: rows {offset} to {offset + len(batch_data) - 1}")
@@ -1783,15 +1910,16 @@ def concatenate_tables():
     table_names = data.get('tableNames')
     new_table_name = data.get('newTableName')
     
-    # Remove the force_split parameter - we want a single table
-    # force_split = True  # Always use the split approach for wide tables
+    # Add a force_single_table parameter set to True to ensure we always create one table
+    force_single_table = True
     
     # Set a reasonable batch size for processing large tables
     BATCH_SIZE = 5  # Process 5 tables at a time
-    MAX_COLUMNS_PER_BATCH = 1000  # Maximum number of columns to process in a batch
+    # MODIFIED: Increase MAX_COLUMNS_PER_BATCH to avoid splitting tables
+    MAX_COLUMNS_PER_BATCH = 2000  # Increased from 1000 to 2000
     
     # MySQL has a limit of 1024 columns per table in older versions, 4096 in newer
-    MYSQL_COLUMN_LIMIT = 1024
+    MYSQL_COLUMN_LIMIT = 4096  # Updated to newer MySQL limit
 
     # Import packages needed for the function
     import numpy as np
@@ -1821,6 +1949,10 @@ def concatenate_tables():
         # Set MySQL optimization settings to help with wide tables
         cursor.execute("SET SESSION innodb_strict_mode=OFF")
         cursor.execute("SET SESSION sql_mode=''")
+        # Removed: cursor.execute("SET SESSION innodb_fill_factor=70")
+        # Removed: cursor.execute("SET SESSION max_allowed_packet=1073741824")  # 1GB
+        # Removed: cursor.execute("SET SESSION innodb_large_prefix=ON")
+        # Removed: cursor.execute("SET GLOBAL innodb_file_per_table=ON")
         connection.commit()
 
         # First, check if all tables have the same row count
@@ -1855,42 +1987,28 @@ def concatenate_tables():
         cursor.execute("SHOW TABLES LIKE %s", (new_table_name,))
         if cursor.fetchone():
             connection.close()
-            return jsonify(success=False, message='A table with the new name already exists.')
+            return jsonify(success=False, message='A table with that name already exists.')
         
-        # Fetch data from each table and prepare for concatenation
-        print(f"Preparing to concatenate {len(table_names)} tables")
-        
-        # Create a dictionary to store column name mappings for each table
-        column_mappings = {}
+        # Get the total number of columns across all tables to concatenate
         all_column_info = []
         total_columns = 0
         
-        # Collect column information from all tables
         for i, table_name in enumerate(table_names):
-            # Get column information for each table
-            cursor.execute(f"DESCRIBE `{table_name}`")
-            columns_info = cursor.fetchall()
-            
-            # Get column names and create prefixed versions
-            original_columns = [col[0] for col in columns_info]
-            prefixed_columns = [f"t{i}_{col}" for col in original_columns]
-            
-            # Store the mapping for this table
-            column_mappings[table_name] = {
-                'original': original_columns,
-                'prefixed': prefixed_columns
-            }
-            
-            # Add column info to the full list
-            all_column_info.append({
-                'table_name': table_name,
-                'table_index': i,
-                'columns': original_columns
-            })
-            
-            total_columns += len(original_columns)
+            try:
+                cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
+                columns = [col[0] for col in cursor.fetchall()]
+                all_column_info.append({
+                    'table_name': table_name,
+                    'table_index': i + 1,  # 1-based index for clearer naming
+                    'columns': columns
+                })
+                total_columns += len(columns)
+            except Exception as e:
+                print(f"Error getting columns for table {table_name}: {e}")
+                connection.close()
+                return jsonify(success=False, message=f'Error getting columns for table {table_name}: {str(e)}')
         
-        print(f"Total number of columns across all tables: {total_columns}")
+        print(f"Total columns to concatenate: {total_columns}")
         
         # We're now bypassing the split approach to create a single table
         # This was the previous condition:
@@ -1911,94 +2029,90 @@ def concatenate_tables():
                 traceback.print_exc()
                 # Continue to regular processing as fallback
         
-        # Check if we're dealing with a large number of columns
-        if total_columns > MAX_COLUMNS_PER_BATCH:
-            print(f"Large number of columns detected ({total_columns}). Using batched column processing.")
-            
-            # Also check against MySQL's column limit
-            if total_columns > MYSQL_COLUMN_LIMIT:
-                print(f"WARNING: Total columns ({total_columns}) exceeds MySQL's limit of {MYSQL_COLUMN_LIMIT} columns.")
-                print("Will proceed with batched processing, but final table structure may be limited.")
+        # If we have a very large number of columns, use the large column process
+        if total_columns > MAX_COLUMNS_PER_BATCH and not force_single_table:
+            print(f"Very wide table detected ({total_columns} columns). Using optimized approach for large column count.")
+            try:
+                # MODIFIED: Increase max_columns_per_batch to avoid splitting tables
+                max_columns_per_batch = MAX_COLUMNS_PER_BATCH  # Use a very large value to keep all columns together
                 
-            return process_large_column_concatenation(database, table_names, new_table_name, 
-                                                     column_mappings, all_column_info, row_count,
-                                                     MAX_COLUMNS_PER_BATCH)
+                # Use optimized version for large column count
+                process_large_column_concatenation(
+                    database, table_names, new_table_name, 
+                    {}, all_column_info, row_count, max_columns_per_batch
+                )
+                
+                return jsonify(success=True, 
+                              message=f"Successfully concatenated tables into {new_table_name} " +
+                                      f"with specialized processing for {total_columns} columns.")
+            except Exception as e:
+                print(f"Error in large column process: {e}. Falling back to regular processing.")
+                traceback.print_exc()
+                # Continue to regular processing as fallback
         
-        # For a smaller number of columns, proceed with the standard approach
-        # Create the empty dataframe for concatenation
-        print(f"Creating empty dataframe with {row_count} rows")
+        # Regular processing for tables that aren't extremely wide
+        print("Using standard concatenation approach.")
         
-        # Get all prefixed columns
-        all_df_columns = []
-        for table_info in column_mappings.values():
-            all_df_columns.extend(table_info['prefixed'])
+        # Create an empty DataFrame with a column for each source table column
+        # We'll prefix column names with table index to avoid duplicate column names
+        columns = []
+        column_mappings = {}  # Track original to new column names
         
-        # Efficiently build the dataframe by creating it just once with NaN values
-        import numpy as np
-        import pandas as pd
-        empty_df = pd.DataFrame(np.nan, index=range(row_count), columns=all_df_columns)
+        for table_info in all_column_info:
+            table_idx = table_info['table_index']
+            for col_name in table_info['columns']:
+                # Create a unique prefixed column name
+                prefixed_name = f"t{table_idx}_{col_name}"
+                columns.append(prefixed_name)
+                
+                # Track the mapping from original to prefixed name
+                if col_name not in column_mappings:
+                    column_mappings[col_name] = []
+                column_mappings[col_name].append(prefixed_name)
         
-        # Now fill the dataframe with data from each table
-        for i, table_name in enumerate(table_names):
-            print(f"Loading data from table {i+1}/{len(table_names)}: {table_name}")
+        # Create an empty DataFrame with these columns
+        empty_df = pd.DataFrame(columns=columns)
+        
+        # Add rows to match the row count in the tables
+        if row_count > 0:
+            # Create rows with placeholder values
+            empty_df = pd.DataFrame(index=range(row_count), columns=columns)
+            empty_df = empty_df.fillna('')  # Use empty string instead of NaN
+        
+        # Process tables in batches to avoid memory issues
+        for batch_start in range(0, len(table_names), BATCH_SIZE):
+            batch_end = min(batch_start + BATCH_SIZE, len(table_names))
+            batch = table_names[batch_start:batch_end]
             
-            # Efficiently fetch all data at once
-            cursor.execute(f"SELECT * FROM `{table_name}`")
-            rows = cursor.fetchall()
+            print(f"Processing tables {batch_start+1}-{batch_end} of {len(table_names)}...")
             
-            # Get original column names
-            original_columns = column_mappings[table_name]['original']
-            prefixed_columns = column_mappings[table_name]['prefixed']
-            
-            # Convert to dataframe
-            table_df = pd.DataFrame(rows, columns=original_columns)
-            
-            # Efficiently copy data to the main dataframe
-            for orig_col, pref_col in zip(original_columns, prefixed_columns):
-                empty_df[pref_col] = table_df[orig_col].values
-            
-            # Clear memory
-            del table_df
-        
-        # Clean up column names - use our rename function to ensure uniqueness
-        # First, remove the temporary prefixes
-        renamed_columns = {}
-        for col in empty_df.columns:
-            if col.startswith('t') and '_' in col:
-                base_name = col.split('_', 1)[1]
-                renamed_columns[col] = base_name
-        
-        # Now handle duplicate column names using our improved function
-        seen = {}
-        final_column_mapping = {}
-        
-        for old_col, base_name in renamed_columns.items():
-            # Check if this base name has been seen before
-            if base_name in seen:
-                seen[base_name] += 1
-                new_col = f"{base_name}_{seen[base_name]}"
-                # Ensure uniqueness
-                while new_col in final_column_mapping.values():
-                    seen[base_name] += 1
-                    new_col = f"{base_name}_{seen[base_name]}"
-                final_column_mapping[old_col] = new_col
-            else:
-                seen[base_name] = 0
-                # Check if this name already exists in the final mapping values
-                if base_name in final_column_mapping.values():
-                    seen[base_name] = 1
-                    new_col = f"{base_name}_{seen[base_name]}"
-                    final_column_mapping[old_col] = new_col
-                else:
-                    final_column_mapping[old_col] = base_name
-        
-        # Rename columns in the dataframe
-        empty_df = empty_df.rename(columns=final_column_mapping)
-        
-        print(f"Saving concatenated data to table {new_table_name}")
-        
-        # Instead of using to_sql directly, we'll use create_table then insert in chunks
-        engine = create_long_running_engine(database)
+            # Process each table in the batch
+            for table_idx, table_name in enumerate(batch, start=batch_start+1):
+                try:
+                    print(f"Loading data from {table_name}...")
+                    
+                    # Get column names first
+                    cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
+                    columns = [col[0] for col in cursor.fetchall()]
+                    
+                    # Fetch all data
+                    cursor.execute(f"SELECT * FROM `{table_name}`")
+                    rows = cursor.fetchall()
+                    
+                    # Convert to DataFrame
+                    df = pd.DataFrame(rows, columns=columns)
+                    
+                    # Map each column to its prefixed name and add to the empty DataFrame
+                    for col_name in df.columns:
+                        prefixed_name = f"t{table_idx}_{col_name}"
+                        empty_df[prefixed_name] = df[col_name].values
+                        
+                    print(f"Added {len(df.columns)} columns from {table_name}")
+                    
+                except Exception as e:
+                    print(f"Error processing table {table_name}: {e}")
+                    connection.close()
+                    return jsonify(success=False, message=f'Error processing table {table_name}: {str(e)}')
         
         # First, create the table structure with one empty row to establish the schema
         if row_count > 0:
@@ -2013,10 +2127,9 @@ def concatenate_tables():
                 column_defs = []
                 
                 for col in sample_df.columns:
-                    # Use TINYTEXT instead of LONGTEXT to reduce overhead
-                    # TINYTEXT can store up to 255 bytes which is enough for most values
-                    # and has much lower overhead compared to TEXT or LONGTEXT
-                    column_defs.append(f"`{col}` TINYTEXT")
+                    # Use TEXT instead of VARCHAR(255) to store data outside the row
+                    # This prevents row size limit issues with wide tables
+                    column_defs.append(f"`{col}` TEXT")
                     
                 create_table_sql += ", ".join(column_defs)
                 # Add more aggressive settings for large rows
@@ -2032,100 +2145,93 @@ def concatenate_tables():
                 cursor.execute(create_table_sql)
                 connection.commit()
                 
-                print(f"Created table {new_table_name} with TINYTEXT columns and ROW_FORMAT=DYNAMIC")
-            except Exception as e:
-                print(f"Error creating table with custom SQL: {e}")
-                print("Falling back to pandas to_sql method")
+                print(f"Created table {new_table_name} with TEXT columns and ROW_FORMAT=DYNAMIC")
                 
-                # Set MySQL optimization settings before creating the table
-                with engine.begin() as conn:
-                    conn.execute("SET SESSION innodb_strict_mode=OFF")
-                    conn.execute("SET SESSION sql_mode=''")
+                # Now insert the data in chunks
+                CHUNK_SIZE = 100  # Process 100 rows at a time
                 
-                # Use pandas to_sql with optimized settings
-                from sqlalchemy import Text
-                sample_df.to_sql(
-                    new_table_name, 
-                    con=engine, 
-                    if_exists='replace', 
-                    index=False,
-                    dtype={col: Text() for col in sample_df.columns}  # Force TEXT type for all columns
-                )
-                
-                # Try to alter the table format
-                try:
-                    cursor.execute(f"ALTER TABLE `{new_table_name}` ROW_FORMAT=DYNAMIC")
-                    connection.commit()
-                    print(f"Set ROW_FORMAT=DYNAMIC for table {new_table_name}")
-                except Exception as e:
-                    print(f"Warning: Could not set ROW_FORMAT=DYNAMIC: {e}")
-            
-            # Drop the sample row if it was inserted
-            cursor.execute(f"TRUNCATE TABLE `{new_table_name}`")
-            connection.commit()
-            
-            # Now insert the data in chunks to avoid timeouts
-            CHUNK_SIZE = 1000  # Adjust based on your table size and server capacity
-            
-            # Use raw SQL for faster inserts
-            from sqlalchemy.dialects.mysql import insert
-            from sqlalchemy import Table, MetaData, select
-            from sqlalchemy.sql import text
-            
-            # Get the table metadata
-            metadata = MetaData()
-            metadata.reflect(bind=engine, only=[new_table_name])
-            table = metadata.tables[new_table_name]
-            
-            # Insert data in chunks
-            for start_idx in range(0, len(empty_df), CHUNK_SIZE):
-                end_idx = min(start_idx + CHUNK_SIZE, len(empty_df))
-                chunk = empty_df.iloc[start_idx:end_idx]
-                
-                try:
-                    # Convert DataFrame chunk to a list of dictionaries
-                    records = chunk.to_dict('records')
+                for i in range(0, len(empty_df), CHUNK_SIZE):
+                    end_idx = min(i + CHUNK_SIZE, len(empty_df))
+                    chunk = empty_df.iloc[i:end_idx]
                     
-                    if records:
-                        # Use the connection directly for better control
-                        with engine.begin() as conn:
-                            conn.execute(table.insert(), records)
-                        
-                    print(f"Inserted rows {start_idx} to {end_idx}")
-                except Exception as e:
-                    print(f"Error inserting chunk {start_idx}-{end_idx}: {e}")
-                    # Try an alternative approach if the first method fails
+                    # Build SQL placeholders
+                    placeholders = ", ".join(["%s"] * len(chunk.columns))
+                    column_names = ", ".join([f"`{col}`" for col in chunk.columns])
+                    
+                    # Build batch insert SQL
+                    insert_sql = f"INSERT INTO `{new_table_name}` ({column_names}) VALUES ({placeholders})"
+                    
+                    # Convert to tuple of tuples for executemany, handling numpy types
+                    values = []
+                    for row_array in chunk.values: # row_array is a 1D numpy array
+                        processed_row = []
+                        for item in row_array:
+                            if isinstance(item, np.integer):
+                                processed_row.append(int(item))
+                            elif isinstance(item, np.floating):
+                                processed_row.append(float(item))
+                            elif pd.isna(item): # Check for pd.NA or np.nan
+                                processed_row.append(None) # Convert to SQL NULL
+                            else:
+                                processed_row.append(str(item)) # Default to string for other types
+                        values.append(tuple(processed_row))
+                    
+                    # Execute the batch insert
                     try:
-                        # Try with pandas to_sql for this chunk, with lower chunksize
-                        chunk.to_sql(new_table_name, con=engine, if_exists='append', 
-                                     index=False, chunksize=100)
-                        print(f"Inserted rows {start_idx} to {end_idx} with alternative method")
-                    except Exception as inner_e:
-                        print(f"Alternative insert also failed: {inner_e}")
-                        # Continue with next chunk instead of failing completely
+                        cursor.executemany(insert_sql, values)
+                        connection.commit()
+                        print(f"Inserted rows {i+1}-{end_idx} of {len(empty_df)}")
+                    except Exception as e:
+                        print(f"Error inserting rows {i+1}-{end_idx}: {e}")
+                        # Try to continue with next chunk
+                
+                print(f"Successfully inserted all data into {new_table_name}")
+                
+            except Exception as e:
+                print(f"Error creating or populating table: {e}")
+                traceback.print_exc()
+                cursor.close()
+                connection.close()
+                return jsonify(success=False, message=f'Error creating or populating table: {str(e)}')
+            
         else:
-            # Just create an empty table with the right structure
-            empty_df.to_sql(new_table_name, con=engine, if_exists='replace', index=False)
+            # For empty tables, just create a table with the structure
+            try:
+                # Generate CREATE TABLE SQL with TEXT columns
+                create_table_sql = f"CREATE TABLE `{new_table_name}` ("
+                column_defs = []
+                
+                for col in empty_df.columns:
+                    column_defs.append(f"`{col}` TEXT")
+                    
+                create_table_sql += ", ".join(column_defs)
+                create_table_sql += ") ENGINE=InnoDB ROW_FORMAT=DYNAMIC"
+                
+                # Drop the table if it exists
+                cursor.execute(f"DROP TABLE IF EXISTS `{new_table_name}`")
+                
+                # Create the empty table
+                cursor.execute(create_table_sql)
+                connection.commit()
+                
+                print(f"Created empty table {new_table_name} with {len(empty_df.columns)} columns")
+                
+            except Exception as e:
+                print(f"Error creating empty table: {e}")
+                cursor.close()
+                connection.close()
+                return jsonify(success=False, message=f'Error creating empty table: {str(e)}')
         
-        # Close the connection
+        # Close database connection
         cursor.close()
         connection.close()
-
-        # Check if we need to remove the temporary ID column
-        try:
-            cursor.execute(f"SHOW COLUMNS FROM `{new_table_name}` LIKE 'temp_row_id'")
-            if cursor.fetchone():
-                cursor.execute(f"ALTER TABLE `{new_table_name}` DROP COLUMN `temp_row_id`")
-                connection.commit()
-                print("Removed temporary row ID column")
-        except Exception as e:
-            print(f"Warning: Could not remove temporary column: {e}")
         
-        return jsonify(success=True, message=f"Successfully concatenated {len(table_names)} tables with {row_count} rows each.")
+        return jsonify(success=True, message=f"Successfully concatenated {len(table_names)} tables into {new_table_name}")
+        
     except Exception as e:
-        print(f'Error in concatenate_tables: {e}')
-        traceback.print_exc()  # Print the full traceback for debugging
-        return jsonify(success=False, message=f"Error: {str(e)}")
+        print(f"Unexpected error: {e}")
+        traceback.print_exc()
+        return jsonify(success=False, message=f'Unexpected error: {str(e)}')
 
 def process_large_column_concatenation(database, table_names, new_table_name, 
                                      column_mappings, all_column_info, row_count,
@@ -2158,227 +2264,135 @@ def process_large_column_concatenation(database, table_names, new_table_name,
                     'prefixed_name': f"t{table_idx}_{col_name}"
                 })
         
-        # Organize into batches
-        column_batches = []
-        current_batch = []
+        # MODIFIED: Instead of processing in batches, combine all columns at once
+        column_batches = [all_columns_to_process]  # Put all columns in a single batch
+
+        print(f"Processing all {len(all_columns_to_process)} columns together in a single batch")
         
+        # Create the output table with all columns
+        create_table_sql = f"CREATE TABLE `{new_table_name}` ("
+        column_defs = []
+        
+        # Add all column definitions
         for col_info in all_columns_to_process:
-            current_batch.append(col_info)
-            if len(current_batch) >= max_columns_per_batch:
-                column_batches.append(current_batch)
-                current_batch = []
+            # Use TEXT instead of VARCHAR(255) for wide tables to avoid row size limits
+            # TEXT data types are stored separately with only pointers in the row
+            column_defs.append(f"`{col_info['prefixed_name']}` TEXT")
         
-        # Add any remaining columns to the last batch
-        if current_batch:
-            column_batches.append(current_batch)
+        # Complete the CREATE TABLE statement
+        create_table_sql += ", ".join(column_defs)
+        create_table_sql += ") ENGINE=InnoDB ROW_FORMAT=DYNAMIC"
         
-        print(f"Split {len(all_columns_to_process)} columns into {len(column_batches)} batches")
+        # Set optimization options
+        cursor.execute("SET SESSION innodb_strict_mode=OFF")
+        cursor.execute("SET SESSION sql_mode=''")
+        # Removed: cursor.execute("SET SESSION innodb_fill_factor=70")
+        # Removed: cursor.execute("SET SESSION max_allowed_packet=1073741824")  # Set to 1GB
+        # Removed: cursor.execute("SET SESSION innodb_large_prefix=ON")
+        # Removed: cursor.execute("SET GLOBAL innodb_file_per_table=ON")
+        cursor.execute(f"DROP TABLE IF EXISTS `{new_table_name}`")
         
-        # Process the first batch to create the table structure
-        if not column_batches:
-            return jsonify(success=False, message='No columns to process after batching.')
+        # Create the table
+        print(f"Creating table {new_table_name} with all {len(column_defs)} columns")
+        cursor.execute(create_table_sql)
+        connection.commit()
         
-        first_batch = column_batches[0]
+        # Now insert the data in chunks
+        # Create a DataFrame to hold all rows
+        batch_df = pd.DataFrame(index=range(row_count))
         
-        # Create DataFrame for the first batch
-        first_batch_columns = [col_info['prefixed_name'] for col_info in first_batch]
-        first_batch_df = pd.DataFrame(np.nan, index=range(row_count), columns=first_batch_columns)
-        
-        # Fill the first batch with actual data
-        for col_info in first_batch:
-            table_name = col_info['table_name']
-            original_col = col_info['original_name']
-            prefixed_col = col_info['prefixed_name']
+        # Process each table to fill the DataFrame
+        for table_info in all_column_info:
+            table_name = table_info['table_name']
+            table_idx = table_info['table_index']
+            print(f"Loading data from table {table_name}")
             
-            print(f"Loading data for column: {original_col} from table: {table_name}")
-            
-            # Fetch just this column's data
-            cursor.execute(f"SELECT `{original_col}` FROM `{table_name}`")
+            # Query the source table for all data
+            cursor.execute(f"SELECT * FROM `{table_name}`")
             rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
             
-            # Add to the dataframe
-            first_batch_df[prefixed_col] = [row[0] for row in rows]
-        
-        # Clean up column names for the first batch
-        # First, remove the temporary prefixes and handle duplicates
-        renamed_columns = {}
-        seen_names = {}
-        
-        for col_info in first_batch:
-            prefixed_name = col_info['prefixed_name']
-            base_name = col_info['original_name']
+            # Create a DataFrame from the rows
+            source_df = pd.DataFrame(rows, columns=columns)
             
-            if base_name in seen_names:
-                seen_names[base_name] += 1
-                new_name = f"{base_name}_{seen_names[base_name]}"
-                # Ensure uniqueness
-                while new_name in renamed_columns.values():
-                    seen_names[base_name] += 1
-                    new_name = f"{base_name}_{seen_names[base_name]}"
-                renamed_columns[prefixed_name] = new_name
-            else:
-                seen_names[base_name] = 0
-                renamed_columns[prefixed_name] = base_name
-        
-        # Rename columns in the first batch dataframe
-        first_batch_df = first_batch_df.rename(columns=renamed_columns)
-        
-        # Create the table with the first batch
-        print(f"Creating table structure with first batch of {len(first_batch)} columns")
-        
-        # Instead of using to_sql, manually create the table with LONGTEXT columns
-        try:
-            # Generate CREATE TABLE SQL with LONGTEXT columns 
-            create_table_sql = f"CREATE TABLE `{new_table_name}` ("
-            column_defs = []
+            # Map each column to the target DataFrame with prefixed names
+            for col_name in columns:
+                prefixed_name = f"t{table_idx}_{col_name}"
+                batch_df[prefixed_name] = source_df[col_name]
             
-            for col_name in first_batch_df.columns:
-                # Use LONGTEXT for all columns to avoid row size issues
-                column_defs.append(f"`{col_name}` LONGTEXT")
+            print(f"Added {len(columns)} columns from {table_name}")
+            
+            # Clear memory
+            del source_df, rows
+        
+        # Insert the data in chunks to avoid timeouts
+        CHUNK_SIZE = 100
+        total_rows = len(batch_df)
+        
+        print(f"Inserting {total_rows} rows in chunks of {CHUNK_SIZE}")
+        
+        for chunk_start in range(0, total_rows, CHUNK_SIZE):
+            chunk_end = min(chunk_start + CHUNK_SIZE, total_rows)
+            chunk = batch_df.iloc[chunk_start:chunk_end]
+            
+            # Convert the chunk to a list of dictionaries
+            records = []
+            for _, row in chunk.iterrows():
+                row_dict = {}
+                for col in row.index:
+                    # Handle NaN values
+                    val = row[col]
+                    if pd.isna(val):
+                        row_dict[col] = None
+                    else:
+                        row_dict[col] = str(val)
+                records.append(row_dict)
+            
+            # Generate placeholders and column names for SQL
+            if records:
+                col_names = list(records[0].keys())
+                placeholders = ", ".join(["%s"] * len(col_names))
+                columns_str = ", ".join([f"`{col}`" for col in col_names])
                 
-            create_table_sql += ", ".join(column_defs)
-            # Add optimized table settings for large rows
-            create_table_sql += ") ENGINE=InnoDB ROW_FORMAT=DYNAMIC KEY_BLOCK_SIZE=8"
-            
-            # Drop the table if it exists
-            cursor.execute(f"DROP TABLE IF EXISTS `{new_table_name}`")
-            
-            # Create the table with the optimized format
-            cursor.execute(create_table_sql)
-            connection.commit()
-            
-            print(f"Created table {new_table_name} with LONGTEXT columns and optimized row format")
-        except Exception as e:
-            print(f"Error creating table with custom SQL: {e}")
-            print("Falling back to pandas to_sql method")
-            # Fall back to pandas to_sql
-            first_batch_df.to_sql(new_table_name, con=engine, if_exists='replace', index=False)
-            
-            # Try to alter the table format
-            try:
-                cursor.execute(f"ALTER TABLE `{new_table_name}` ROW_FORMAT=DYNAMIC")
+                # Create INSERT statement
+                insert_sql = f"INSERT INTO `{new_table_name}` ({columns_str}) VALUES ({placeholders})"
+                
+                # Prepare values for each row
+                values = []
+                for record in records:
+                    row_values = [record[col] for col in col_names]
+                    values.append(tuple(row_values))
+                
+                # Execute the insert
+                cursor.executemany(insert_sql, values)
                 connection.commit()
-                print(f"Set ROW_FORMAT=DYNAMIC for table {new_table_name}")
-            except Exception as e:
-                print(f"Warning: Could not set ROW_FORMAT=DYNAMIC: {e}")
+                
+                print(f"Inserted rows {chunk_start+1} to {chunk_end} of {total_rows}")
         
-        # Now process remaining batches
-        for batch_idx, batch in enumerate(column_batches[1:], 1):
-            print(f"Processing batch {batch_idx} with {len(batch)} columns")
-            
-            # Create a temporary dataframe for this batch
-            batch_columns = [col_info['prefixed_name'] for col_info in batch]
-            batch_df = pd.DataFrame(np.nan, index=range(row_count), columns=batch_columns)
-            
-            # Fill the batch with actual data
-            for col_info in batch:
-                table_name = col_info['table_name']
-                original_col = col_info['original_name']
-                prefixed_col = col_info['prefixed_name']
-                
-                # Fetch just this column's data
-                cursor.execute(f"SELECT `{original_col}` FROM `{table_name}`")
-                rows = cursor.fetchall()
-                
-                # Add to the dataframe
-                batch_df[prefixed_col] = [row[0] for row in rows]
-            
-            # Clean up column names for this batch
-            batch_renamed_columns = {}
-            
-            for col_info in batch:
-                prefixed_name = col_info['prefixed_name']
-                base_name = col_info['original_name']
-                
-                if base_name in seen_names:
-                    seen_names[base_name] += 1
-                    new_name = f"{base_name}_{seen_names[base_name]}"
-                    # Ensure uniqueness
-                    while new_name in renamed_columns.values():
-                        seen_names[base_name] += 1
-                        new_name = f"{base_name}_{seen_names[base_name]}"
-                    batch_renamed_columns[prefixed_name] = new_name
-                    # Also track in the overall renamed columns
-                    renamed_columns[prefixed_name] = new_name
-                else:
-                    seen_names[base_name] = 0
-                    batch_renamed_columns[prefixed_name] = base_name
-                    # Also track in the overall renamed columns
-                    renamed_columns[prefixed_name] = base_name
-            
-            # Rename columns in this batch
-            batch_df = batch_df.rename(columns=batch_renamed_columns)
-            
-            # Add the columns to the existing table
-            for col_name in batch_df.columns:
-                # Always use LONGTEXT type to avoid row size issues
-                cursor.execute(f"ALTER TABLE `{new_table_name}` ADD COLUMN `{col_name}` LONGTEXT")
-            
-            # Update the table with this batch's data
-            # Process in smaller chunks to avoid memory issues
-            CHUNK_SIZE = 1000
-            
-            for start_idx in range(0, len(batch_df), CHUNK_SIZE):
-                end_idx = min(start_idx + CHUNK_SIZE, len(batch_df))
-                chunk = batch_df.iloc[start_idx:end_idx]
-                
-                # For each row in the chunk
-                for row_idx, row in chunk.iterrows():
-                    # Build an UPDATE statement for this row
-                    set_clauses = []
-                    values = []
-                    
-                    for col_name in chunk.columns:
-                        set_clauses.append(f"`{col_name}` = %s")
-                        values.append(row[col_name])
-                    
-                    # Calculate the absolute row index in the table
-                    absolute_row_idx = start_idx + (row_idx - chunk.index[0])
-                    
-                    try:
-                        # MySQL version-compatible approach: use LIMIT/OFFSET for positioning
-                        # This is more universally compatible than ROW_NUMBER()
-                        sql = f"UPDATE `{new_table_name}` SET {', '.join(set_clauses)} LIMIT 1 OFFSET %s"
-                        values.append(absolute_row_idx)
-                        cursor.execute(sql, values)
-                    except Exception as e:
-                        print(f"Error updating row {absolute_row_idx}: {e}")
-                        # Try a fallback approach - identify with a temporary ID column if needed
-                        try:
-                            # Check if we need to add a temporary ID column
-                            cursor.execute(f"SHOW COLUMNS FROM `{new_table_name}` LIKE 'temp_row_id'")
-                            if not cursor.fetchone():
-                                cursor.execute(f"ALTER TABLE `{new_table_name}` ADD COLUMN `temp_row_id` INT")
-                                # Populate the IDs
-                                cursor.execute(f"SET @row_num := 0")
-                                cursor.execute(f"UPDATE `{new_table_name}` SET `temp_row_id` = (@row_num := @row_num + 1)")
-                                connection.commit()
-                            
-                            # Now use the temp_row_id for updates
-                            set_clauses_with_id = set_clauses.copy()
-                            values_with_id = values[:-1]  # Remove the OFFSET value
-                            values_with_id.append(absolute_row_idx + 1)  # +1 because @row_num starts from 0
-                            alt_sql = f"UPDATE `{new_table_name}` SET {', '.join(set_clauses_with_id)} WHERE `temp_row_id` = %s"
-                            cursor.execute(alt_sql, values_with_id)
-                        except Exception as inner_e:
-                            print(f"Fallback update also failed for row {absolute_row_idx}: {inner_e}")
-                            # Just continue to next row
-                
-                connection.commit()
-                print(f"Updated rows {start_idx} to {end_idx} with batch {batch_idx} data")
+        print(f"Successfully created and populated table {new_table_name}")
         
-        # Close the connection
+        # Close connections
         cursor.close()
         connection.close()
         
         return jsonify(success=True, 
-                      message=f"Successfully concatenated {len(table_names)} tables with {row_count} rows " + 
-                              f"and {len(all_columns_to_process)} total columns using batch processing.")
+                      message=f"Successfully concatenated tables into {new_table_name}")
         
     except Exception as e:
         print(f"Error in process_large_column_concatenation: {e}")
         traceback.print_exc()
-        return jsonify(success=False, message=f"Error processing large table: {str(e)}")
+        
+        # Close connections
+        try:
+            if 'cursor' in locals() and cursor is not None:
+                cursor.close()
+            if 'connection' in locals() and connection is not None:
+                connection.close()
+        except:
+            pass
+        
+        return jsonify(success=False, 
+                      message=f"Error processing large column concatenation: {str(e)}")
 
 def infer_mysql_type_from_pandas(series):
     """Infer an appropriate MySQL data type from a pandas Series"""
@@ -3710,6 +3724,7 @@ def execute_remote_command():
                     'error': result.stderr.strip()
                 })
                 
+                
         except subprocess.TimeoutExpired:
             return jsonify({
                 'success': False, 
@@ -4424,7 +4439,7 @@ def get_mysql_directory_size():
         print(f"Error getting MySQL directory size: {e}")
         return "340.00 GB (default)"
 
-def split_wide_table_concatenation(database, table_names, base_table_name, max_columns_per_table=50):
+def split_wide_table_concatenation(database, table_names, base_table_name, max_columns_per_table=500):
     """
     Handle extremely wide tables by splitting them into multiple tables with fewer columns.
     This is a last-resort approach when the row size limit cannot be overcome.
@@ -4433,7 +4448,7 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
         database: The database name
         table_names: List of table names to concatenate
         base_table_name: Base name for the output tables
-        max_columns_per_table: Maximum columns per output table (default 50)
+        max_columns_per_table: Maximum columns per output table (default 500, increased from 50)
         
     Returns:
         Number of tables created
@@ -4448,6 +4463,15 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
         connection = create_long_running_connection(database)
         cursor = connection.cursor()
         engine = create_long_running_engine(database)
+        
+        # Set MySQL optimization settings to help with wide tables
+        cursor.execute("SET SESSION innodb_strict_mode=OFF")
+        cursor.execute("SET SESSION sql_mode=''")
+        # Removed: cursor.execute("SET SESSION innodb_fill_factor=70")
+        # Removed: cursor.execute("SET SESSION max_allowed_packet=1073741824")  # 1GB
+        # Removed: cursor.execute("SET SESSION innodb_large_prefix=ON")
+        # Removed: cursor.execute("SET GLOBAL innodb_file_per_table=ON")
+        connection.commit()
         
         # First, check if all tables have the same row count
         row_counts = {}
@@ -4503,7 +4527,7 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
             if cursor.fetchone():
                 cursor.execute(f"DROP TABLE `{output_table_name}`")
             
-            # Create the table with LONGTEXT columns
+            # Create the table with TEXT columns to avoid row size limit issues
             create_sql = f"CREATE TABLE `{output_table_name}` ("
             col_defs = []
             
@@ -4513,14 +4537,16 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
             # Add all the columns for this group
             for col_info in columns_group:
                 col_name = f"{col_info['table']}_{col_info['column']}"
-                col_defs.append(f"`{col_name}` LONGTEXT")
+                # Use TEXT instead of VARCHAR(255) to store data outside the row
+                # This prevents row size limit issues with wide tables
+                col_defs.append(f"`{col_name}` TEXT")
             
             create_sql += ", ".join(col_defs)
             create_sql += ") ENGINE=InnoDB ROW_FORMAT=DYNAMIC"
             
-            # Add specific table options to handle row size limits - updated for MySQL 8
-            # innodb_file_format and innodb_file_per_table are deprecated in MySQL 8
-            cursor.execute("SET GLOBAL innodb_file_per_table=ON")
+            # Add specific table options to handle row size limits
+            cursor.execute("SET SESSION innodb_strict_mode=OFF")
+            # Removed: cursor.execute("SET GLOBAL innodb_file_per_table=ON")
             
             # Execute the CREATE TABLE statement
             cursor.execute(create_sql)

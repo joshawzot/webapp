@@ -1,1 +1,4 @@
-def fix_indentation():\n    with open("route_handlers.py", "r") as f:\n        lines = f.readlines()\n    for i in range(1551, 1556):\n        if lines[i].startswith("    "):\n            lines[i] = lines[i][4:]\n    with open("route_handlers.py", "w") as f:\n        f.writelines(lines)\n    print("File fixed!")\n\nfix_indentation()
+import re
+with open("route_handlers.py.bak", "r") as f:
+    content = f.read()
+fix1 = """                    # Convert numpy data types to Python native types before inserting

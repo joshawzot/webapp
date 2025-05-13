@@ -1540,32 +1540,22 @@ def copy_tables():
                         # Process data in batches and chunks for large tables
                         BATCH_SIZE = 1000
                         
-                        if num_columns > 30:
-                            # For wide tables, process in column chunks
-                            COLUMN_CHUNK_SIZE = 20
-                            copy_success = copy_wide_table_in_chunks(source_cursor, target_cursor, 
-                                                                     table, column_names, row_count,
-                                                                     COLUMN_CHUNK_SIZE, BATCH_SIZE,
-                                                                     target_conn)
-                            if not copy_success:
-                                use_vertical_partitioning = True
-                        else:
-                            # For regular tables, process in simple batches
-                            source_cursor.execute(f"SELECT * FROM `{table}`")
-                            data = source_cursor.fetchall()
-                            
-                            # Insert data in batches
-                            if data:
-                                placeholders = ", ".join(["%s"] * len(column_names))
-                                insert_sql = f"INSERT INTO `{table}` ({', '.join([f'`{col}`' for col in column_names])}) VALUES ({placeholders})"
-                                
-                                for i in range(0, len(data), BATCH_SIZE):
-                                    batch = data[i:i+BATCH_SIZE]
-                                    target_cursor.executemany(insert_sql, batch)
-                                    target_conn.commit()
-                                    print(f"Inserted batch {i//BATCH_SIZE + 1} of {(len(data) + BATCH_SIZE - 1)//BATCH_SIZE}")
-                                
-                                print(f"Successfully copied table {table}")
+                        # For regular tables, process in simple batches
+                        source_cursor.execute(f"SELECT * FROM `{table}`")
+                        data = source_cursor.fetchall()
+
+                        # Insert data in batches
+                        if data:
+                            placeholders = ", ".join(["%s"] * len(column_names))
+                            insert_sql = f"INSERT INTO `{table}` ({', '.join([f'`{col}`' for col in column_names])}) VALUES ({placeholders})"
+
+                            for i in range(0, len(data), BATCH_SIZE):
+                                batch = data[i:i+BATCH_SIZE]
+                                target_cursor.executemany(insert_sql, batch)
+                                target_conn.commit()
+                                print(f"Inserted batch {i//BATCH_SIZE + 1} of {(len(data) + BATCH_SIZE - 1)//BATCH_SIZE}")
+
+                            print(f"Successfully copied table {table}")
                     except Exception as copy_error:
                         print(f"Error copying data: {copy_error}")
                         if "Row size too large" in str(copy_error):
@@ -1834,74 +1824,6 @@ def copy_tables():
         
     # Return success message at the end of try block (after the for loop)
     return jsonify({'message': 'Tables copied successfully.'}), 200
-
-def copy_wide_table_in_chunks(source_cursor, target_cursor, table, column_names, row_count, 
-                             column_chunk_size, batch_size, target_conn):
-    try:
-        num_columns = len(column_names)
-        print(f"Copying {table} with {num_columns} columns in chunks")
-        
-        # Process in column chunks
-        for col_start in range(0, num_columns, column_chunk_size):
-            col_end = min(col_start + column_chunk_size, num_columns)
-            chunk_columns = column_names[col_start:col_end]
-            
-            print(f"Processing columns {col_start} to {col_end-1}")
-            
-            # Process in row batches
-            for offset in range(0, row_count, batch_size):
-                limit = min(batch_size, row_count - offset)
-                
-                # Select the current batch of data
-                select_cols = ", ".join([f"`{col}`" for col in chunk_columns])
-                source_cursor.execute(f"SELECT {select_cols} FROM `{table}` LIMIT {limit} OFFSET {offset}")
-                batch_data = source_cursor.fetchall()
-                
-                if batch_data:
-                    # Use a temp table to avoid update complexity
-                    temp_table = f"_temp_{table}_chunk"
-                    
-                    # Create the temp table
-                    target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
-                    create_temp_sql = f"""
-                    CREATE TEMPORARY TABLE `{temp_table}` (
-                        row_id INT AUTO_INCREMENT PRIMARY KEY,
-                        {", ".join([f"`{col}` TEXT" for col in chunk_columns])}
-                    )
-                    """
-                    target_cursor.execute(create_temp_sql)
-                    
-                    # Insert into temp table
-                    insert_cols = ", ".join([f"`{col}`" for col in chunk_columns])
-                    placeholders = ", ".join(["%s"] * len(chunk_columns))
-                    insert_sql = f"INSERT INTO `{temp_table}` ({insert_cols}) VALUES ({placeholders})"
-                    target_cursor.executemany(insert_sql, batch_data)
-                    
-                    # Update the main table using the temp table
-                    for i, col in enumerate(chunk_columns):
-                        update_sql = f"""
-                        UPDATE `{table}` t1
-                        JOIN `{temp_table}` t2 ON t1.id = t2.row_id
-                        SET t1.`{col}` = t2.`{col}`
-                        WHERE t1.id BETWEEN {offset + 1} AND {offset + limit}
-                        """
-                        target_cursor.execute(update_sql)
-                    
-                    # Drop the temp table
-                    target_cursor.execute(f"DROP TABLE IF EXISTS `{temp_table}`")
-                    
-                    target_conn.commit()
-                    print(f"Processed batch: rows {offset} to {offset + len(batch_data) - 1}")
-        
-        print(f"Successfully copied all chunks for table {table}")
-        return True
-    
-    except Exception as e:
-        print(f"Error in chunked copy: {e}")
-        if "Row size too large" in str(e):
-            return False
-        else:
-            raise
 
 @app.route('/concatenate_tables', methods=['POST'])
 def concatenate_tables():

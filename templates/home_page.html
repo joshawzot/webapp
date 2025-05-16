@@ -30,7 +30,7 @@
         </button>
         <!-- Jupyter Notebook Button -->
         <a href="{{ url_for('notebook_selector') }}" class="btn btn-success">
-            <i class="fas fa-book-open"></i> Open Jupyter Notebooks
+            <i class="fas fa-book-open"></i> Data analysis using custom Jupyter Notebooks
         </a>
         <!-- Test Machines SSH Button -->
         <a href="{{ url_for('test_machines') }}" class="btn btn-warning">
@@ -213,8 +213,10 @@
                     
                     <!-- Add information note about table naming -->
                     <div class="alert alert-info mb-3">
-                        <i class="fas fa-info-circle"></i> <strong>Note:</strong> All tables will have the schema name added to the prefix (e.g., schema_table). 
-                        Table names that exceed 64 characters will be skipped from migrating to the merged folder.
+                        <i class="fas fa-info-circle"></i> <strong>Note:</strong> Tables will be merged using their original names (without schema prefixes). 
+                        Tables with identical names from different source folders will be skipped. Tables with names 
+                        <!-- exceeding 64 characters will also be skipped. All columns will be converted to TEXT type to prevent row size limitations
+                        for very wide tables. Large tables will be processed in batches for better performance. -->
                     </div>
                     
                     <!-- Add counter display for selected and total -->
@@ -252,6 +254,13 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <!-- Add processing indicator -->
+                    <div id="mergeProcessingIndicator" class="text-center w-100 mb-3" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Processing...</span>
+                        </div>
+                        <span class="ml-2">Processing files... This may take a while for large tables.</span>
+                    </div>
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" id="mergeFoldersBtn">Merge</button>
                 </div>
@@ -401,6 +410,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // Add handler for merge folders button
     document.getElementById('mergeFoldersBtn').addEventListener('click', function() {
+        // Show processing indicator
+        document.getElementById('mergeProcessingIndicator').style.display = 'block';
+        // Disable the merge button to prevent double clicks
+        this.disabled = true;
+        
         // Determine which option is selected
         const useExistingSchema = document.getElementById('existingSchemaOption').checked;
         
@@ -411,6 +425,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             const selectedRadio = document.querySelector('.target-schema-radio:checked');
             if (!selectedRadio) {
                 alert('Please select a target folder');
+                // Hide processing indicator and re-enable button
+                document.getElementById('mergeProcessingIndicator').style.display = 'none';
+                this.disabled = false;
                 return;
             }
             targetSchemaName = selectedRadio.value;
@@ -419,6 +436,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             
             if (!targetSchemaName) {
                 alert('Please enter a name for the new folder');
+                // Hide processing indicator and re-enable button
+                document.getElementById('mergeProcessingIndicator').style.display = 'none';
+                this.disabled = false;
                 return;
             }
         }
@@ -428,12 +448,18 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         if (selectedSchemas.length < 1) {
             alert('Please select at least one folder to merge');
+            // Hide processing indicator and re-enable button
+            document.getElementById('mergeProcessingIndicator').style.display = 'none';
+            this.disabled = false;
             return;
         }
         
         // If merging to existing schema, ensure we're not selecting the target
         if (useExistingSchema && selectedSchemas.includes(targetSchemaName)) {
             alert('Cannot merge a folder into itself. Please remove the target folder from selection.');
+            // Hide processing indicator and re-enable button
+            document.getElementById('mergeProcessingIndicator').style.display = 'none';
+            this.disabled = false;
             return;
         }
 
@@ -451,14 +477,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
         })
         .then(response => response.json())
         .then(data => {
+            // Hide processing indicator
+            document.getElementById('mergeProcessingIndicator').style.display = 'none';
+            
             if (data.success) {
                 alert('Folders merged successfully!');
                 window.location.reload(); // Reload the page to show the new schema
             } else {
                 alert('Error: ' + data.message);
+                // Re-enable the merge button
+                document.getElementById('mergeFoldersBtn').disabled = false;
             }
         })
         .catch(error => {
+            // Hide processing indicator and re-enable button on error
+            document.getElementById('mergeProcessingIndicator').style.display = 'none';
+            document.getElementById('mergeFoldersBtn').disabled = false;
+            
             console.error('Error:', error);
             alert('An error occurred while merging folders');
         });

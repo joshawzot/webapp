@@ -2731,6 +2731,39 @@ def merge_schemas():
         skipped_tables = []
         processed_tables = []
         duplicate_tables = []
+        error_tables = []
+
+        # First, get all existing tables in the target schema to check for conflicts
+        target_tables = set()
+        if schema_exists:
+            cursor.execute(f"SHOW TABLES FROM `{new_schema_name}`")
+            target_tables = {table[0] for table in cursor.fetchall()}
+        
+        # Next, track table names across all selected schemas to identify duplicates
+        table_origins = {}  # Dictionary to track which schema each table comes from
+        conflicting_tables = set()  # Set to track tables that appear in multiple schemas
+        
+        for schema in selected_schemas:
+            cursor.execute(f"SHOW TABLES FROM `{schema}`")
+            tables = cursor.fetchall()
+            for (table_name,) in tables:
+                if table_name in table_origins:
+                    # This table name appears in multiple schemas - mark as conflicting
+                    conflicting_tables.add(table_name)
+                    table_origins[table_name] = f"{table_origins[table_name]}, {schema}"
+                else:
+                    table_origins[table_name] = schema
+
+        # Set global MySQL optimization settings for processing wide tables
+        try:
+            cursor.execute("SET SESSION innodb_strict_mode=OFF")
+            cursor.execute("SET SESSION sql_mode=''")
+            cursor.execute("SET SESSION max_allowed_packet=1073741824")  # 1GB
+            cursor.execute("SET SESSION net_buffer_length=1000000")  # 1MB
+            cursor.execute("SET SESSION group_concat_max_len=18446744073709551615")  # Max value
+        except Exception as e:
+            print(f"Warning: Could not set some MySQL optimization settings: {e}")
+            # Continue anyway as these are optimizations, not requirements
 
         # Process each selected schema
         for schema in selected_schemas:
@@ -2739,30 +2772,113 @@ def merge_schemas():
             tables = cursor.fetchall()
             
             for (table_name,) in tables:
-                # Create new table name with schema prefix
-                new_table_name = f"{schema}_{table_name}"
+                # Use original table name without schema prefix
+                new_table_name = table_name
                 
-                # Check if the new table name exceeds MySQL's limit
+                # Check if the table name exceeds MySQL's limit
                 if len(new_table_name) > MAX_TABLE_NAME_LENGTH:
                     skipped_tables.append(f"{schema}.{table_name}")
                     continue
                 
-                # Check if table already exists in target schema
-                cursor.execute(f"SHOW TABLES FROM `{new_schema_name}` LIKE %s", (new_table_name,))
-                if cursor.fetchone():
-                    duplicate_tables.append(f"{schema}.{table_name}")
+                # Skip conflicting tables (same name in multiple source schemas)
+                if table_name in conflicting_tables:
+                    duplicate_tables.append(f"{schema}.{table_name} (conflicts with tables from: {table_origins[table_name]})")
                     continue
                 
-                # Copy table structure and data to new schema
-                cursor.execute(f"""
-                    CREATE TABLE `{new_schema_name}`.`{new_table_name}` 
-                    LIKE `{schema}`.`{table_name}`
-                """)
-                cursor.execute(f"""
-                    INSERT INTO `{new_schema_name}`.`{new_table_name}`
-                    SELECT * FROM `{schema}`.`{table_name}`
-                """)
-                processed_tables.append(f"{schema}.{table_name}")
+                # Check if table already exists in target schema
+                if new_table_name in target_tables:
+                    duplicate_tables.append(f"{schema}.{table_name} (already exists in target folder)")
+                    continue
+                
+                try:
+                    # For very large tables, use optimized copy approach
+                    # Get table size information
+                    cursor.execute(f"SELECT COUNT(*) FROM `{schema}`.`{table_name}`")
+                    row_count = cursor.fetchone()[0]
+                    
+                    cursor.execute(f"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = %s", 
+                                (schema, table_name))
+                    column_count = cursor.fetchone()[0]
+                    
+                    # Add table to the set of tables in target to prevent future conflicts
+                    target_tables.add(new_table_name)
+                    
+                    # Instead of using CREATE TABLE LIKE, create a new table with all columns as TEXT
+                    # This will avoid row size limit issues for wide tables
+                    cursor.execute(f"""
+                        SELECT COLUMN_NAME 
+                        FROM INFORMATION_SCHEMA.COLUMNS 
+                        WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s
+                        ORDER BY ORDINAL_POSITION
+                    """, (schema, table_name))
+                    
+                    columns = [row[0] for row in cursor.fetchall()]
+                    
+                    # Create the new table with all columns as TEXT type
+                    create_table_query = f"CREATE TABLE `{new_schema_name}`.`{new_table_name}` ("
+                    column_defs = []
+                    
+                    for col in columns:
+                        # Use TEXT type for all columns to avoid row size issues
+                        column_defs.append(f"`{col}` TEXT")
+                        
+                    create_table_query += ", ".join(column_defs)
+                    # Add explicit ROW_FORMAT=DYNAMIC for better handling of wide rows
+                    create_table_query += ") ENGINE=InnoDB ROW_FORMAT=DYNAMIC"
+                    
+                    # Execute the CREATE TABLE statement
+                    cursor.execute(create_table_query)
+                    
+                    # Use batched inserts for all tables, with size based on table dimensions
+                    batch_size = 5000  # Default batch size for normal tables
+                    if column_count > 100:
+                        batch_size = 1000  # Medium size tables
+                    if column_count > 500:
+                        batch_size = 500  # Large tables
+                    if column_count > 1000:
+                        batch_size = 100  # Extra large tables
+                        
+                    # Build column list string for SELECT and INSERT
+                    columns_str = ", ".join([f"`{col}`" for col in columns])
+                    
+                    # Use batched inserts
+                    for offset in range(0, row_count, batch_size):
+                        limit = min(batch_size, row_count - offset)
+                        insert_query = f"""
+                            INSERT INTO `{new_schema_name}`.`{new_table_name}` ({columns_str})
+                            SELECT {columns_str} FROM `{schema}`.`{table_name}` LIMIT {limit} OFFSET {offset}
+                        """
+                        cursor.execute(insert_query)
+                        connection.commit()
+                    
+                    processed_tables.append(f"{schema}.{table_name}")
+                    
+                except mysql.connector.Error as err:
+                    # Track specific MySQL errors
+                    error_tables.append(f"{schema}.{table_name} (MySQL Error: {err})")
+                    print(f"Error copying table {schema}.{table_name}: {err}")
+                    # Remove from target_tables since it failed
+                    if new_table_name in target_tables:
+                        target_tables.remove(new_table_name)
+                    # Try to clean up the partially created table if it exists
+                    try:
+                        cursor.execute(f"DROP TABLE IF EXISTS `{new_schema_name}`.`{new_table_name}`")
+                        connection.commit()
+                    except:
+                        pass
+                except Exception as e:
+                    # Track general errors
+                    error_tables.append(f"{schema}.{table_name} (Error: {str(e)})")
+                    print(f"Unexpected error copying table {schema}.{table_name}: {e}")
+                    # Remove from target_tables since it failed
+                    if new_table_name in target_tables:
+                        target_tables.remove(new_table_name)
+                    # Try to clean up the partially created table if it exists
+                    try:
+                        cursor.execute(f"DROP TABLE IF EXISTS `{new_schema_name}`.`{new_table_name}`")
+                        connection.commit()
+                    except:
+                        pass
 
         connection.commit()
         cursor.close()
@@ -2782,14 +2898,20 @@ def merge_schemas():
             result['skipped_tables'] = skipped_tables
             
         if duplicate_tables:
-            message_parts.append(f'{len(duplicate_tables)} tables were skipped because they already exist in the target folder.')
+            message_parts.append(f'{len(duplicate_tables)} tables were skipped due to name conflicts between source folders or existing in the target folder.')
             result['duplicate_tables'] = duplicate_tables
+            
+        if error_tables:
+            message_parts.append(f'{len(error_tables)} tables encountered errors during the merge process.')
+            result['error_tables'] = error_tables
             
         result['message'] = ' '.join(message_parts)
         return jsonify(result)
         
     except Exception as e:
         print(f'Error merging schemas: {e}')
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': f'An error occurred: {str(e)}'})
 
 #------------------------------------------------------------------------------------------------------------

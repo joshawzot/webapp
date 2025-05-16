@@ -4,6 +4,7 @@ import base64
 import pandas as pd
 import re
 from conductance_calculator import convert_table_to_conductance, convert_table_to_linear
+import matplotlib.pyplot as plt
 
 def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array):
     connection = create_connection(database_name)
@@ -448,6 +449,7 @@ def generate_plot(table_names, database_name, form_data):
     # Initialize sigma_distances and num_states at the start
     sigma_distances = {}
     num_states = 0
+    color_group_keywords = form_data.get('color_group_keywords', [])
     
     print("color_map_flag:", color_map_flag)
     print("outlier_analysis_flag:", outlier_analysis_flag)
@@ -526,11 +528,62 @@ def generate_plot(table_names, database_name, form_data):
     # Initialize an empty list to hold the encoded plots
     encoded_plots = []
     group_data = []
-    colors = get_colors(len(table_names))
+    #colors = get_colors(len(table_names))
     avg_values = []
     std_values = []
     miao_ber = []
     sub_array_size = []
+
+    # Generate colors based on keywords if provided
+    if color_group_keywords:
+        print(f"Using color group keywords: {color_group_keywords}")
+        num_distinct_keyword_groups = len(color_group_keywords)
+        num_colors_needed = num_distinct_keyword_groups + 1  # One for each keyword, one for 'other'
+        
+        cmap_name = 'tab20'  # tab20 has 20 distinct colors
+        try:
+            colormap = plt.colormaps[cmap_name]
+        except AttributeError: # Older Matplotlib might not have plt.colormaps
+            import matplotlib.cm as cm
+            colormap = cm.get_cmap(cmap_name)
+
+        distinct_colors_list = []
+        if hasattr(colormap, 'colors'): # Qualitative colormap
+            distinct_colors_list = list(colormap.colors)
+        else: # Sequential/Diverging colormap, sample it
+            for i in range(num_colors_needed):
+                distinct_colors_list.append(colormap(i / max(1, num_colors_needed - 1)))
+
+        if num_colors_needed > len(distinct_colors_list):
+            print(f"Warning: Need {num_colors_needed} distinct colors, but 'cmap_name' provides {len(distinct_colors_list)}. Colors will be repeated.")
+            original_cmap_colors = list(distinct_colors_list) # Use the fetched/generated list
+            distinct_colors_list = [original_cmap_colors[i % len(original_cmap_colors)] for i in range(num_colors_needed)]
+
+        keyword_colors_vals = distinct_colors_list[:num_distinct_keyword_groups]
+        # Ensure other_color_val index is within bounds
+        other_color_idx = num_distinct_keyword_groups % len(distinct_colors_list)
+        other_color_val = distinct_colors_list[other_color_idx]
+
+        keyword_to_color_map = {}
+        for i, keyword in enumerate(color_group_keywords):
+             # Ensure keyword_colors_vals index is within bounds if num_distinct_keyword_groups > len(distinct_colors_list)
+            color_idx = i % len(keyword_colors_vals)
+            keyword_to_color_map[keyword] = keyword_colors_vals[color_idx]
+        
+        colors = []
+        for t_name in table_names:
+            assigned_color = None
+            for keyword in color_group_keywords:
+                if keyword in t_name:  # Simple substring check
+                    assigned_color = keyword_to_color_map[keyword]
+                    break 
+            if assigned_color is None:
+                colors.append(other_color_val)
+            else:
+                colors.append(assigned_color)
+    else:
+        print("No color group keywords provided, using default colors.")
+        colors = get_colors(len(table_names)) # from tools_for_plots.py
 
     # Compute the global min and max values among all data matrices
     data_matrices = []

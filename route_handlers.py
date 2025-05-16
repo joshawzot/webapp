@@ -496,6 +496,48 @@ def view_plot(database, table_name, plot_function):
                 # Determine the appropriate function to call based on plot_function
                 if plot_function == "generate_plot":
                     form_data = get_form_data_generate_plot(request.form)
+                    # Server-side validation for color_group_keywords
+                    if form_data.get('color_group_keywords'):
+                        table_names_list = table_name.split(',')
+                        keywords = form_data['color_group_keywords']
+                        conflict_messages = []
+                        for tn in table_names_list:
+                            tn_trimmed = tn.strip()
+                            matches = [kw for kw in keywords if kw in tn_trimmed]
+                            if len(matches) > 1:
+                                conflict_messages.append(f"Table '{tn_trimmed}' matches multiple keywords: {', '.join(matches)}.")
+                        
+                        if conflict_messages:
+                            for msg in conflict_messages:
+                                flash(msg, 'danger')
+                            flash("Please ensure each table name matches at most one keyword, or remove/adjust keywords.", 'danger')
+                            # Re-render the input form with existing context
+                            # Need to fetch these again or pass them appropriately
+                            using_conductance = session.get('using_conductance', False)
+                            conductance_comparison = session.get('conductance_comparison', None)
+                            using_linear_conversion = session.get('using_linear_conversion', False)
+                            linear_conversion_comparison = session.get('linear_conversion_comparison', None)
+                            from conductance_calculator import LINEAR_CONVERSION
+                            linear_min = LINEAR_CONVERSION["output_min"]
+                            linear_max = LINEAR_CONVERSION["output_max"]
+
+                            # Decide which template to render based on the original plot_function choice
+                            # This assumes input_form_generate_plot.html is the one being submitted from
+                            return render_template('input_form_generate_plot.html', 
+                                                  database=database, 
+                                                  table_name=table_name, 
+                                                  plot_function=plot_function,
+                                                  # Pass back form data to repopulate, if needed by template
+                                                  # form_data_for_template=request.form 
+                                                  # It might be better to let the template handle defaults on error
+                                                  using_conductance=using_conductance,
+                                                  conductance_comparison=conductance_comparison,
+                                                  using_linear_conversion=using_linear_conversion,
+                                                  linear_conversion_comparison=linear_conversion_comparison,
+                                                  linear_min=linear_min,
+                                                  linear_max=linear_max
+                                                  )
+
                 elif plot_function == "generate_plot_read_stability":
                     form_data = get_form_data_generate_plot_read_stability(request.form)
         
@@ -2786,7 +2828,7 @@ def get_form_data_generate_plot(form):
             'selected_groups_1D', 'pass_range_1D', 'state_pattern',
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
-            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division'  # Added custom_division here
+            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division', 'color_group_keywords'  # Added color_group_keywords here
         ]
     }
 
@@ -2834,6 +2876,13 @@ def get_form_data_generate_plot(form):
             form_data['target_values'] = []
     else:
         form_data['target_values'] = []
+    
+    # Process color grouping keywords
+    color_group_keywords_str = form_data.get('color_group_keywords', '')
+    if color_group_keywords_str:
+        form_data['color_group_keywords'] = [keyword.strip() for keyword in color_group_keywords_str.split(',') if keyword.strip()]
+    else:
+        form_data['color_group_keywords'] = []
     
     # Process target_x_diff value
     target_x_diff_str = form.get('target_x_diff', '2')

@@ -154,12 +154,6 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
     global_x_max = float('-inf')
     sigma_intersections = {}  # Store sigma intersections for each table and state
 
-    # Create colormap
-    num_colors = max(len(data), 20)
-    colormap = plt.get_cmap('tab20', num_colors)
-    color_normalizer = mcolors.Normalize(vmin=0, vmax=num_colors - 1)
-    scalar_map = plt.cm.ScalarMappable(norm=color_normalizer, cmap=colormap)
-
     # Create separate figures for sigma and CDF plots
     fig_sigma = plt.figure(figsize=figsize)
     ax_sigma = fig_sigma.add_subplot(111)
@@ -171,7 +165,7 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
         # Process data and create transformed plots
         for i, group in enumerate(data):
             transformed_data = []
-            color = scalar_map.to_rgba(i)
+            current_color = colors[i]
             table_name = table_names[i]
             sigma_intersections[table_name] = []
 
@@ -193,12 +187,12 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                 sigma_intersections[table_name].append(x_at_sigmas)
 
                 # Plot sigma values
-                ax_sigma.plot(sorted_data, sigma_values, linestyle='-', linewidth=1, color=color, label=label)
-                ax_sigma.scatter(sorted_data, sigma_values, s=10, color=color)
+                ax_sigma.plot(sorted_data, sigma_values, linestyle='-', linewidth=1, color=current_color, label=label)
+                ax_sigma.scatter(sorted_data, sigma_values, s=10, color=current_color)
 
                 # Plot CDF values
-                ax_cdf.plot(sorted_data, cdf_values, linestyle='-', linewidth=1, color=color, label=label)
-                ax_cdf.scatter(sorted_data, cdf_values, s=10, color=color)
+                ax_cdf.plot(sorted_data, cdf_values, linestyle='-', linewidth=1, color=current_color, label=label)
+                ax_cdf.scatter(sorted_data, cdf_values, s=10, color=current_color)
 
                 transformed_data.append((sorted_data, sigma_values))
 
@@ -238,7 +232,7 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
             horizontal_line_y_value = []
 
             for i, transformed_data in enumerate(transformed_data_groups):
-                color = scalar_map.to_rgba(i)
+                current_color = colors[i]
 
                 for k in range(len(transformed_data) - 1):
                     x1, y1 = transformed_data[k]
@@ -267,9 +261,9 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     cdf_value_2 = interp_common_x_2
 
                     if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
-                        ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=color, alpha=0.7, 
+                        ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=current_color, alpha=0.7, 
                                      label=f'{table_name} - state {start_state}')
-                        ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=color, alpha=0.7, 
+                        ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=current_color, alpha=0.7, 
                                      label=f'{table_name} - state {end_state}')
 
                         # Find and mark intersection
@@ -1175,9 +1169,16 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 def get_colors(num_colors):
     """Generate a colormap and return the colors for the specified number of items."""
-    cmap = plt.get_cmap('viridis', num_colors)
-    norm = mcolors.Normalize(vmin=0, vmax=num_colors - 1)
-    return [cmap(norm(i)) for i in range(num_colors)]
+    if num_colors <= 0:
+        return []
+
+    try:
+        colormap = plt.colormaps['viridis'] # Access the colormap object
+    except AttributeError: # Fallback for older matplotlib
+        colormap = cm.get_cmap('viridis')
+        
+    # Sample colors from the colormap
+    return [colormap(i / (num_colors -1 if num_colors > 1 else 1)) for i in range(num_colors)]
 
 def plot_miao(combined_data, base_figsize=(1, 2)):
     # Determine dimensions

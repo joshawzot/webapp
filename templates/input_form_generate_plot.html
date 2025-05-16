@@ -5,7 +5,7 @@
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
     <h3>Input Form</h3>
     <p></p>
-    <form action="/view-plot/{{ database }}/{{ table_name }}/{{ plot_function }}" method="POST" autocomplete="off" id="plotForm">
+    <form action="/view-plot/{{ database }}/{{ table_name }}/{{ plot_function }}" method="POST" autocomplete="off" id="plotForm" data-table-names="{{ table_name }}">
         <div class="form-group">
             <label for="state_pattern_type">State Pattern Type</label>
             <select class="form-control" name="state_pattern_type" id="state_pattern_type" onchange="toggleStatePatternType()">
@@ -90,6 +90,11 @@
             <input type="checkbox" name="color_map_flag" id="color_map_flag" value="True">
         </div>
 
+        <div class="form-group">
+            <label for="color_group_keywords">Color Grouping Keywords (comma-separated, optional):</label>
+            <input type="text" class="form-control" name="color_group_keywords" id="color_group_keywords" placeholder="e.g., T-1,gsof2">
+        </div>
+
         <!-- Add the new target values input field -->
         <div class="form-group">
             <label for="target_values">Target Values (not required):</label>
@@ -143,6 +148,9 @@
         document.getElementById('color_map_flag').checked = false;
         document.getElementById('custom_division').checked = false;
         
+        // Reset the new color grouping keywords field
+        document.getElementById('color_group_keywords').value = '';
+        
         // Call toggleStatePatternType to set proper visibility
         toggleStatePatternType();
         
@@ -164,6 +172,47 @@
     window.onload = function() {
         initializeForm();
     };
+
+    document.getElementById('plotForm').addEventListener('submit', function(event) {
+        const keywordsInput = document.getElementById('color_group_keywords');
+        const keywordsValue = keywordsInput.value.trim();
+
+        if (!keywordsValue) {
+            return; // No keywords, no validation needed for this specific check
+        }
+
+        const keywords = keywordsValue.split(',').map(k => k.trim()).filter(k => k);
+        if (keywords.length === 0) {
+            return; // No actual keywords after parsing
+        }
+
+        const rawTableNames = event.target.dataset.tableNames;
+        const tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
+
+        let warningMessages = [];
+        let conflictFound = false;
+
+        for (const tableName of tableNames) {
+            let matchCount = 0;
+            let matchingKeywords = [];
+            for (const keyword of keywords) {
+                if (tableName.includes(keyword)) {
+                    matchCount++;
+                    matchingKeywords.push(keyword);
+                }
+            }
+
+            if (matchCount > 1) {
+                conflictFound = true;
+                warningMessages.push(`Table '${tableName}' matches multiple keywords: ${matchingKeywords.join(', ')}.`);
+            }
+        }
+
+        if (conflictFound) {
+            alert("Color Keyword Validation Error:\n\n" + warningMessages.join("\n") + "\n\nPlease ensure each table name matches at most one keyword, or remove/adjust keywords.");
+            event.preventDefault(); // Stop form submission
+        }
+    });
 
     function updateCustomInput(select, inputId) {
         var customInput = document.getElementById(inputId);

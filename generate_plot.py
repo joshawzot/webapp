@@ -691,10 +691,24 @@ def generate_plot(table_names, database_name, form_data):
     encoded_plots.append(plot_average_values_table(avg_values, table_names, selected_groups))
     encoded_plots.append(plot_std_values_table(std_values, table_names, selected_groups))
 
-    plot_data_sigma, plot_data_cdf, plot_data_interpo, ber_results, sigma_intersections = plot_transformed_cdf_2(group_data, table_names, selected_groups, colors, target_x_diff)
+    # Get num_interp_points from form_data or use default
+    num_interp_points = form_data.get('num_interp_points', 500)
+    if isinstance(num_interp_points, str) and num_interp_points.strip():
+        try:
+            num_interp_points = int(num_interp_points)
+            # Remove constraints to allow any value
+        except ValueError:
+            num_interp_points = 500  # Default if conversion fails
+    elif not isinstance(num_interp_points, int):
+        num_interp_points = 500  # Default if not an integer
+
+    # When calling plot_transformed_cdf_2, pass the num_interp_points
+    plot_data_sigma, plot_data_cdf, plot_data_interpolated_cdf, ber_results, sigma_intersections = plot_transformed_cdf_2(
+        group_data, table_names, selected_groups, colors, target_x_diff, figsize=(15, 10), num_interp_points=num_interp_points
+    )
     encoded_plots.append(plot_data_sigma)
     encoded_plots.append(plot_data_cdf)
-    encoded_plots.append(plot_data_interpo)
+    encoded_plots.append(plot_data_interpolated_cdf)
 
     # Create a table for sigma intersections
     sigma_points = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
@@ -813,7 +827,7 @@ def generate_plot(table_names, database_name, form_data):
          sorted_table_names_100ppm,
          sorted_table_names_200ppm,
          sorted_table_names_500ppm,
-         sorted_table_names_1000ppm) = plot_ber_tables(ber_results, target_x_diff)
+         sorted_table_names_1000ppm) = plot_ber_tables(ber_results, target_x_diff, num_interp_points)
 
         # Since we now have a combined image, append it to the plots
         encoded_plots.append(ppm_image)

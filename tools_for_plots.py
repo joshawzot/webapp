@@ -18,6 +18,14 @@ from PIL import Image  # For image processing
 # Local application imports
 from db_operations import create_connection, close_connection
 
+# Add numba for JIT compilation
+try:
+    from numba import jit, prange
+    HAS_NUMBA = True
+except ImportError:
+    HAS_NUMBA = False
+    print("Numba not available. Some optimizations will be disabled.")
+
 def plot_boxplot(data, table_names, figsize=(15, 10)):
     # Create a new figure instance for this plot
     fig = plt.figure(figsize=figsize)
@@ -145,7 +153,238 @@ def calculate_sigma_intersections(sorted_data, sigma_values, target_sigmas=[-4, 
     
     return x_at_sigmas
 
-def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_diff=2, figsize=(15, 10)):
+# Optimize intersection finding with JIT compilation if available
+if HAS_NUMBA:
+    @jit(nopython=True, parallel=True, fastmath=True)
+    def find_intersection(x_values, y1_values, y2_values):
+        """Efficiently find intersection point between two curves."""
+        # Find where the difference between curves is closest to zero
+        min_diff_idx = np.argmin(np.abs(y1_values - y2_values))
+        return x_values[min_diff_idx], y1_values[min_diff_idx]
+    
+    @jit(nopython=True, fastmath=True)
+    def find_target_x_diff(x_values, y1_values, y2_values, target_diff, tolerance):
+        """Find points that are approximately target_diff apart in x axis."""
+        # Pre-calculate differences to avoid repeated calculations
+        for i in range(len(x_values) - 1):
+            for j in range(i+1, min(i+1000, len(x_values))):  # Limit search window for better performance
+                x_diff = x_values[j] - x_values[i]
+                if abs(x_diff - target_diff) < tolerance:
+                    if y2_values[j] > y1_values[i]:
+                        return x_values[i], x_values[j], y2_values[j]
+                # Break early if we've gone too far
+                if x_diff > target_diff + tolerance:
+                    break
+        return None, None, None
+else:
+    def find_intersection(x_values, y1_values, y2_values):
+        min_diff_idx = np.argmin(np.abs(y1_values - y2_values))
+        return x_values[min_diff_idx], y1_values[min_diff_idx]
+    
+    def find_target_x_diff(x_values, y1_values, y2_values, target_diff, tolerance):
+        for i in range(len(x_values) - 1):
+            for j in range(i+1, min(i+1000, len(x_values))):  # Limit search window
+                x_diff = x_values[j] - x_values[i]
+                if abs(x_diff - target_diff) < tolerance:
+                    if y2_values[j] > y1_values[i]:
+                        return x_values[i], x_values[j], y2_values[j]
+                # Break early if we've gone too far
+                if x_diff > target_diff + tolerance:
+                    break
+        return None, None, None
+
+def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_diff=2, figsize=(15, 10), num_interp_points=1000):
+    # Initialize variables
+    added_to_legend = set()
+    ber_results = []
+    transformed_data_groups = []
+    global_x_min = float('inf')
+    global_x_max = float('-inf')
+    sigma_intersections = {}  # Store sigma intersections for each table and state
+
+    # Create separate figures for sigma and CDF plots
+    fig_sigma = plt.figure(figsize=figsize)
+    ax_sigma = fig_sigma.add_subplot(111)
+    
+    fig_cdf = plt.figure(figsize=figsize)
+    ax_cdf = fig_cdf.add_subplot(111)
+    
+    try:
+        # Pre-process all data first to avoid redundant calculations
+        for i, group in enumerate(data):
+            transformed_data = []
+            current_color = colors[i]
+            table_name = table_names[i]
+            sigma_intersections[table_name] = []
+
+            for j, subgroup in enumerate(group):
+                state_index = selected_groups[j]
+                label = table_name if table_name not in added_to_legend else None
+                if label:
+                    added_to_legend.add(label)
+
+                # Use more efficient sorting and min/max finding
+                sorted_data = np.sort(subgroup)
+                subgroup_min = sorted_data[0]
+                subgroup_max = sorted_data[-1]
+                global_x_min = min(global_x_min, subgroup_min)
+                global_x_max = max(global_x_max, subgroup_max)
+
+                # More efficient CDF calculation
+                cdf_values = (np.arange(1, len(sorted_data) + 1) - 0.5) / len(sorted_data)
+                sigma_values = sp_stats.norm.ppf(cdf_values)
+
+                # Calculate sigma intersections for this state
+                x_at_sigmas = calculate_sigma_intersections(sorted_data, sigma_values)
+                sigma_intersections[table_name].append(x_at_sigmas)
+
+                # Plot sigma values
+                ax_sigma.plot(sorted_data, sigma_values, linestyle='-', linewidth=1, color=current_color, label=label)
+                ax_sigma.scatter(sorted_data, sigma_values, s=10, color=current_color)
+
+                # Plot CDF values
+                ax_cdf.plot(sorted_data, cdf_values, linestyle='-', linewidth=1, color=current_color, label=label)
+                ax_cdf.scatter(sorted_data, cdf_values, s=10, color=current_color)
+
+                transformed_data.append((sorted_data, sigma_values))
+
+            transformed_data_groups.append(transformed_data)
+
+        # Configure sigma plot
+        ax_sigma.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), borderaxespad=0.)
+        ax_sigma.grid(True)
+        ax_sigma.set_ylabel('Sigma')
+        ax_sigma.set_xlabel('Value')
+
+        # Configure CDF plot
+        ax_cdf.set_yscale('log')
+        ax_cdf.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), borderaxespad=0.)
+        ax_cdf.grid(True)
+
+        # Save sigma plot
+        buf_sigma = BytesIO()
+        fig_sigma.savefig(buf_sigma, format='png', bbox_inches='tight')
+        buf_sigma.seek(0)
+        plot_data_sigma = base64.b64encode(buf_sigma.getvalue()).decode('utf-8')
+
+        # Save CDF plot
+        buf_cdf = BytesIO()
+        fig_cdf.savefig(buf_cdf, format='png', bbox_inches='tight')
+        buf_cdf.seek(0)
+        plot_data_cdf = base64.b64encode(buf_cdf.getvalue()).decode('utf-8')
+
+        # Create interpolated CDF plot
+        fig_interp = plt.figure(figsize=figsize)
+        ax_interp = fig_interp.add_subplot(111)
+        
+        try:
+            ax_interp.set_xlim(global_x_min, global_x_max)
+
+            # Use user-specified number of interpolation points
+            # num_interp_points is now passed as a parameter to the function
+            tolerance = 0.2
+            
+            # Process data for each group in parallel
+            for i, transformed_data in enumerate(transformed_data_groups):
+                current_color = colors[i]
+
+                for k in range(len(transformed_data) - 1):
+                    x1, y1 = transformed_data[k]
+                    x2, y2 = transformed_data[k + 1]
+
+                    y1 = -y1  # Reverse y-axis for first state
+
+                    start_state = selected_groups[k]
+                    end_state = selected_groups[k + 1]
+                    table_name = table_names[i]
+
+                    # Optimize min/max calculations
+                    common_x_min_all = min(np.min(x1), np.min(x2))
+                    common_x_max_all = max(np.max(x1), np.max(x2))
+                    
+                    # Pre-allocate the array for better memory management
+                    common_x_all = np.linspace(common_x_min_all, common_x_max_all, num=num_interp_points, dtype=np.float32)
+
+                    # Remove duplicates and prepare for interpolation
+                    unique_x1, unique_indices_x1 = np.unique(x1, return_index=True)
+                    unique_y1 = y1[unique_indices_x1]
+                    unique_x2, unique_indices_x2 = np.unique(x2, return_index=True)
+                    unique_y2 = y2[unique_indices_x2]
+
+                    # Create interpolation functions once and reuse
+                    f1 = interp1d(unique_x1, unique_y1, fill_value="extrapolate", bounds_error=False)
+                    f2 = interp1d(unique_x2, unique_y2, fill_value="extrapolate", bounds_error=False)
+                    
+                    # Apply interpolation
+                    interp_common_x_1 = f1(common_x_all)
+                    interp_common_x_2 = f2(common_x_all)
+
+                    cdf_value_1 = interp_common_x_1
+                    cdf_value_2 = interp_common_x_2
+
+                    if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
+                        ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=current_color, alpha=0.7, 
+                                     label=f'{table_name} - state {start_state}')
+                        ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=current_color, alpha=0.7, 
+                                     label=f'{table_name} - state {end_state}')
+
+                        # Use optimized intersection finding
+                        intersection_x, intersection_y = find_intersection(common_x_all, cdf_value_1, cdf_value_2)
+                        ax_interp.scatter(intersection_x, intersection_y, color='red', s=50, zorder=5)
+
+                        ber = np.abs(intersection_y)
+                        ppm_ber = sigma_to_ppm(ber)
+
+                        # Find horizontal line points using optimized function
+                        x_start, x_end, h_line_y = find_target_x_diff(
+                            common_x_all, cdf_value_1, cdf_value_2, target_x_diff, tolerance
+                        )
+                        
+                        if h_line_y is not None:
+                            ax_interp.hlines(y=h_line_y, xmin=x_start, xmax=x_end, 
+                                           color='green', linestyles='dotted')
+                            horizontal_line_y_value = h_line_y
+                            ppm = sigma_to_ppm(abs(horizontal_line_y_value))
+                        else:
+                            horizontal_line_y_value = None
+                            ppm = None
+                    else:  # Handle extreme case for perfect distribution
+                        ber = 0
+                        ppm_ber = 0
+                        ppm = 0
+                        horizontal_line_y_value = 0
+
+                    hlyv_rounded = round(abs(horizontal_line_y_value), 4) if horizontal_line_y_value is not None else None
+                    ber_results.append((table_name, f'state{start_state} to state{end_state}', 
+                                      ber, ppm_ber, ppm, hlyv_rounded, 4))
+
+            ax_interp.grid(True)
+            ax_interp.set_ylim(bottom=-8, top=8)
+            ax_interp.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), borderaxespad=0.)
+
+            # Save interpolated CDF plot
+            buf_interp = BytesIO()
+            fig_interp.savefig(buf_interp, format='png', bbox_inches='tight')
+            buf_interp.seek(0)
+            plot_data_interpolated_cdf = base64.b64encode(buf_interp.getvalue()).decode('utf-8')
+
+            return plot_data_sigma, plot_data_cdf, plot_data_interpolated_cdf, ber_results, sigma_intersections
+
+        finally:
+            plt.close(fig_interp)
+            if 'buf_interp' in locals():
+                buf_interp.close()
+
+    finally:
+        # Clean up resources
+        plt.close(fig_sigma)
+        plt.close(fig_cdf)
+        if 'buf_sigma' in locals():
+            buf_sigma.close()
+        if 'buf_cdf' in locals():
+            buf_cdf.close()
+
+def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, target_x_diff=2, figsize=(15, 10)):
     # Initialize variables
     added_to_legend = set()
     ber_results = []
@@ -1019,7 +1258,20 @@ def get_full_table_data(table_name, database_name):
 
     return data_matrix, data_matrix_size
     
-def plot_ber_tables(ber_results, target_x_diff=2):
+def plot_ber_tables(ber_results, target_x_diff=2, num_interp_points=1000):
+    """
+    Plot the BER tables with results of CDF analysis.
+    
+    Args:
+        ber_results: The BER results from the CDF analysis
+        target_x_diff: The window value used in the calculation (default: 2)
+        num_interp_points: Number of interpolation points used (default: 1000)
+        
+    Returns:
+        Tuple of (sigma_image, ppm_image, uS_image, additional_image, 
+               sorted_table_names, sorted_table_names_100ppm, sorted_table_names_200ppm, 
+               sorted_table_names_500ppm, sorted_table_names_1000ppm)
+    """
     # Extract unique table names and state transitions
     table_names = sorted(set(entry[0] for entry in ber_results))
     state_transitions = sorted(set(entry[1] for entry in ber_results))
@@ -1102,9 +1354,9 @@ def plot_ber_tables(ber_results, target_x_diff=2):
     images = {}
     titles = {
         'sigma': "Sigma Values at Intersection",
-        'ppm': f"BER PPM (Window = {target_x_diff})",
-        'uS': f"BER at Windows = {target_x_diff}",
-        'additional': f"Y Values at Windows = {target_x_diff}"
+        'ppm': f"BER PPM (Window = {target_x_diff}, Points = {num_interp_points})",
+        'uS': f"BER at Windows = {target_x_diff}, Points = {num_interp_points}",
+        'additional': f"Y Values at Windows = {target_x_diff}, Points = {num_interp_points}"
     }
 
     for key, title in titles.items():

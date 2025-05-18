@@ -107,6 +107,13 @@
             <input type="text" class="form-control" name="target_x_diff" id="target_x_diff" placeholder="Enter window value" value="2">
         </div>
 
+        <!-- Add the new interpolation points input field -->
+        <div class="form-group">
+            <label for="num_interp_points">Interpolation Points (higher = more accurate but slower):</label>
+            <input type="text" class="form-control" name="num_interp_points" id="num_interp_points" placeholder="Enter number of interpolation points" value="500">
+            <small class="form-text text-muted">Default: 500 (usually 500 is good enough, we used to use 4000) </small>
+        </div>
+
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 </div>

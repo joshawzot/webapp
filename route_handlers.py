@@ -2950,7 +2950,8 @@ def get_form_data_generate_plot(form):
             'selected_groups_1D', 'pass_range_1D', 'state_pattern',
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
-            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division', 'color_group_keywords'  # Added color_group_keywords here
+            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division', 'color_group_keywords',
+            'target_x_diff', 'num_interp_points'  # Added num_interp_points here
         ]
     }
 
@@ -3015,6 +3016,17 @@ def get_form_data_generate_plot(form):
     except ValueError:
         form_data['target_x_diff'] = 2.0  # Default to 2.0 if conversion fails
         print(f"Failed to convert target_x_diff, using default: {form_data['target_x_diff']}")
+    
+    # Process num_interp_points value
+    num_interp_points_str = form.get('num_interp_points', '1000')
+    print(f"Raw num_interp_points from form: '{num_interp_points_str}'")
+    try:
+        form_data['num_interp_points'] = int(num_interp_points_str) if num_interp_points_str else 500
+        # Remove constraints so users can use any value
+        print(f"Converted num_interp_points to: {form_data['num_interp_points']}")
+    except ValueError:
+        form_data['num_interp_points'] = 500  # Default to 500 if conversion fails
+        print(f"Failed to convert num_interp_points, using default: {form_data['num_interp_points']}")
 
     print("Final Form Data:", form_data)  # Debug print
     return form_data

@@ -5,7 +5,11 @@
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
     <h3>Input Form</h3>
     <p></p>
-    <form action="/view-plot/{{ database }}/{{ table_name }}/{{ plot_function }}" method="POST" autocomplete="off" id="plotForm" data-table-names="{{ table_name }}">
+    <form action="/process-plot-form" method="POST" autocomplete="off" id="plotForm" data-table-names="{{ table_name }}">
+        <input type="hidden" name="database" value="{{ database }}">
+        <input type="hidden" name="table_name" value="{{ table_name }}">
+        <input type="hidden" name="plot_function" value="{{ plot_function }}">
+        
         <div class="form-group">
             <label for="state_pattern_type">State Pattern Type</label>
             <select class="form-control" name="state_pattern_type" id="state_pattern_type" onchange="toggleStatePatternType()">

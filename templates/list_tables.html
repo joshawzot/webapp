@@ -5,6 +5,20 @@
     <!-- Add a Return to Home Page button -->
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
 
+    <!-- Flash messages section -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     <!-- Drag and Drop File Upload Area -->
     <div class="border p-3 mb-4">
         <h3>Upload Files:</h3>
@@ -1095,9 +1109,34 @@
                         // Remove the modal
                         closeModal();
 
-                        // Open a new window/tab to display the scatter plot with selected columns
-                        const plotUrl = `/generate_scatter_plot/${database}/${tableName}?x_column=${encodeURIComponent(xColumn)}&y_column=${encodeURIComponent(yColumn)}`;
-                        window.open(plotUrl, '_blank');
+                        // Create a form for POST submission instead of opening a new window
+                        const form = document.createElement('form');
+                        form.method = 'GET';  // We can use GET here as it's just a few parameters
+                        form.action = `/generate_scatter_plot/${database}/${tableName}`;
+                        form.target = '_blank';  // Still open in a new tab
+                        
+                        // Add x_column parameter
+                        const xColumnInput = document.createElement('input');
+                        xColumnInput.type = 'hidden';
+                        xColumnInput.name = 'x_column';
+                        xColumnInput.value = xColumn;
+                        form.appendChild(xColumnInput);
+                        
+                        // Add y_column parameter
+                        const yColumnInput = document.createElement('input');
+                        yColumnInput.type = 'hidden';
+                        yColumnInput.name = 'y_column';
+                        yColumnInput.value = yColumn;
+                        form.appendChild(yColumnInput);
+                        
+                        // Add the form to the body and submit
+                        document.body.appendChild(form);
+                        form.submit();
+                        
+                        // Remove the form from the DOM after submission
+                        setTimeout(() => {
+                            document.body.removeChild(form);
+                        }, 100);
                     };
                 } else {
                     alert(`Error: ${result.message}`);
@@ -1106,20 +1145,47 @@
                 alert('Please select exactly one table for scatter plot.');
             }
         });
-    });
 
-    document.getElementById('plotSelected').addEventListener('click', function() {
-        const tableNames = getSelectedVisibleTableNames();
-        if (tableNames.length > 0) {
-            let baseUrl = "{{ url_for('view_plot', database=database, plot_function=plot_function, table_name='PLACEHOLDER') }}";
-            baseUrl = baseUrl.replace('PLACEHOLDER', tableNames.join(','));
-                
-            // Update the current state before redirecting
-            window.history.replaceState({}, '', window.location.href);
-            window.location.href = baseUrl;
-        } else {
-            alert('Please select at least one table to plot.');
-        }
+        // Add the event listener for the "Plot Selected" button
+        document.getElementById('plotSelected').addEventListener('click', function() {
+            const tableNames = getSelectedVisibleTableNames();
+            
+            if (tableNames.length > 0) {
+                // Create a form for POST submission
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/plot-selected';
+
+                // Add the database name
+                const dbInput = document.createElement('input');
+                dbInput.type = 'hidden';
+                dbInput.name = 'database';
+                dbInput.value = '{{ database }}';
+                form.appendChild(dbInput);
+
+                // Add the plot function
+                const plotFunctionInput = document.createElement('input');
+                plotFunctionInput.type = 'hidden';
+                plotFunctionInput.name = 'plot_function';
+                plotFunctionInput.value = '{{ plot_function }}';
+                form.appendChild(plotFunctionInput);
+
+                // Add all selected tables
+                tableNames.forEach(function(tableName) {
+                    const tableInput = document.createElement('input');
+                    tableInput.type = 'hidden';
+                    tableInput.name = 'tableNames';
+                    tableInput.value = tableName;
+                    form.appendChild(tableInput);
+                });
+
+                // Add the form to the body and submit
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                alert('Please select at least one table to plot.');
+            }
+        });
     });
 
     function fetchDatabases() {

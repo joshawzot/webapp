@@ -243,14 +243,39 @@ def render_plot(database, table_name, plot_function):
         if 'username' not in session:
             return "User not logged in", 403
 
-        # Parse form data
-        form_data_json = request.args.get('form_data', '{}')
-        try:
-            form_data = json.loads(form_data_json)
-        except json.JSONDecodeError:
-            return "Error: Invalid form data", 400
+        # Check if we're using session-stored tables
+        if table_name == 'from_session':
+            # Retrieve table names from session
+            table_names = session.get('plot_tables', [])
+            
+            # If table names found in session, use them
+            if table_names:
+                table_name = ','.join(table_names)
+            else:
+                flash('No tables found in session. Please select tables again.', 'warning')
+                return redirect(url_for('list_tables'))
+                
+            # Also check if we have form data stored in session
+            form_data_json = session.get('plot_form_data')
+            if form_data_json:
+                try:
+                    form_data = json.loads(form_data_json)
+                    # Clear the session data to avoid reusing it accidentally
+                    session.pop('plot_form_data', None)
+                except json.JSONDecodeError:
+                    # If can't decode, use empty form data
+                    form_data = {}
+            else:
+                form_data = {}
+        else:
+            # Parse form data from query string as before
+            form_data_json = request.args.get('form_data', '{}')
+            try:
+                form_data = json.loads(form_data_json)
+            except json.JSONDecodeError:
+                return "Error: Invalid form data", 400
 
-        # Map plot function names to actual functions
+        # Validate plot function
         plot_functions = {
             'generate_plot': generate_plot,
             'generate_plot_read_stability': generate_plot_read_stability,
@@ -473,8 +498,23 @@ def download_npy():
 @app.route('/view-plot/<database>/<table_name>/<plot_function>', methods=['GET', 'POST'])
 def view_plot(database, table_name, plot_function):
     print("view_plot")
+    
+    # Check if we're using session-stored tables
+    if table_name == 'from_session':
+        # Retrieve table names from session
+        table_names = session.get('plot_tables', [])
+        
+        # If table names found in session, use them
+        if table_names:
+            table_name = ','.join(table_names)
+        else:
+            flash('No tables found in session. Please select tables again.', 'warning')
+            return redirect(url_for('list_tables'))
+    
     if request.method == "POST":
         print("POST:::::::::::::::::::::::::::::::::")
+        
+        # Check if this is a plot function choice submission
         plot_function_choice = request.form.get('plot_choice')
         if plot_function_choice:
             plot_function = plot_function_choice
@@ -485,82 +525,28 @@ def view_plot(database, table_name, plot_function):
                     return render_template('input_form_generate_plot_read_stability.html', database=database, table_name=table_name, plot_function=plot_function)
             else:
                 return f"Invalid plot function selection", 400
-
-        if plot_function:
-            print(f"plot_function: {plot_function}")
-            # if plot_function in generate_plot_functions:
-            #     form_data = get_form_data_generate_plot(request.form)
-            #     form_data_json = json.dumps(form_data)
-
-            if plot_function in ["generate_plot", "generate_plot_read_stability"]:
-                # Determine the appropriate function to call based on plot_function
-                if plot_function == "generate_plot":
-                    form_data = get_form_data_generate_plot(request.form)
-                    # Server-side validation for color_group_keywords
-                    if form_data.get('color_group_keywords'):
-                        table_names_list = table_name.split(',')
-                        keywords = form_data['color_group_keywords']
-                        conflict_messages = []
-                        for tn in table_names_list:
-                            tn_trimmed = tn.strip()
-                            matches = [kw for kw in keywords if kw in tn_trimmed]
-                            if len(matches) > 1:
-                                conflict_messages.append(f"Table '{tn_trimmed}' matches multiple keywords: {', '.join(matches)}.")
-                        
-                        if conflict_messages:
-                            for msg in conflict_messages:
-                                flash(msg, 'danger')
-                            flash("Please ensure each table name matches at most one keyword, or remove/adjust keywords.", 'danger')
-                            # Re-render the input form with existing context
-                            # Need to fetch these again or pass them appropriately
-                            using_conductance = session.get('using_conductance', False)
-                            conductance_comparison = session.get('conductance_comparison', None)
-                            using_linear_conversion = session.get('using_linear_conversion', False)
-                            linear_conversion_comparison = session.get('linear_conversion_comparison', None)
-                            from conductance_calculator import LINEAR_CONVERSION
-                            linear_min = LINEAR_CONVERSION["output_min"]
-                            linear_max = LINEAR_CONVERSION["output_max"]
-
-                            # Decide which template to render based on the original plot_function choice
-                            # This assumes input_form_generate_plot.html is the one being submitted from
-                            return render_template('input_form_generate_plot.html', 
-                                                  database=database, 
-                                                  table_name=table_name, 
-                                                  plot_function=plot_function,
-                                                  # Pass back form data to repopulate, if needed by template
-                                                  # form_data_for_template=request.form 
-                                                  # It might be better to let the template handle defaults on error
-                                                  using_conductance=using_conductance,
-                                                  conductance_comparison=conductance_comparison,
-                                                  using_linear_conversion=using_linear_conversion,
-                                                  linear_conversion_comparison=linear_conversion_comparison,
-                                                  linear_min=linear_min,
-                                                  linear_max=linear_max
-                                                  )
-
-                elif plot_function == "generate_plot_read_stability":
-                    form_data = get_form_data_generate_plot_read_stability(request.form)
         
-                # Check if we should use conductance values
-                using_conductance = session.get('using_conductance', False)
-                if using_conductance:
-                    form_data['using_conductance'] = True
-                    form_data['conductance_params'] = session.get('conductance_params', {})
+        # For other POST requests (form submissions), redirect to the process-plot-form endpoint
+        # This will avoid URI length issues when there are many tables
+        
+        # We need to copy all form data to the new request
+        form_data = request.form.to_dict(flat=False)
+        
+        # Create a form for POST submission
+        form_html = '<form id="redirectForm" action="/process-plot-form" method="POST">'
+        form_html += f'<input type="hidden" name="database" value="{database}">'
+        form_html += f'<input type="hidden" name="table_name" value="{table_name}">'
+        form_html += f'<input type="hidden" name="plot_function" value="{plot_function}">'
+        
+        # Add all form fields
+        for key, values in form_data.items():
+            for value in values:
+                form_html += f'<input type="hidden" name="{key}" value="{value}">'
                 
-                # Check if we should use linear conversion
-                using_linear_conversion = session.get('using_linear_conversion', False)
-                if using_linear_conversion:
-                    form_data['using_linear_conversion'] = True
+        form_html += '</form>'
+        form_html += '<script>document.getElementById("redirectForm").submit();</script>'
         
-                # Convert form data to JSON
-                form_data_json = json.dumps(form_data)
-
-                # Redirect with the form data in the query string
-                return redirect(f"/render-plot/{database}/{table_name}/{plot_function}?form_data={form_data_json}")
-            else:
-                return f"Invalid plot function selection", 400
-        else:
-            return f"Plot function not selected", 400
+        return form_html
     else:
         table_names = table_name.split(',')
         print(table_names)
@@ -4708,3 +4694,103 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
         print(f"Error in split_wide_table_concatenation: {e}")
         traceback.print_exc()
         raise e
+
+@app.route('/plot-selected', methods=['POST'])
+def plot_selected():
+    """
+    Handle POST requests for plotting multiple tables.
+    This avoids URL length limitations by using POST instead of GET.
+    """
+    database = request.form.get('database')
+    plot_function = request.form.get('plot_function', 'None')
+    table_names = request.form.getlist('tableNames')
+    
+    if not database or not table_names:
+        return 'Missing required information', 400
+    
+    # Store table names in session to avoid URL length issues
+    session['plot_tables'] = table_names
+    
+    # Redirect to view_plot with a special parameter indicating to use session data
+    return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
+
+@app.route('/process-plot-form', methods=['POST'])
+def process_plot_form():
+    """
+    Handle POST form submission from input_form_generate_plot.html.
+    This avoids URL length limitations by using POST instead of including table names in URL.
+    """
+    database = request.form.get('database')
+    table_name = request.form.get('table_name')
+    plot_function = request.form.get('plot_function')
+    
+    if not all([database, table_name, plot_function]):
+        return 'Missing required parameters', 400
+    
+    # Generate plot form data based on the form
+    if plot_function == "generate_plot":
+        form_data = get_form_data_generate_plot(request.form)
+        
+        # Server-side validation for color_group_keywords
+        if form_data.get('color_group_keywords'):
+            table_names_list = table_name.split(',')
+            keywords = form_data['color_group_keywords']
+            conflict_messages = []
+            for tn in table_names_list:
+                tn_trimmed = tn.strip()
+                matches = [kw for kw in keywords if kw in tn_trimmed]
+                if len(matches) > 1:
+                    conflict_messages.append(f"Table '{tn_trimmed}' matches multiple keywords: {', '.join(matches)}.")
+            
+            if conflict_messages:
+                for msg in conflict_messages:
+                    flash(msg, 'danger')
+                flash("Please ensure each table name matches at most one keyword, or remove/adjust keywords.", 'danger')
+                
+                # Re-render the input form with existing context
+                using_conductance = session.get('using_conductance', False)
+                conductance_comparison = session.get('conductance_comparison', None)
+                using_linear_conversion = session.get('using_linear_conversion', False)
+                linear_conversion_comparison = session.get('linear_conversion_comparison', None)
+                from conductance_calculator import LINEAR_CONVERSION
+                linear_min = LINEAR_CONVERSION["output_min"]
+                linear_max = LINEAR_CONVERSION["output_max"]
+                
+                return render_template('input_form_generate_plot.html', 
+                                      database=database, 
+                                      table_name=table_name, 
+                                      plot_function=plot_function,
+                                      using_conductance=using_conductance,
+                                      conductance_comparison=conductance_comparison,
+                                      using_linear_conversion=using_linear_conversion,
+                                      linear_conversion_comparison=linear_conversion_comparison,
+                                      linear_min=linear_min,
+                                      linear_max=linear_max)
+    elif plot_function == "generate_plot_read_stability":
+        form_data = get_form_data_generate_plot_read_stability(request.form)
+    else:
+        return 'Invalid plot function', 400
+    
+    # Check if we should use conductance values
+    using_conductance = session.get('using_conductance', False)
+    if using_conductance:
+        form_data['using_conductance'] = True
+        form_data['conductance_params'] = session.get('conductance_params', {})
+    
+    # Check if we should use linear conversion
+    using_linear_conversion = session.get('using_linear_conversion', False)
+    if using_linear_conversion:
+        form_data['using_linear_conversion'] = True
+    
+    # Convert form data to JSON
+    form_data_json = json.dumps(form_data)
+    
+    # Store in session for retrieval in render_plot
+    session['plot_form_data'] = form_data_json
+    
+    # Store table names in session (splitting if needed)
+    table_names = table_name.split(',')
+    session['plot_tables'] = table_names
+    
+    # Redirect to render-plot with a special parameter indicating to use session data
+    return redirect(f"/render-plot/{database}/from_session/{plot_function}")

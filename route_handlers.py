@@ -339,6 +339,11 @@ def render_plot(database, table_name, plot_function):
             print("- cluster_map present:", points_map is not None)
             print("- outlier_coordinates present:", bool(outlier_coordinates))
             print("- outlier_coordinates length:", len(outlier_coordinates) if outlier_coordinates else 0)
+            
+            # Extract BER filter values from form_data
+            ber_lower_limit = form_data.get('ber_lower_limit')
+            ber_upper_limit = form_data.get('ber_upper_limit')
+            print(f"BER filter values for template: lower={ber_lower_limit}, upper={ber_upper_limit}")
 
             return render_template(
                 'plot.html',
@@ -358,7 +363,9 @@ def render_plot(database, table_name, plot_function):
                 table_names=table_names,
                 target_values=form_data.get('target_values', []),
                 sigma_table=sigma_table,
-                sigma_points=sigma_points
+                sigma_points=sigma_points,
+                ber_lower_limit=ber_lower_limit,
+                ber_upper_limit=ber_upper_limit
             )
 
         except Exception as e:
@@ -2937,7 +2944,7 @@ def get_form_data_generate_plot(form):
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
             'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division', 'color_group_keywords',
-            'target_x_diff', 'num_interp_points'  # Added num_interp_points here
+            'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit'  # Added BER limit fields
         ]
     }
 
@@ -3013,6 +3020,24 @@ def get_form_data_generate_plot(form):
     except ValueError:
         form_data['num_interp_points'] = 500  # Default to 500 if conversion fails
         print(f"Failed to convert num_interp_points, using default: {form_data['num_interp_points']}")
+
+    # Process BER range limits
+    ber_lower_limit_str = form.get('ber_lower_limit', '')
+    ber_upper_limit_str = form.get('ber_upper_limit', '')
+    
+    try:
+        form_data['ber_lower_limit'] = int(ber_lower_limit_str) if ber_lower_limit_str.strip() else None
+        print(f"Converted ber_lower_limit to: {form_data['ber_lower_limit']}")
+    except ValueError:
+        form_data['ber_lower_limit'] = None
+        print(f"Failed to convert ber_lower_limit, using None")
+    
+    try:
+        form_data['ber_upper_limit'] = int(ber_upper_limit_str) if ber_upper_limit_str.strip() else None
+        print(f"Converted ber_upper_limit to: {form_data['ber_upper_limit']}")
+    except ValueError:
+        form_data['ber_upper_limit'] = None
+        print(f"Failed to convert ber_upper_limit, using None")
 
     print("Final Form Data:", form_data)  # Debug print
     return form_data

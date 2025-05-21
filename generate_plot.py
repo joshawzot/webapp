@@ -446,6 +446,11 @@ def generate_plot(table_names, database_name, form_data):
     using_linear_conversion = form_data.get('using_linear_conversion', False)
     conductance_params = form_data.get('conductance_params', {})
     
+    # Get BER range limits
+    ber_lower_limit = form_data.get('ber_lower_limit')
+    ber_upper_limit = form_data.get('ber_upper_limit')
+    print("BER filter range:", ber_lower_limit, "to", ber_upper_limit)
+    
     # Initialize sigma_distances and num_states at the start
     sigma_distances = {}
     num_states = 0
@@ -534,6 +539,69 @@ def generate_plot(table_names, database_name, form_data):
     miao_ber = []
     sub_array_size = []
 
+    # Compute the global min and max values among all data matrices
+    data_matrices = []
+    for table_name in table_names:
+        data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
+        
+        # Apply conductance conversion if enabled
+        if using_conductance and conductance_params:
+            print(f"Converting table {table_name} to conductance values")
+            data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+        # Apply linear conversion if enabled
+        elif using_linear_conversion:
+            print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
+            data_matrix = convert_table_to_linear(data_matrix)
+            
+        data_matrices.append((table_name, data_matrix))
+    
+    # Ensure all data matrices are converted to float
+    data_matrices = [(label, data_matrix.astype(float)) for label, data_matrix in data_matrices]
+
+    print("min")
+    global_min = min(np.min(data_matrix.astype(float)) for _, data_matrix in data_matrices)
+    global_max = max(np.max(data_matrix.astype(float)) for _, data_matrix in data_matrices)
+    g_range = (global_min, global_max)
+    print("min")
+
+    # Process each table to extract groups and statistics
+    table_ber_data = {}  # Store BER data for each table
+    table_indices = {}   # Map table names to their indices in the array
+    all_ber_results = []  # Store all BER results for filtering
+
+    for i, table_name in enumerate(table_names):
+        # Use the already processed data matrix
+        data_matrix = data_matrices[i][1]
+        
+        if target_range_flag == 0:
+            if form_data['state_pattern_type'] == '1D':
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups = get_group_data_new_from_matrix(
+                    data_matrix, selected_groups, number_of_states, custom_division)
+            elif form_data['state_pattern_type'] == 'predefined':
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups = get_group_data_from_matrix(
+                    data_matrix, selected_groups, pattern_file_array)
+        elif target_range_flag == 1:
+            if form_data['state_pattern_type'] == '1D':
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
+                    target_ranges, data_matrix, selected_groups, number_of_states, custom_division)
+            elif form_data['state_pattern_type'] == 'predefined':
+                # Modify to use the data matrix directly
+                groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                    target_ranges, data_matrix, selected_groups, pattern_file_array)
+            miao_ber.append(table_miao_ber)
+
+        # Extract average and standard deviation values for each selected group
+        table_avg_values = [stat[2] for stat in stats]  # Index 2 is average
+        table_std_values = [stat[3] for stat in stats]  # Index 3 is standard deviation
+
+        group_data.append(groups)
+        avg_values.append(table_avg_values)
+        std_values.append(table_std_values)
+        table_indices[table_name] = i
+
     # Generate colors based on keywords if provided
     if color_group_keywords:
         print(f"Using color group keywords: {color_group_keywords}")
@@ -585,77 +653,20 @@ def generate_plot(table_names, database_name, form_data):
         print("No color group keywords provided, using default colors.")
         colors = get_colors(len(table_names)) # from tools_for_plots.py
 
-    # Compute the global min and max values among all data matrices
-    data_matrices = []
-    for table_name in table_names:
-        data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
-        
-        # Apply conductance conversion if enabled
-        if using_conductance and conductance_params:
-            print(f"Converting table {table_name} to conductance values")
-            data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
-        # Apply linear conversion if enabled
-        elif using_linear_conversion:
-            print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
-            data_matrix = convert_table_to_linear(data_matrix)
-            
-        data_matrices.append((table_name, data_matrix))
+    # Before calculating sigma distances, add debug prints
+    print("About to check target_values condition")
+    print("target_values is:", target_values)
+    print("Is target_values truthy?", bool(target_values))
+    print("group_data structure:", [len(group) for group in group_data])
     
-    # Ensure all data matrices are converted to float
-    data_matrices = [(label, data_matrix.astype(float)) for label, data_matrix in data_matrices]
-
-    print("min")
-    global_min = min(np.min(data_matrix.astype(float)) for _, data_matrix in data_matrices)
-    global_max = max(np.max(data_matrix.astype(float)) for _, data_matrix in data_matrices)
-    g_range = (global_min, global_max)
-    print("min")
-
-    for i, table_name in enumerate(table_names):
-        # Use the already processed data matrix
-        data_matrix = data_matrices[i][1]
-        
-        if target_range_flag == 0:
-            if form_data['state_pattern_type'] == '1D':
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups = get_group_data_new_from_matrix(
-                    data_matrix, selected_groups, number_of_states, custom_division)
-            elif form_data['state_pattern_type'] == 'predefined':
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups = get_group_data_from_matrix(
-                    data_matrix, selected_groups, pattern_file_array)
-        elif target_range_flag == 1:
-            if form_data['state_pattern_type'] == '1D':
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
-                    target_ranges, data_matrix, selected_groups, number_of_states, custom_division)
-            elif form_data['state_pattern_type'] == 'predefined':
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                    target_ranges, data_matrix, selected_groups, pattern_file_array)
-            miao_ber.append(table_miao_ber)
-
-        # Extract average and standard deviation values for each selected group
-        table_avg_values = [stat[2] for stat in stats]  # Index 2 is average
-        table_std_values = [stat[3] for stat in stats]  # Index 3 is standard deviation
-
-        group_data.append(groups)
-        avg_values.append(table_avg_values)
-        std_values.append(table_std_values)
-
-        # Before calculating sigma distances, add debug prints
-        print("About to check target_values condition")
-        print("target_values is:", target_values)
-        print("Is target_values truthy?", bool(target_values))
-        print("group_data structure:", [len(group) for group in group_data])
-        
-        if target_values:
-            print("Inside target_values condition")
-            print("group_data length:", len(group_data))
-            sigma_distances = calculate_sigma_distances(group_data, target_values, table_names)
-            num_states = len(target_values)
-            print("Calculated sigma distances:", sigma_distances)
-        else:
-            print("target_values condition was False")
+    if target_values:
+        print("Inside target_values condition")
+        print("group_data length:", len(group_data))
+        sigma_distances = calculate_sigma_distances(group_data, target_values, table_names)
+        num_states = len(target_values)
+        print("Calculated sigma distances:", sigma_distances)
+    else:
+        print("target_values condition was False")
 
     print("equal")
     def combine_data(table_names, miao_ber):
@@ -674,9 +685,68 @@ def generate_plot(table_names, database_name, form_data):
         miao_ber = combine_data(table_names, miao_ber)
         print(miao_ber)
 
+    # Calculate BER values using transformed CDF for each table
+    print("Calculating BER values using transformed CDF...")
+    temp_plot_data_sigma, temp_plot_data_cdf, temp_plot_data_interpolated_cdf, ber_results, sigma_intersections = plot_transformed_cdf_2(
+        group_data, table_names, selected_groups, colors, target_x_diff, figsize=(15, 10), num_interp_points=form_data.get('num_interp_points', 500)
+    )
+
+    # Calculate max BER per table
+    max_ber_per_table = {}
+    for entry in ber_results:
+        table_name = entry[0]
+        ppm_ber = entry[4]  # ppm is at index 4 in the result tuple
+        
+        if ppm_ber is not None:
+            # Update max BER for table
+            if table_name not in max_ber_per_table or ppm_ber > max_ber_per_table[table_name]:
+                max_ber_per_table[table_name] = ppm_ber
+
+    # Apply BER range filtering if limits are provided
+    filtered_table_names = table_names[:]  # Start with all tables
+    if ber_lower_limit is not None or ber_upper_limit is not None:
+        filtered_table_names = []
+        for table_name in table_names:
+            # Get the max BER for this table
+            table_ber = max_ber_per_table.get(table_name, 0)
+            # Check if it's within the specified range
+            if ((ber_lower_limit is None or table_ber >= ber_lower_limit) and 
+                (ber_upper_limit is None or table_ber <= ber_upper_limit)):
+                filtered_table_names.append(table_name)
+        
+        print(f"Filtered tables from {len(table_names)} to {len(filtered_table_names)} based on BER range")
+        
+        if len(filtered_table_names) == 0:
+            print("Warning: No tables match the BER filter criteria!")
+            # Return empty results to indicate no tables match
+            return ([], [], None, None, None, None, [], [], [], None, None, {}, 0, [], {}, [])
+
+    # Create filtered versions of all data structures
+    filtered_indices = [table_indices[name] for name in filtered_table_names]
+    filtered_group_data = [group_data[i] for i in filtered_indices]
+    filtered_avg_values = [avg_values[i] for i in filtered_indices]
+    filtered_std_values = [std_values[i] for i in filtered_indices]
+    filtered_colors = [colors[i] for i in filtered_indices]
+    
+    if target_range_flag == 1:
+        filtered_miao_ber = {name: miao_ber[name] for name in filtered_table_names if name in miao_ber}
+    
+    filtered_data_matrices = [(name, matrix) for name, matrix in data_matrices if name in filtered_table_names]
+    
+    # Create a filtered version of sigma_distances if it exists
+    filtered_sigma_distances = {}
+    if sigma_distances:
+        filtered_sigma_distances = {name: sigma_distances[name] for name in filtered_table_names if name in sigma_distances}
+    
+    # Create a filtered version of sigma_intersections
+    filtered_sigma_intersections = {}
+    for table_name in filtered_table_names:
+        if table_name in sigma_intersections:
+            filtered_sigma_intersections[table_name] = sigma_intersections[table_name]
+
     # Plot the color maps using the shared color scale if color_map_flag is True
     if color_map_flag:
-        for table_name, data_matrix in data_matrices:
+        for table_name, data_matrix in filtered_data_matrices:
             if state_pattern in ("1296x64_rowbar_4states", "1296x64_Adrien_random_4states", "1296x64_1state"):
                 encoded_plots.append(plot_colormap_magnified(
                     data_matrix, title=f"Colormap for {table_name}", g_range=g_range))
@@ -684,12 +754,11 @@ def generate_plot(table_names, database_name, form_data):
                 encoded_plots.append(plot_colormap(
                     data_matrix, title=f"Colormap for {table_name}", g_range=g_range))
 
-    # Generate plots for individual tables using original 'table_names'
-    encoded_plots.append(plot_boxplot(group_data, table_names))
-    #encoded_plots.append(plot_histogram(group_data, table_names, colors))
-
-    encoded_plots.append(plot_average_values_table(avg_values, table_names, selected_groups))
-    encoded_plots.append(plot_std_values_table(std_values, table_names, selected_groups))
+    # Generate plots for filtered tables
+    encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
+    
+    encoded_plots.append(plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups))
+    encoded_plots.append(plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups))
 
     # Get num_interp_points from form_data or use default
     num_interp_points = form_data.get('num_interp_points', 500)
@@ -702,10 +771,12 @@ def generate_plot(table_names, database_name, form_data):
     elif not isinstance(num_interp_points, int):
         num_interp_points = 500  # Default if not an integer
 
-    # When calling plot_transformed_cdf_2, pass the num_interp_points
-    plot_data_sigma, plot_data_cdf, plot_data_interpolated_cdf, ber_results, sigma_intersections = plot_transformed_cdf_2(
-        group_data, table_names, selected_groups, colors, target_x_diff, figsize=(15, 10), num_interp_points=num_interp_points
+    # Re-calculate plot data with filtered tables
+    plot_data_sigma, plot_data_cdf, plot_data_interpolated_cdf, filtered_ber_results, filtered_sigma_intersections = plot_transformed_cdf_2(
+        filtered_group_data, filtered_table_names, selected_groups, filtered_colors, target_x_diff, 
+        figsize=(15, 10), num_interp_points=num_interp_points
     )
+    
     encoded_plots.append(plot_data_sigma)
     encoded_plots.append(plot_data_cdf)
     encoded_plots.append(plot_data_interpolated_cdf)
@@ -713,18 +784,19 @@ def generate_plot(table_names, database_name, form_data):
     # Create a table for sigma intersections
     sigma_points = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
     sigma_table = {}
-    for table_name in table_names:
-        sigma_table[table_name] = sigma_intersections[table_name]
+    for table_name in filtered_table_names:
+        if table_name in filtered_sigma_intersections:
+            sigma_table[table_name] = filtered_sigma_intersections[table_name]
 
     if target_range_flag == 1:
-        print("miao_ber:", miao_ber)
-        encoded_plots.append(plot_miao(miao_ber))
+        print("filtered_miao_ber:", filtered_miao_ber)
+        encoded_plots.append(plot_miao(filtered_miao_ber))
     
     # Only perform outlier analysis if the flag is enabled and state_pattern_type is predefined
     if outlier_analysis_flag and form_data['state_pattern_type'] == 'predefined':
         try:
-            # Process each table's data for outliers
-            for table_idx, table_name in enumerate(table_names):
+            # Process each filtered table's data for outliers
+            for table_idx, table_name in enumerate(filtered_table_names):
                 try:
                     # Get the data matrix for this table
                     data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
@@ -736,13 +808,13 @@ def generate_plot(table_names, database_name, form_data):
                     print(f"Table {table_name} dimensions: {rows}x{cols}")
                     
                     # Get the last group's data
-                    if len(group_data) > 0 and len(group_data[table_idx]) > 0:
+                    if len(filtered_group_data) > 0 and len(filtered_group_data[table_idx]) > 0:
                         last_group_idx = len(selected_groups) - 1 if selected_groups else 0
-                        if last_group_idx >= len(group_data[table_idx]):
+                        if last_group_idx >= len(filtered_group_data[table_idx]):
                             print(f"Warning: last_group_idx {last_group_idx} exceeds group_data length")
                             continue
                             
-                        last_group = np.array(group_data[table_idx][last_group_idx], dtype=float)
+                        last_group = np.array(filtered_group_data[table_idx][last_group_idx], dtype=float)
                         last_group = np.ravel(last_group)
                         
                         if len(last_group) == 0:
@@ -794,7 +866,7 @@ def generate_plot(table_names, database_name, form_data):
                 # Generate cluster map if we have correlation analysis
                 if correlation_analysis:
                     # Get the dimensions from the first table's data matrix
-                    first_table_name = table_names[0]
+                    first_table_name = filtered_table_names[0]
                     data_matrix, data_matrix_size = get_full_table_data(first_table_name, database_name)
                     rows, cols = data_matrix_size
                     cluster_map = plot_individual_points_map(correlation_analysis, table_dimensions=(rows, cols))
@@ -827,7 +899,7 @@ def generate_plot(table_names, database_name, form_data):
          sorted_table_names_100ppm,
          sorted_table_names_200ppm,
          sorted_table_names_500ppm,
-         sorted_table_names_1000ppm) = plot_ber_tables(ber_results, target_x_diff, num_interp_points)
+         sorted_table_names_1000ppm) = plot_ber_tables(filtered_ber_results, target_x_diff, num_interp_points)
 
         # Since we now have a combined image, append it to the plots
         encoded_plots.append(ppm_image)
@@ -865,9 +937,9 @@ def generate_plot(table_names, database_name, form_data):
                 outlier_coordinates if outlier_analysis_flag else [],  # Only return outlier coordinates if flag is True
                 correlation_analysis if outlier_analysis_flag else None,  # Only return correlation analysis if flag is True
                 cluster_map if outlier_analysis_flag else None,
-                sigma_distances,
+                filtered_sigma_distances,
                 num_states,
-                table_names,
+                filtered_table_names,
                 sigma_table,  # Add sigma intersections table
                 sigma_points)  # Add sigma points
     else:
@@ -898,9 +970,9 @@ def generate_plot(table_names, database_name, form_data):
             outlier_coordinates if outlier_analysis_flag else [],
             correlation_analysis if outlier_analysis_flag else None,
             cluster_map if outlier_analysis_flag else None,
-            sigma_distances,
+            filtered_sigma_distances,
             num_states,
-            table_names,
+            filtered_table_names,
             sigma_table,  # Add sigma intersections table
             sigma_points)  # Add sigma points
 

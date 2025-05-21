@@ -118,6 +118,22 @@
             <small class="form-text text-muted">Default: 500 (usually 500 is good enough, we used to use 4000) </small>
         </div>
 
+        <!-- Add new BER range filter fields -->
+        <div class="form-group">
+            <label for="ber_range_filter">Filter by BER Range:</label>
+            <div class="row">
+                <div class="col">
+                    <input type="number" class="form-control" name="ber_lower_limit" id="ber_lower_limit" placeholder="Lower limit (ppm)" min="0">
+                    <!-- <small class="form-text text-muted">Minimum BER value (in ppm)</small> -->
+                </div>
+                <div class="col">
+                    <input type="number" class="form-control" name="ber_upper_limit" id="ber_upper_limit" placeholder="Upper limit (ppm)" min="0">
+                    <!-- <small class="form-text text-muted">Maximum BER value (in ppm)</small> -->
+                </div>
+            </div>
+            <!-- <small class="form-text text-muted">Leave empty to include all tables regardless of BER. The BER of a table is the maximum BER value between adjacent states.</small> -->
+        </div>
+
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 </div>

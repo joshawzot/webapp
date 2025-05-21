@@ -8,6 +8,24 @@
     </div>
 </div>
 
+<!-- Add BER Filter Range information if provided -->
+{% if ber_lower_limit is not none or ber_upper_limit is not none %}
+<div class="row mb-3">
+    <div class="col">
+        <div class="alert alert-info">
+            <strong>BER Filter Range Applied:</strong>
+            {% if ber_lower_limit is not none and ber_upper_limit is not none %}
+                {{ ber_lower_limit }} to {{ ber_upper_limit }} ppm
+            {% elif ber_lower_limit is not none %}
+                ≥ {{ ber_lower_limit }} ppm
+            {% elif ber_upper_limit is not none %}
+                ≤ {{ ber_upper_limit }} ppm
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Add a Download Images as PPTX button in the second row -->
 <div class="row">
     <div class="col">

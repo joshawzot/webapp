@@ -782,8 +782,24 @@ if __name__ == '__main__':
     import eventlet
     eventlet.monkey_patch()
     
-    port = int(os.environ.get("PORT", 3000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    # Run the app on multiple ports (3001-3020)
+    import multiprocessing
+    
+    def start_server(port):
+        print(f"Starting server on port {port}")
+        socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    
+    # Create and start processes for each port
+    processes = []
+    for port in range(3000, 3006):  # This will run from 3001 to 3020
+        process = multiprocessing.Process(target=start_server, args=(port,))
+        processes.append(process)
+        process.start()
+        print(f"Started process for port {port}")
+    
+    # Wait for all processes to complete (which they won't unless interrupted)
+    for process in processes:
+        process.join()
 else:
     # WSGI entry point - this is used by Gunicorn
     # We need to make sure Gunicorn can work with SocketIO

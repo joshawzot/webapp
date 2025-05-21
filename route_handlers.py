@@ -57,7 +57,6 @@ from datetime import datetime
 
 # Custom module imports
 from generate_plot import generate_plot
-from generate_plot_read_stability import generate_plot_read_stability
 
 #from flask_caching import Cache
 #cache = Cache(app, config={'CACHE_TYPE': 'simple'})
@@ -234,7 +233,6 @@ def view_table(database, table_name):
 # Define a dictionary to map plot function names to their corresponding functions
 generate_plot_functions = {
     "generate_plot": generate_plot,
-    "generate_plot_read_stability": generate_plot_read_stability,
 }
 
 @app.route('/render-plot/<database>/<table_name>/<plot_function>')
@@ -278,7 +276,6 @@ def render_plot(database, table_name, plot_function):
         # Validate plot function
         plot_functions = {
             'generate_plot': generate_plot,
-            'generate_plot_read_stability': generate_plot_read_stability,
         }
 
         # Validate plot function
@@ -528,8 +525,6 @@ def view_plot(database, table_name, plot_function):
             if plot_function in generate_plot_functions:
                 if plot_function == "generate_plot":
                     return render_template('input_form_generate_plot.html', database=database, table_name=table_name, plot_function=plot_function)
-                elif plot_function == "generate_plot_read_stability":
-                    return render_template('input_form_generate_plot_read_stability.html', database=database, table_name=table_name, plot_function=plot_function)
             else:
                 return f"Invalid plot function selection", 400
         
@@ -3042,20 +3037,6 @@ def get_form_data_generate_plot(form):
     print("Final Form Data:", form_data)  # Debug print
     return form_data
 
-def get_form_data_generate_plot_read_stability(form):
-    # Initialize form_data dictionary
-    form_data = {}
-
-    # Retrieve and store the 'state_pattern' from the form
-    form_data['state_pattern'] = form.get('state_pattern', None)
-    form_data['input_integer'] = form.get('input_integer', None)
-
-    # Debug print to check the retrieved 'state_pattern'
-    print("State Pattern:", form_data['state_pattern'])
-    print("input_integer:", form_data['input_integer'])
-
-    return form_data
-
 def flatten_sections(array_3d):
     """Flatten 16x16 sections from a 3D array."""
     slices = [array_3d[row:row+16, col:col+16, setting].flatten()
@@ -4791,8 +4772,6 @@ def process_plot_form():
                                       linear_conversion_comparison=linear_conversion_comparison,
                                       linear_min=linear_min,
                                       linear_max=linear_max)
-    elif plot_function == "generate_plot_read_stability":
-        form_data = get_form_data_generate_plot_read_stability(request.form)
     else:
         return 'Invalid plot function', 400
     

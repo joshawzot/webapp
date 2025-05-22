@@ -1268,9 +1268,7 @@ def plot_ber_tables(ber_results, target_x_diff=2, num_interp_points=1000):
         num_interp_points: Number of interpolation points used (default: 1000)
         
     Returns:
-        Tuple of (sigma_image, ppm_image, uS_image, additional_image, 
-               sorted_table_names, sorted_table_names_100ppm, sorted_table_names_200ppm, 
-               sorted_table_names_500ppm, sorted_table_names_1000ppm)
+        Tuple of (sigma_image, ppm_image, uS_image, additional_image, sorted_table_names)
     """
     # Extract unique table names and state transitions
     table_names = sorted(set(entry[0] for entry in ber_results))
@@ -1303,14 +1301,11 @@ def plot_ber_tables(ber_results, target_x_diff=2, num_interp_points=1000):
         for table_name, transitions in ber_data.items()
     }
 
-    # Sort table names and create threshold-based lists
+    # Sort table names by BER (low to high)
+    # Note: These tables are already filtered by the generate_plot function
+    # so we're only sorting the remaining tables by BER
     sorted_table_names = sorted(max_ber_per_table, key=max_ber_per_table.get, reverse=False)
-    sorted_tables_by_threshold = {
-        threshold: [table for table in sorted_table_names 
-                   if max_ber_per_table[table] <= threshold]
-        for threshold in [100, 200, 500, 1000]
-    }
-
+    
     # Prepare headers and data structures
     headers = ["State/Transition"] + sorted_table_names + ["Row Avg"]
     data_structures = {
@@ -1363,15 +1358,12 @@ def plot_ber_tables(ber_results, target_x_diff=2, num_interp_points=1000):
         transposed_data = [list(x) for x in zip(*data_structures[key])]
         images[key] = plot_table(transposed_data, title, transpose=False)
 
+    # Return only the images and sorted_table_names
     return (images['sigma'],
             images['ppm'],
             images['uS'],
             images['additional'],
-            sorted_table_names,
-            sorted_tables_by_threshold.get(100, []),
-            sorted_tables_by_threshold.get(200, []),
-            sorted_tables_by_threshold.get(500, []),
-            sorted_tables_by_threshold.get(1000, []))
+            sorted_table_names)
 
 def plot_table(data, title, transpose=False):
     """

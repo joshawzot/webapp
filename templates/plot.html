@@ -1,308 +1,468 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Add a Return to Home Page button in the first row -->
-<div class="row mb-3">
-    <div class="col">
-        <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
-    </div>
-</div>
 
-<!-- Add BER Filter Range information if provided -->
-{% if ber_lower_limit is not none or ber_upper_limit is not none %}
-<div class="row mb-3">
-    <div class="col">
-        <div class="alert alert-info">
-            <strong>BER Filter Range Applied:</strong>
-            {% if ber_lower_limit is not none and ber_upper_limit is not none %}
-                {{ ber_lower_limit }} to {{ ber_upper_limit }} ppm
-            {% elif ber_lower_limit is not none %}
-                ≥ {{ ber_lower_limit }} ppm
-            {% elif ber_upper_limit is not none %}
-                ≤ {{ ber_upper_limit }} ppm
-            {% endif %}
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Add a Download Images as PPTX button in the second row -->
-<div class="row">
-    <div class="col">
-        <button class="btn btn-success" id="downloadPPTX">Download all as PPTX</button>
-    </div>
-</div>
-
-<div class="mb-4">
-    {% for plot in plot_data %}
-        <div class="plot-container mb-3">
-            <img src="data:image/png;base64,{{ plot }}" alt="Generated Plot" class="img-fluid">
-            <button class="btn btn-primary mt-2" onclick="downloadPlot('{{ plot }}', {{ loop.index }})">Download Plot</button>
-        </div>
-    {% endfor %}
-</div>
-
-<!-- Link to external JavaScript libraries and your scripts.js file -->
-
-<script>
-    document.getElementById('downloadPPTX').addEventListener('click', function() {
-        // Prompt user for filename
-        var filename = prompt("Enter a filename for your presentation:");
-        
-        // If user cancels or enters empty string, use default filename
-        if (filename === null) {
-            // User clicked cancel, abort download
-            return;
-        }
-        
-        // Ensure filename has .pptx extension
-        if (!filename.toLowerCase().endsWith('.pptx')) {
-            filename += '.pptx';
-        }
-        
-        var plots = Array.from(document.querySelectorAll('.plot-container img')).map(function(img) {
-            return img.src; // This is the Base64 encoded image
-        });
+<div class="container-fluid">
+    <h1 class="mt-4 mb-4">Plot Results</h1>
     
-        fetch('{{ url_for('download_pptx') }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({plots: plots}),
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            // Create a link to download the blob
-            var url = window.URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
+    <!-- Return to Home Page button -->
+    <div class="row mb-3">
+        <div class="col">
+            <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+        </div>
+    </div>
+    
+    <!-- Add information banner for Tables with best BER -->
+    {% if ber_display_option == 'top_ios' and top_ios_count and top_ios_count < initial_table_count %}
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-info">
+                <strong>Tables with Best BER Filter Applied:</strong>
+                Showing top {{ top_ios_count }} out of {{ initial_table_count }} selected tables
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Add BER Filter Range information if provided -->
+    {% if ber_lower_limit is not none or ber_upper_limit is not none %}
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-info">
+                <strong>BER Filter Range Applied:</strong>
+                {% if ber_lower_limit is not none and ber_upper_limit is not none %}
+                    {{ ber_lower_limit }} to {{ ber_upper_limit }} ppm
+                {% elif ber_lower_limit is not none %}
+                    ≥ {{ ber_lower_limit }} ppm
+                {% elif ber_upper_limit is not none %}
+                    ≤ {{ ber_upper_limit }} ppm
+                {% endif %}
+                <br>
+                <span class="mt-1 d-block">
+                    <strong>Tables:</strong> {{ filtered_table_count }} out of {{ initial_table_count }} selected tables are in this range
+                    {% if filtered_table_count == 0 %}
+                    <span class="text-danger">(Warning: No tables match the filter criteria)</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Add a Download Images as PPTX button in the second row -->
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-success" id="downloadPPTX">Download all as PPTX</button>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        {% for plot in plot_data %}
+            <div class="plot-container mb-3">
+                <img src="data:image/png;base64,{{ plot }}" alt="Generated Plot" class="img-fluid" id="plot-img-{{ loop.index }}">
+                <button class="btn btn-primary mt-2 download-plot-btn" data-index="{{ loop.index }}">Download Plot</button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Link to external JavaScript libraries and your scripts.js file -->
+
+    <script>
+        document.getElementById('downloadPPTX').addEventListener('click', function() {
+            // Prompt user for filename
+            var filename = prompt("Enter a filename for your presentation:");
+            
+            // If user cancels or enters empty string, use default filename
+            if (filename === null) {
+                // User clicked cancel, abort download
+                return;
+            }
+            
+            // Ensure filename has .pptx extension
+            if (!filename.toLowerCase().endsWith('.pptx')) {
+                filename += '.pptx';
+            }
+            
+            var plots = Array.from(document.querySelectorAll('.plot-container img')).map(function(img) {
+                return img.src; // This is the Base64 encoded image
+            });
+        
+            fetch('{{ url_for('download_pptx') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({plots: plots})
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                // Create a link to download the blob
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            });
         });
-    });
+        
+        // Add event listeners to download buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all download buttons
+            var downloadButtons = document.querySelectorAll('.download-plot-btn');
+            
+            // Add click event listener to each button
+            downloadButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var index = this.getAttribute('data-index');
+                    var imgElement = document.getElementById('plot-img-' + index);
+                    var plotData = imgElement.src.split(',')[1]; // Extract the base64 part
+                    
+                    // Create a link to download the plot
+                    var a = document.createElement('a');
+                    a.href = imgElement.src;
+                    a.download = 'plot_' + index + '.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                });
+            });
+        });
     </script>
 
-<!-- Add code to display the sorted table names at the end -->
-{% if sorted_table_names %}
-    <h3>IO sorted with BER low to high (table_names must contain such as "io34_" to have io number extracted):</h3>
-    <pre>{{ sorted_table_names|join(', ') }}</pre>
-{% endif %}
+    <!-- JavaScript for copy buttons -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all copy buttons
+            var copyButtons = document.querySelectorAll('.copy-btn');
+            
+            // Add click event listener to each button
+            copyButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    // Get the target element ID
+                    var targetId = this.getAttribute('data-copy-target');
+                    var targetElement = document.getElementById(targetId);
+                    var btn = this; // Store reference to button
+                    
+                    if (targetElement) {
+                        // Get the text to copy
+                        var textToCopy = targetElement.textContent.trim();
+                        
+                        // Method 1: Try using the modern Clipboard API
+                        copyTextToClipboard(textToCopy, btn);
+                    }
+                });
+            });
+            
+            // Function to handle copying text to clipboard with fallbacks
+            function copyTextToClipboard(text, button) {
+                // Store original button text for restoration
+                var originalText = button.innerHTML;
+                
+                // Try using the Clipboard API first
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        showCopySuccess(button, originalText);
+                    }).catch(function(err) {
+                        console.error('Clipboard API error:', err);
+                        fallbackCopyTextToClipboard(text, button, originalText);
+                    });
+                } else {
+                    // If Clipboard API not available, use fallback
+                    fallbackCopyTextToClipboard(text, button, originalText);
+                }
+            }
+            
+            // Fallback method using document.execCommand
+            function fallbackCopyTextToClipboard(text, button, originalText) {
+                try {
+                    // Create temporary textarea element
+                    var textArea = document.createElement("textarea");
+                    
+                    // Style it to be out of the way but visible (some browsers need it to be visible)
+                    textArea.style.position = "fixed";
+                    textArea.style.top = "0";
+                    textArea.style.left = "0";
+                    textArea.style.width = "2em";
+                    textArea.style.height = "2em";
+                    textArea.style.padding = "0";
+                    textArea.style.border = "none";
+                    textArea.style.outline = "none";
+                    textArea.style.boxShadow = "none";
+                    textArea.style.background = "transparent";
+                    
+                    // Set and select the text
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    
+                    // Execute copy command
+                    var successful = document.execCommand('copy');
+                    
+                    // Clean up
+                    document.body.removeChild(textArea);
+                    
+                    if (successful) {
+                        showCopySuccess(button, originalText);
+                    } else {
+                        showCopyFailure(button, originalText);
+                    }
+                } catch (err) {
+                    console.error('Fallback copy error:', err);
+                    showCopyFailure(button, originalText);
+                }
+            }
+            
+            // Show success feedback
+            function showCopySuccess(button, originalText) {
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            }
+            
+            // Show failure feedback
+            function showCopyFailure(button, originalText) {
+                button.innerHTML = '<i class="fas fa-times"></i> Failed to copy';
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-danger');
+                
+                setTimeout(function() {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-danger');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            }
+        });
+    </script>
 
-{% if sorted_table_names_100ppm %}
-    <h3>IO sorted with BER ≤ 100ppm:</h3>
-    <pre>{{ sorted_table_names_100ppm|join(', ') }}</pre>
-{% endif %}
+    <!-- Add code to display the sorted table names at the end -->
+    {% if sorted_table_names %}
+        {% if ber_display_option == 'top_ios' %}
+            {% if top_ios_count is none or top_ios_count == initial_table_count %}
+                <!-- Show all tables when top_ios_count is none or equal to initial_table_count -->
+                <div class="d-flex align-items-center mb-2">
+                    <h3 class="me-2 mb-0">IOs sorted with BER low to high:</h3>
+                    <button class="btn btn-sm btn-outline-primary copy-btn" data-copy-target="all-tables">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <pre id="all-tables">{{ sorted_table_names|join(', ') }}</pre>
+            {% endif %}
+        {% else %}
+            <!-- Always show this section for ber_range option -->
+            <div class="d-flex align-items-center mb-2">
+                <h3 class="me-2 mb-0">IOs sorted with BER low to high:</h3>
+                <button class="btn btn-sm btn-outline-primary copy-btn" data-copy-target="all-tables">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <pre id="all-tables">{{ sorted_table_names|join(', ') }}</pre>
+        {% endif %}
+    {% endif %}
 
-{% if sorted_table_names_200ppm %}
-    <h3>IO sorted with BER ≤ 200ppm:</h3>
-    <pre>{{ sorted_table_names_200ppm|join(', ') }}</pre>
-{% endif %}
+    <!-- Display top IOs sorted with BER low to high, only when appropriate -->
+    {% if best_32 and ber_display_option == 'top_ios' %}
+        {% if top_ios_count and top_ios_count < initial_table_count %}
+            <div class="d-flex align-items-center mb-2">
+                <h3 class="me-2 mb-0">Top {{ top_ios_count }} IOs sorted with BER low to high:</h3>
+                <button class="btn btn-sm btn-outline-primary copy-btn" data-copy-target="top-tables">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <pre id="top-tables">{{ best_32|join(', ') }}</pre>
+        {% endif %}
+    {% endif %}
 
-{% if sorted_table_names_500ppm %}
-    <h3>IO sorted with BER ≤ 500ppm:</h3>
-    <pre>{{ sorted_table_names_500ppm|join(', ') }}</pre>
-{% endif %}
-
-{% if sorted_table_names_1000ppm %}
-    <h3>IO sorted with BER ≤ 1000ppm:</h3>
-    <pre>{{ sorted_table_names_1000ppm|join(', ') }}</pre>
-{% endif %}
-
-<!-- Add the following two sections to display the best 32 IOs -->
-{% if best_32 %}
-    <h3>Top 32 IOs sorted with BER low to high:</h3>
-    <pre>{{ best_32|join(', ') }}</pre>
-{% endif %}
-
-{% if best_32_with_io %}
-    <h3>Top 32 IOs with 'io' prefix:</h3>
-    <pre>{{ best_32_with_io|join(', ') }}</pre>
-{% endif %}
-
-<!-- Individual Points Map -->
-{% if outlier_coordinates and cluster_map %}
-<div class="card mb-3">
-    <div class="card-header">
-        <h4>Individual Points Map</h4>
-    </div>
-    <div class="card-body">
-        <div class="map-container">
-            <img src="data:image/png;base64,{{ cluster_map }}" alt="Individual Points Map" class="img-fluid">
-        </div>
-    </div>
-</div>
-{% endif %}
-
-{% if outlier_coordinates %}
+    <!-- Individual Points Map -->
+    {% if outlier_coordinates and cluster_map %}
     <div class="card mb-3">
         <div class="card-header">
-            <h4>Outlier Analysis (Values < 50)</h4>
+            <h4>Individual Points Map</h4>
         </div>
         <div class="card-body">
-            <!-- Summary Statistics -->
-            <p>Total Outliers: {{ outlier_coordinates|length }}</p>
-
-            <!-- Outliers Table -->
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Table</th>
-                            <th>Coordinates (row, col)</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for outlier in outlier_coordinates %}
-                        <tr>
-                            <td>{{ outlier.table }}</td>
-                            <td>({{ outlier.coordinates[0] }}, {{ outlier.coordinates[1] }})</td>
-                            <td>{{ "%.3f"|format(outlier.value) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="map-container">
+                <img src="data:image/png;base64,{{ cluster_map }}" alt="Individual Points Map" class="img-fluid">
             </div>
         </div>
     </div>
-{% endif %}
+    {% endif %}
 
-<!-- After the sigma plot but before the BER results -->
-{% if target_values %}
-    <div class="sigma-distance-tables mt-4 mb-4">
-        <h3>Sigma Distance Analysis</h3>
-        {% for table_name in table_names %}
-            <div class="table-responsive mb-4">
-                <h4>{{ table_name }}</h4>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>-4sigma</th>
-                            <th>-3sigma</th>
-                            <th>-2sigma</th>
-                            <th>-1sigma</th>
-                            <th>Mean</th>
-                            <th>1sigma</th>
-                            <th>2sigma</th>
-                            <th>3sigma</th>
-                            <th>4sigma</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for state_idx in range(num_states) %}
-                            <tr>
-                                <th>State {{ state_idx }}</th>
-                                {% for sigma_val in sigma_distances[table_name][state_idx] %}
-                                    <td>{{ "%.1f"|format(sigma_val) }}</td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    {% if outlier_coordinates %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h4>Outlier Analysis (Values < 50)</h4>
             </div>
-        {% endfor %}
-    </div>
-{% endif %}
+            <div class="card-body">
+                <!-- Summary Statistics -->
+                <p>Total Outliers: {{ outlier_coordinates|length }}</p>
 
-<!-- Add Sigma Intersections Table -->
-{% if sigma_table %}
-    <div class="sigma-intersections-tables mt-4 mb-4">
-        <h3>Sigma Intersections Analysis</h3>
-        {% for table_name in table_names %}
-            <div class="table-responsive mb-4">
-                <h4>{{ table_name }}</h4>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            {% for sigma in sigma_points %}
-                                <th>{{ sigma }}σ</th>
+                <!-- Outliers Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Table</th>
+                                <th>Coordinates (row, col)</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for outlier in outlier_coordinates %}
+                            <tr>
+                                <td>{{ outlier.table }}</td>
+                                <td>({{ outlier.coordinates[0] }}, {{ outlier.coordinates[1] }})</td>
+                                <td>{{ "%.3f"|format(outlier.value) }}</td>
+                            </tr>
                             {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for state_idx in range(sigma_table[table_name]|length) %}
-                            <tr>
-                                <th>State {{ state_idx }}</th>
-                                {% for x_val in sigma_table[table_name][state_idx] %}
-                                    <td>{{ "%.1f"|format(x_val) if not x_val|is_nan else "N/A" }}</td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        {% endfor %}
-    </div>
+        </div>
+    {% endif %}
 
-    <!-- Add Sigma Drift Analysis Table -->
-    <div class="sigma-drift-tables mt-4 mb-4">
-        <h3>Sigma Drift Analysis</h3>
-        {% for table_name in table_names %}
-            <div class="table-responsive mb-4">
-                <h4>{{ table_name }}</h4>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            {% for sigma in sigma_points %}
-                                <th>{{ sigma }}σ</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for state_idx in range(sigma_table[table_name]|length) %}
+    <!-- After the sigma plot but before the BER results -->
+    {% if target_values %}
+        <div class="sigma-distance-tables mt-4 mb-4">
+            <h3>Sigma Distance Analysis</h3>
+            {% for table_name in table_names %}
+                <div class="table-responsive mb-4">
+                    <h4>{{ table_name }}</h4>
+                    <table class="table table-bordered">
+                        <thead>
                             <tr>
-                                <th>State {{ state_idx }}</th>
-                                {% for i in range(sigma_points|length) %}
-                                    {% if i == 0 %}
-                                        <!-- For -4σ column: current value - next value -->
-                                        {% set current_val = sigma_table[table_name][state_idx][i] %}
-                                        {% set next_val = sigma_table[table_name][state_idx][i+1] %}
-                                        {% if not current_val|is_nan and not next_val|is_nan %}
-                                            <td>{{ "%.1f"|format(current_val - next_val) }}</td>
-                                        {% else %}
-                                            <td>N/A</td>
-                                        {% endif %}
-                                    {% elif i == 4 %}
-                                        <!-- For 0σ column: mean value - target value -->
-                                        {% set mean_val = sigma_table[table_name][state_idx][i] %}
-                                        {% if target_values and state_idx < target_values|length and not mean_val|is_nan %}
-                                            <td>{{ "%.1f"|format(mean_val - target_values[state_idx]) }}</td>
-                                        {% else %}
-                                            <td>N/A</td>
-                                        {% endif %}
-                                    {% elif i < 4 %}
-                                        <!-- For negative sigma columns (-3σ, -2σ, -1σ): current value - next value -->
-                                        {% set current_val = sigma_table[table_name][state_idx][i] %}
-                                        {% set next_val = sigma_table[table_name][state_idx][i+1] %}
-                                        {% if not current_val|is_nan and not next_val|is_nan %}
-                                            <td>{{ "%.1f"|format(current_val - next_val) }}</td>
-                                        {% else %}
-                                            <td>N/A</td>
-                                        {% endif %}
-                                    {% else %}
-                                        <!-- For positive sigma columns (1σ, 2σ, 3σ, 4σ): current value - previous value -->
-                                        {% set current_val = sigma_table[table_name][state_idx][i] %}
-                                        {% set prev_val = sigma_table[table_name][state_idx][i-1] %}
-                                        {% if not current_val|is_nan and not prev_val|is_nan %}
-                                            <td>{{ "%.1f"|format(current_val - prev_val) }}</td>
-                                        {% else %}
-                                            <td>N/A</td>
-                                        {% endif %}
-                                    {% endif %}
+                                <th></th>
+                                <th>-4sigma</th>
+                                <th>-3sigma</th>
+                                <th>-2sigma</th>
+                                <th>-1sigma</th>
+                                <th>Mean</th>
+                                <th>1sigma</th>
+                                <th>2sigma</th>
+                                <th>3sigma</th>
+                                <th>4sigma</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for state_idx in range(num_states) %}
+                                <tr>
+                                    <th>State {{ state_idx }}</th>
+                                    {% for sigma_val in sigma_distances[table_name][state_idx] %}
+                                        <td>{{ "%.1f"|format(sigma_val) }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Add Sigma Intersections Table -->
+    {% if sigma_table %}
+        <div class="sigma-intersections-tables mt-4 mb-4">
+            <h3>Sigma Intersections Analysis</h3>
+            {% for table_name in table_names %}
+                <div class="table-responsive mb-4">
+                    <h4>{{ table_name }}</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                {% for sigma in sigma_points %}
+                                    <th>{{ sigma }}σ</th>
                                 {% endfor %}
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
+                        </thead>
+                        <tbody>
+                            {% for state_idx in range(sigma_table[table_name]|length) %}
+                                <tr>
+                                    <th>State {{ state_idx }}</th>
+                                    {% for x_val in sigma_table[table_name][state_idx] %}
+                                        <td>{{ "%.1f"|format(x_val) if not x_val|is_nan else "N/A" }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Add Sigma Drift Analysis Table -->
+        <div class="sigma-drift-tables mt-4 mb-4">
+            <h3>Sigma Drift Analysis</h3>
+            {% for table_name in table_names %}
+                <div class="table-responsive mb-4">
+                    <h4>{{ table_name }}</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                {% for sigma in sigma_points %}
+                                    <th>{{ sigma }}σ</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for state_idx in range(sigma_table[table_name]|length) %}
+                                <tr>
+                                    <th>State {{ state_idx }}</th>
+                                    {% for i in range(sigma_points|length) %}
+                                        {% if i == 0 %}
+                                            <!-- For -4σ column: current value - next value -->
+                                            {% set current_val = sigma_table[table_name][state_idx][i] %}
+                                            {% set next_val = sigma_table[table_name][state_idx][i+1] %}
+                                            {% if not current_val|is_nan and not next_val|is_nan %}
+                                                <td>{{ "%.1f"|format(current_val - next_val) }}</td>
+                                            {% else %}
+                                                <td>N/A</td>
+                                            {% endif %}
+                                        {% elif i == 4 %}
+                                            <!-- For 0σ column: mean value - target value -->
+                                            {% set mean_val = sigma_table[table_name][state_idx][i] %}
+                                            {% if target_values and state_idx < target_values|length and not mean_val|is_nan %}
+                                                <td>{{ "%.1f"|format(mean_val - target_values[state_idx]) }}</td>
+                                            {% else %}
+                                                <td>N/A</td>
+                                            {% endif %}
+                                        {% elif i < 4 %}
+                                            <!-- For negative sigma columns (-3σ, -2σ, -1σ): current value - next value -->
+                                            {% set current_val = sigma_table[table_name][state_idx][i] %}
+                                            {% set next_val = sigma_table[table_name][state_idx][i+1] %}
+                                            {% if not current_val|is_nan and not next_val|is_nan %}
+                                                <td>{{ "%.1f"|format(current_val - next_val) }}</td>
+                                            {% else %}
+                                                <td>N/A</td>
+                                            {% endif %}
+                                        {% else %}
+                                            <!-- For positive sigma columns (1σ, 2σ, 3σ, 4σ): current value - previous value -->
+                                            {% set current_val = sigma_table[table_name][state_idx][i] %}
+                                            {% set prev_val = sigma_table[table_name][state_idx][i-1] %}
+                                            {% if not current_val|is_nan and not prev_val|is_nan %}
+                                                <td>{{ "%.1f"|format(current_val - prev_val) }}</td>
+                                            {% else %}
+                                                <td>N/A</td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
 
 {% endblock %}

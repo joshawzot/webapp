@@ -141,6 +141,14 @@
                 <input type="text" id="ioOrFilters" class="form-control" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
             </div>
         </div>
+
+        <!-- New row for exact table name matching -->
+        <div class="row custom-row">
+            <div class="col">
+                <p></p>
+                <input type="text" id="exactTableNames" class="form-control" placeholder="Enter comma-separated exact table names to match">
+            </div>
+        </div>
     </div>
 
     <ul id="table-list" class="list-group no-bullets">
@@ -274,16 +282,21 @@
             // Get value of the new "IO" OR filter
             const ioOrFiltersText = document.getElementById('ioOrFilters').value.toLowerCase();
 
+            // Get value of the exact table names filter
+            const exactTableNamesText = document.getElementById('exactTableNames').value;
+
             // Split the comma-separated substrings into arrays
             const andFilters = andFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
             const orFilters = orFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
             const andNotFilters = andNotFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
             const orNotFilters = orNotFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
             const ioOrFilters = ioOrFiltersText.split(',').map(s => s.trim()).filter(s => s !== '');
+            const exactTableNames = exactTableNamesText.split(',').map(s => s.trim()).filter(s => s !== '');
 
             const anyOrFiltersAreNonEmpty = orFilters.length > 0;
             const anyOrNotFiltersAreNonEmpty = orNotFilters.length > 0;
             const anyIoOrFiltersAreNonEmpty = ioOrFilters.length > 0;
+            const anyExactTableNamesAreNonEmpty = exactTableNames.length > 0;
 
             tableItems.forEach(function(item) {
                 const tableName = item.getAttribute('data-table-name');
@@ -316,6 +329,9 @@
                 }
                 const passesIoOrFilters = !anyIoOrFiltersAreNonEmpty || ioOrFilters.some(f => passesIoOrFilter(f));
 
+                // Check if the item matches any of the exact table names
+                const passesExactTableNames = !anyExactTableNamesAreNonEmpty || exactTableNames.some(name => name.toLowerCase() === tableNameLower);
+
                 // Combine all filter conditions
                 const passesAllFilters =
                     passesFilterText &&
@@ -323,7 +339,8 @@
                     passesOrFilters &&
                     passesAndNotFilters &&
                     passesOrNotFilters &&
-                    passesIoOrFilters;
+                    passesIoOrFilters &&
+                    passesExactTableNames;
 
                 // Show or hide the item based on the combined filters
                 if (passesAllFilters) {
@@ -370,6 +387,7 @@
         document.getElementById('andNotFilters').addEventListener('input', debouncedFilterTables);
         document.getElementById('orNotFilters').addEventListener('input', debouncedFilterTables);
         document.getElementById('ioOrFilters').addEventListener('input', debouncedFilterTables);
+        document.getElementById('exactTableNames').addEventListener('input', debouncedFilterTables);
 
         // Call filterTables once on page load to initialize the display
         filterTables();

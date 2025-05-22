@@ -292,10 +292,10 @@ def render_plot(database, table_name, plot_function):
             if plot_function == 'generate_plot':
                 (plot_data,
                  sorted_table_names,
-                 sorted_table_names_100ppm,
-                 sorted_table_names_200ppm,
-                 sorted_table_names_500ppm,
-                 sorted_table_names_1000ppm,
+                 sorted_table_names_100ppm,  # These values are now None (removed functionality)
+                 sorted_table_names_200ppm,  # These values are now None (removed functionality)
+                 sorted_table_names_500ppm,  # These values are now None (removed functionality)
+                 sorted_table_names_1000ppm,  # These values are now None (removed functionality)
                  best_32,
                  best_32_with_io,
                  outlier_coordinates,
@@ -342,28 +342,43 @@ def render_plot(database, table_name, plot_function):
             ber_upper_limit = form_data.get('ber_upper_limit')
             print(f"BER filter values for template: lower={ber_lower_limit}, upper={ber_upper_limit}")
 
-            return render_template(
-                'plot.html',
-                plot_data=plot_data,
-                sorted_table_names=sorted_table_names,
-                sorted_table_names_100ppm=sorted_table_names_100ppm,
-                sorted_table_names_200ppm=sorted_table_names_200ppm,
-                sorted_table_names_500ppm=sorted_table_names_500ppm,
-                sorted_table_names_1000ppm=sorted_table_names_1000ppm,
-                best_32=best_32,
-                best_32_with_io=best_32_with_io,
-                outlier_coordinates=outlier_coordinates,
-                correlation_analysis=correlation_analysis,
-                cluster_map=points_map,
-                sigma_distances=sigma_distances,
-                num_states=num_states,
-                table_names=table_names,
-                target_values=form_data.get('target_values', []),
-                sigma_table=sigma_table,
-                sigma_points=sigma_points,
-                ber_lower_limit=ber_lower_limit,
-                ber_upper_limit=ber_upper_limit
-            )
+            if plot_function == 'generate_plot':
+                # Get the initial count of selected tables before any filtering
+                if table_name == 'from_session':
+                    # Use the table names from session
+                    initial_tables = session.get('plot_tables', [])
+                    initial_table_count = len(initial_tables)
+                else:
+                    # Use the table names from the URL
+                    initial_tables = table_name.split(',')
+                    initial_table_count = len(initial_tables)
+                
+                return render_template('plot.html', 
+                                     plot_data=plot_data, 
+                                     sorted_table_names=sorted_table_names, 
+                                     sorted_table_names_100ppm=sorted_table_names_100ppm,  # Now None
+                                     sorted_table_names_200ppm=sorted_table_names_200ppm,  # Now None
+                                     sorted_table_names_500ppm=sorted_table_names_500ppm,  # Now None
+                                     sorted_table_names_1000ppm=sorted_table_names_1000ppm,  # Now None
+                                     best_32=best_32,
+                                     best_32_with_io=best_32_with_io,
+                                     outlier_coordinates=outlier_coordinates,
+                                     correlation_analysis=correlation_analysis,
+                                     cluster_map=points_map,
+                                     sigma_distances=sigma_distances,
+                                     num_states=num_states,
+                                     table_names=table_names,
+                                     target_values=form_data.get('target_values', []),
+                                     sigma_table=sigma_table,
+                                     sigma_points=sigma_points,
+                                     ber_lower_limit=ber_lower_limit,
+                                     ber_upper_limit=ber_upper_limit,
+                                     top_ios_count=form_data.get('top_ios_count', 32),
+                                     ber_display_option=form_data.get('ber_display_option', 'top_ios'),
+                                     initial_table_count=initial_table_count,
+                                     filtered_table_count=len(table_names) if table_names else 0)  # Pass table counts to template
+            else:
+                return render_template('plot.html', plot_data=plot_data)
 
         except Exception as e:
             print(f"Error generating plot: {e}")
@@ -2939,7 +2954,7 @@ def get_form_data_generate_plot(form):
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
             'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division', 'color_group_keywords',
-            'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit'  # Added BER limit fields
+            'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit', 'top_ios_count', 'ber_display_option'  # Added ber_display_option field
         ]
     }
 
@@ -3016,6 +3031,24 @@ def get_form_data_generate_plot(form):
         form_data['num_interp_points'] = 500  # Default to 500 if conversion fails
         print(f"Failed to convert num_interp_points, using default: {form_data['num_interp_points']}")
 
+    # Process top_ios_count value
+    top_ios_count_str = form.get('top_ios_count', '')
+    print(f"Raw top_ios_count from form: '{top_ios_count_str}'")
+    try:
+        if top_ios_count_str.strip():
+            top_ios_count = int(top_ios_count_str)
+            # Ensure it's at least 1 if provided
+            form_data['top_ios_count'] = max(1, top_ios_count)
+            print(f"Converted top_ios_count to: {form_data['top_ios_count']}")
+        else:
+            # If empty, set to None to display all tables
+            form_data['top_ios_count'] = None
+            print("No top_ios_count provided, will display all tables")
+    except ValueError:
+        # Default to None if conversion fails
+        form_data['top_ios_count'] = None
+        print("Failed to convert top_ios_count, will display all tables")
+
     # Process BER range limits
     ber_lower_limit_str = form.get('ber_lower_limit', '')
     ber_upper_limit_str = form.get('ber_upper_limit', '')
@@ -3033,6 +3066,10 @@ def get_form_data_generate_plot(form):
     except ValueError:
         form_data['ber_upper_limit'] = None
         print(f"Failed to convert ber_upper_limit, using None")
+
+    # Set default for ber_display_option if not provided
+    if 'ber_display_option' not in form_data or not form_data['ber_display_option']:
+        form_data['ber_display_option'] = 'top_ios'  # Default to top_ios if not specified
 
     print("Final Form Data:", form_data)  # Debug print
     return form_data
@@ -3521,7 +3558,7 @@ def test_machines():
         {'ip': '192.168.68.164', 'user': 'lenovoi7', 'hostname': 'lenovoi7'},
         {'ip': '192.168.68.205', 'user': 'nuc5', 'hostname': 'NUC5'},
         {'ip': '192.168.68.235', 'user': 'tc5', 'hostname': 'TC5'},
-        {'ip': '192.168.68.231', 'user': 'tc1', 'hostname': 'TC1'},
+        {'ip': '192.168.68.231', 'user': 'tc1', 'hostname': 'TC1'}, 
         {'ip': '192.168.68.232', 'user': 'tc2', 'hostname': 'TC2'}
     ]
     return render_template('test_machines.html', test_machines=test_machines)

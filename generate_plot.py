@@ -702,6 +702,9 @@ def generate_plot(table_names, database_name, form_data):
             if table_name not in max_ber_per_table or ppm_ber > max_ber_per_table[table_name]:
                 max_ber_per_table[table_name] = ppm_ber
 
+    # Sort table names by BER (low to high) for later use
+    all_sorted_table_names = sorted(max_ber_per_table, key=max_ber_per_table.get, reverse=False)
+
     # Apply BER range filtering if limits are provided
     filtered_table_names = table_names[:]  # Start with all tables
     if ber_lower_limit is not None or ber_upper_limit is not None:
@@ -720,6 +723,19 @@ def generate_plot(table_names, database_name, form_data):
             print("Warning: No tables match the BER filter criteria!")
             # Return empty results to indicate no tables match
             return ([], [], None, None, None, None, [], [], [], None, None, {}, 0, [], {}, [])
+    # Apply Top IOs filtering if ber_display_option is 'top_ios' and top_ios_count is specified
+    elif form_data.get('ber_display_option') == 'top_ios':
+        top_ios_count = form_data.get('top_ios_count')
+        # Convert to integer if it's a non-empty string
+        if top_ios_count and str(top_ios_count).strip():
+            try:
+                top_ios_count = int(top_ios_count)
+                if top_ios_count > 0 and top_ios_count < len(all_sorted_table_names):
+                    # Filter tables to only include the top N tables with best BER
+                    filtered_table_names = all_sorted_table_names[:top_ios_count]
+                    print(f"Filtered tables from {len(table_names)} to {len(filtered_table_names)} based on top BER count")
+            except (ValueError, TypeError):
+                pass  # If conversion fails, keep all tables (default behavior)
 
     # Create filtered versions of all data structures
     filtered_indices = [table_indices[name] for name in filtered_table_names]
@@ -895,45 +911,50 @@ def generate_plot(table_names, database_name, form_data):
          ppm_image,
          uS_image,
          additional_image,
-         sorted_table_names,
-         sorted_table_names_100ppm,
-         sorted_table_names_200ppm,
-         sorted_table_names_500ppm,
-         sorted_table_names_1000ppm) = plot_ber_tables(filtered_ber_results, target_x_diff, num_interp_points)
+         sorted_table_names) = plot_ber_tables(filtered_ber_results, target_x_diff, num_interp_points)
 
         # Since we now have a combined image, append it to the plots
         encoded_plots.append(ppm_image)
 
-        # Now, process 'sorted_table_names' to get the extracted numbers
-        def process_sorted_table_names(sorted_table_names_list):
-            if sorted_table_names_list:
-                return [extract_number_from_table_name(name) for name in sorted_table_names_list]
-            else:
-                return []
+        # Store original table names for the top IOs display
+        original_sorted_table_names = sorted_table_names
 
-        sorted_table_names = process_sorted_table_names(sorted_table_names)
-        sorted_table_names_100ppm = process_sorted_table_names(sorted_table_names_100ppm)
-        sorted_table_names_200ppm = process_sorted_table_names(sorted_table_names_200ppm)
-        sorted_table_names_500ppm = process_sorted_table_names(sorted_table_names_500ppm)
-        sorted_table_names_1000ppm = process_sorted_table_names(sorted_table_names_1000ppm)
-
-        # Add the following code to create best_32 and best_32_with_io
-        if sorted_table_names:
-            best_32 = sorted_table_names[:32]
-            best_32_with_io = ['io' + str(n) for n in best_32]
+        # Add the following code to create best_N and best_N_with_io based on user input
+        # Get the top_ios_count from form_data or default to None
+        top_ios_count = form_data.get('top_ios_count')
+        # Convert to integer if it's a non-empty string
+        if top_ios_count and str(top_ios_count).strip():
+            try:
+                top_ios_count = int(top_ios_count)
+            except (ValueError, TypeError):
+                top_ios_count = None
         else:
-            best_32 = []
-            best_32_with_io = []
+            top_ios_count = None
+            
+        # Ensure it doesn't exceed available tables
+        if original_sorted_table_names:
+            if top_ios_count and top_ios_count > 0:
+                max_possible = len(original_sorted_table_names)
+                top_ios_count = min(top_ios_count, max_possible)
+                best_top_n = original_sorted_table_names[:top_ios_count]
+            else:
+                # If no value or zero, display all tables
+                best_top_n = original_sorted_table_names
+                
+            best_top_n_with_io = ['io' + str(extract_number_from_table_name(name)) for name in best_top_n]
+        else:
+            best_top_n = []
+            best_top_n_with_io = []
 
         # Return the plots and sorted table names
         return (encoded_plots,
-                sorted_table_names,
-                sorted_table_names_100ppm,
-                sorted_table_names_200ppm,
-                sorted_table_names_500ppm,
-                sorted_table_names_1000ppm,
-                best_32,
-                best_32_with_io,
+                original_sorted_table_names,  # Use original table names
+                None,  # Placeholder for sorted_table_names_100ppm (removed)
+                None,  # Placeholder for sorted_table_names_200ppm (removed)
+                None,  # Placeholder for sorted_table_names_500ppm (removed)
+                None,  # Placeholder for sorted_table_names_1000ppm (removed)
+                best_top_n,
+                best_top_n_with_io,
                 outlier_coordinates if outlier_analysis_flag else [],  # Only return outlier coordinates if flag is True
                 correlation_analysis if outlier_analysis_flag else None,  # Only return correlation analysis if flag is True
                 cluster_map if outlier_analysis_flag else None,
@@ -945,19 +966,40 @@ def generate_plot(table_names, database_name, form_data):
     else:
         sorted_table_names = None  # Handle the case where there is only one selected group
 
-    # Now, process 'sorted_table_names' to get the extracted numbers
-    if sorted_table_names:
-        sorted_table_names = [extract_number_from_table_name(name) for name in sorted_table_names]
-    else:
+    # Handle the case where there is only one selected group
+    if sorted_table_names is None:
         sorted_table_names = []
-
-    # Add the following code to create best_32 and best_32_with_io
-    if sorted_table_names:
-        best_32 = sorted_table_names[:32]
-        best_32_with_io = ['io' + str(n) for n in best_32]
+        best_top_n = []
+        best_top_n_with_io = []
     else:
-        best_32 = []
-        best_32_with_io = []
+        # Store original table names
+        original_sorted_table_names = sorted_table_names
+        
+        # Get the top_ios_count from form_data or default to None
+        top_ios_count = form_data.get('top_ios_count')
+        # Convert to integer if it's a non-empty string
+        if top_ios_count and str(top_ios_count).strip():
+            try:
+                top_ios_count = int(top_ios_count)
+            except (ValueError, TypeError):
+                top_ios_count = None
+        else:
+            top_ios_count = None
+            
+        # Ensure it doesn't exceed available tables
+        if original_sorted_table_names:
+            if top_ios_count and top_ios_count > 0:
+                max_possible = len(original_sorted_table_names)
+                top_ios_count = min(top_ios_count, max_possible)
+                best_top_n = original_sorted_table_names[:top_ios_count]
+            else:
+                # If no value or zero, display all tables
+                best_top_n = original_sorted_table_names
+                
+            best_top_n_with_io = ['io' + str(extract_number_from_table_name(name)) for name in best_top_n]
+        else:
+            best_top_n = []
+            best_top_n_with_io = []
     
     return (encoded_plots,
             sorted_table_names,
@@ -965,8 +1007,8 @@ def generate_plot(table_names, database_name, form_data):
             None,
             None,
             None,
-            best_32,
-            best_32_with_io,
+            best_top_n,
+            best_top_n_with_io,
             outlier_coordinates if outlier_analysis_flag else [],
             correlation_analysis if outlier_analysis_flag else None,
             cluster_map if outlier_analysis_flag else None,

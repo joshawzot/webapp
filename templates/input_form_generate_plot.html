@@ -54,10 +54,10 @@
             <div class="form-group">
                 <label for="state_pattern">Select a State Pattern:</label>
                 <select class="form-control" name="state_pattern" id="state_pattern">
+                    <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
                     <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
                     <option value="3x4_4states_debug">3x4_4states_debug</option>
                     <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
-                    <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
                     <option value="248x248_1state">248x248_1state</option>
                     <option value="1296x64_1state">1296x64_1state</option>
                     <option value="248x1_1state">248x1_1state</option>
@@ -118,20 +118,37 @@
             <small class="form-text text-muted">Default: 500 (usually 500 is good enough, we used to use 4000) </small>
         </div>
 
-        <!-- Add new BER range filter fields -->
+        <!-- BER Display Options section -->
         <div class="form-group">
+            <label><strong>BER Display Options:</strong></label>
+            <div class="custom-control custom-radio">
+                <input type="radio" id="option_top_ios" name="ber_display_option" class="custom-control-input" value="top_ios" checked>
+                <label class="custom-control-label" for="option_top_ios">Tables with best BER</label>
+            </div>
+            <div class="custom-control custom-radio">
+                <input type="radio" id="option_ber_range" name="ber_display_option" class="custom-control-input" value="ber_range">
+                <label class="custom-control-label" for="option_ber_range">Filter by BER Range</label>
+            </div>
+        </div>
+
+        <!-- Top IOs count input field -->
+        <div class="form-group" id="top_ios_section">
+            <label for="top_ios_count">Number of tables with best BER:</label>
+            <input type="number" class="form-control" name="top_ios_count" id="top_ios_count" placeholder="Enter number of tables with best BER" min="1">
+            <small class="form-text text-muted">If left empty, all selected tables will be included.</small>
+        </div>
+
+        <!-- BER range filter fields -->
+        <div class="form-group" id="ber_range_section" style="display: none;">
             <label for="ber_range_filter">Filter by BER Range:</label>
             <div class="row">
                 <div class="col">
                     <input type="number" class="form-control" name="ber_lower_limit" id="ber_lower_limit" placeholder="Lower limit (ppm)" min="0">
-                    <!-- <small class="form-text text-muted">Minimum BER value (in ppm)</small> -->
                 </div>
                 <div class="col">
                     <input type="number" class="form-control" name="ber_upper_limit" id="ber_upper_limit" placeholder="Upper limit (ppm)" min="0">
-                    <!-- <small class="form-text text-muted">Maximum BER value (in ppm)</small> -->
                 </div>
             </div>
-            <!-- <small class="form-text text-muted">Leave empty to include all tables regardless of BER. The BER of a table is the maximum BER value between adjacent states.</small> -->
         </div>
 
         <button type="submit" class="btn btn-primary">Submit</button>
@@ -183,7 +200,39 @@
         
         // Check custom division visibility
         checkCustomDivision();
+
+        // Set default BER display option
+        document.getElementById('option_top_ios').checked = true;
+        toggleBERDisplayOptions();
     }
+
+    // Toggle between Top IOs and BER Range options
+    function toggleBERDisplayOptions() {
+        const topIosOption = document.getElementById('option_top_ios');
+        const topIosSection = document.getElementById('top_ios_section');
+        const berRangeSection = document.getElementById('ber_range_section');
+        
+        if (topIosOption.checked) {
+            topIosSection.style.display = 'block';
+            berRangeSection.style.display = 'none';
+            // Clear BER range inputs
+            document.getElementById('ber_lower_limit').value = '';
+            document.getElementById('ber_upper_limit').value = '';
+        } else {
+            topIosSection.style.display = 'none';
+            berRangeSection.style.display = 'block';
+            // Clear top IOs input
+            document.getElementById('top_ios_count').value = '';
+        }
+    }
+
+    // Add event listeners for BER display options
+    document.addEventListener('DOMContentLoaded', function() {
+        const berDisplayOptions = document.querySelectorAll('input[name="ber_display_option"]');
+        berDisplayOptions.forEach(option => {
+            option.addEventListener('change', toggleBERDisplayOptions);
+        });
+    });
 
     // Handle both initial page load and back/forward navigation
     window.addEventListener('pageshow', function(event) {
@@ -204,40 +253,58 @@
         const keywordsInput = document.getElementById('color_group_keywords');
         const keywordsValue = keywordsInput.value.trim();
 
-        if (!keywordsValue) {
-            return; // No keywords, no validation needed for this specific check
-        }
+        // Check for color group keywords validation
+        if (keywordsValue) {
+            const keywords = keywordsValue.split(',').map(k => k.trim()).filter(k => k);
+            if (keywords.length > 0) {
+                const rawTableNames = event.target.dataset.tableNames;
+                const tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
 
-        const keywords = keywordsValue.split(',').map(k => k.trim()).filter(k => k);
-        if (keywords.length === 0) {
-            return; // No actual keywords after parsing
-        }
+                let warningMessages = [];
+                let conflictFound = false;
 
-        const rawTableNames = event.target.dataset.tableNames;
-        const tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
+                for (const tableName of tableNames) {
+                    let matchCount = 0;
+                    let matchingKeywords = [];
+                    for (const keyword of keywords) {
+                        if (tableName.includes(keyword)) {
+                            matchCount++;
+                            matchingKeywords.push(keyword);
+                        }
+                    }
 
-        let warningMessages = [];
-        let conflictFound = false;
+                    if (matchCount > 1) {
+                        conflictFound = true;
+                        warningMessages.push(`Table '${tableName}' matches multiple keywords: ${matchingKeywords.join(', ')}.`);
+                    }
+                }
 
-        for (const tableName of tableNames) {
-            let matchCount = 0;
-            let matchingKeywords = [];
-            for (const keyword of keywords) {
-                if (tableName.includes(keyword)) {
-                    matchCount++;
-                    matchingKeywords.push(keyword);
+                if (conflictFound) {
+                    alert("Color Keyword Validation Error:\n\n" + warningMessages.join("\n") + "\n\nPlease ensure each table name matches at most one keyword, or remove/adjust keywords.");
+                    event.preventDefault(); // Stop form submission
+                    return;
                 }
             }
-
-            if (matchCount > 1) {
-                conflictFound = true;
-                warningMessages.push(`Table '${tableName}' matches multiple keywords: ${matchingKeywords.join(', ')}.`);
-            }
         }
 
-        if (conflictFound) {
-            alert("Color Keyword Validation Error:\n\n" + warningMessages.join("\n") + "\n\nPlease ensure each table name matches at most one keyword, or remove/adjust keywords.");
-            event.preventDefault(); // Stop form submission
+        // Add validation for top_ios_count
+        const topIosCountInput = document.getElementById('top_ios_count');
+        const topIosValue = topIosCountInput.value.trim();
+        
+        // Only validate if:
+        // 1. The top IOs option is selected
+        // 2. The input has a value
+        if (document.getElementById('option_top_ios').checked && topIosValue) {
+            const topIosCount = parseInt(topIosValue, 10);
+            const rawTableNames = event.target.dataset.tableNames;
+            const tableCount = rawTableNames.split(',').filter(name => name.trim()).length;
+            
+            if (topIosCount > tableCount) {
+                alert(`Warning: You entered ${topIosCount} for the number of tables with best BER, but only ${tableCount} tables are selected.\n\nPlease enter a number less than or equal to ${tableCount}, or leave the field empty to display all tables.`);
+                event.preventDefault(); // Stop form submission
+                topIosCountInput.focus();
+                return;
+            }
         }
     });
 

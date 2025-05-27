@@ -51,9 +51,10 @@
                 <p>Schema: {{ database }}</p>
                 <p id="tableCount">Number of tables: {{ tables|length }}</p>
                 <p id="selectedCount">Number of tables selected: 0</p>
-                <!-- First group: "Select Filtered", "Deselect Filtered" -->
+                <!-- First group: "Select Filtered", "Deselect Filtered", "Copy Selected" -->
                 <button class="btn btn-primary" id="selectAll">Select Filtered</button>
                 <button class="btn btn-secondary" id="deselectAll">Deselect Filtered</button>
+                <button class="btn btn-info" id="showSelected">Copy Selected table names</button>
             </div>
         </div>
 
@@ -420,6 +421,55 @@
 
             updateSelectedCount(); // Update the selected count
         });
+
+        // Add event listener for the "Show Selected" button
+        document.getElementById('showSelected').addEventListener('click', function() {
+            const selectedTableNames = getAllSelectedTableNames();
+            
+            if (selectedTableNames.length > 0) {
+                // Create comma-separated list of table names
+                const tableNamesList = selectedTableNames.join(', ');
+                
+                // Copy to clipboard
+                if (navigator.clipboard && window.isSecureContext) {
+                    // Use modern clipboard API
+                    navigator.clipboard.writeText(tableNamesList).then(function() {
+                        alert(`${selectedTableNames.length} table names copied to clipboard:\n${tableNamesList}`);
+                    }).catch(function(err) {
+                        console.error('Failed to copy to clipboard:', err);
+                        // Fallback to the older method
+                        fallbackCopyToClipboard(tableNamesList, selectedTableNames.length);
+                    });
+                } else {
+                    // Fallback for older browsers or non-secure contexts
+                    fallbackCopyToClipboard(tableNamesList, selectedTableNames.length);
+                }
+            } else {
+                alert('Please select at least one table to copy.');
+            }
+        });
+
+        // Fallback function for copying to clipboard
+        function fallbackCopyToClipboard(text, count) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                alert(`${count} table names copied to clipboard:\n${text}`);
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+                alert(`Failed to copy to clipboard. Selected table names:\n${text}`);
+            }
+            
+            document.body.removeChild(textArea);
+        }
 
         // Drag and Drop functionality for file upload
         var dropArea = document.getElementById('drop_area');

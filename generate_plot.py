@@ -773,6 +773,9 @@ def generate_plot(table_names, database_name, form_data):
     # Generate plots for filtered tables
     encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
     
+    # Add data points table right after boxplot
+    encoded_plots.append(plot_data_points_table(filtered_group_data, filtered_table_names, selected_groups))
+    
     encoded_plots.append(plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups))
     encoded_plots.append(plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups))
 

@@ -59,7 +59,18 @@
     <div class="mb-4">
         {% for plot in plot_data %}
             <div class="plot-container mb-3">
-                <img src="data:image/png;base64,{{ plot }}" alt="Generated Plot" class="img-fluid" id="plot-img-{{ loop.index }}">
+                {% if loop.index == 1 %}
+                    <!-- Boxplot -->
+                    <h3>Boxplot</h3>
+                    <img src="data:image/png;base64,{{ plot }}" alt="Boxplot" class="img-fluid" id="plot-img-{{ loop.index }}">
+                {% elif loop.index == 2 %}
+                    <!-- Data Points Table -->
+                    <h3>Total Data Points in Each State</h3>
+                    <img src="data:image/png;base64,{{ plot }}" alt="Data Points Table" class="img-fluid" id="plot-img-{{ loop.index }}">
+                {% else %}
+                    <!-- Other plots -->
+                    <img src="data:image/png;base64,{{ plot }}" alt="Generated Plot" class="img-fluid" id="plot-img-{{ loop.index }}">
+                {% endif %}
                 <button class="btn btn-primary mt-2 download-plot-btn" data-index="{{ loop.index }}">Download Plot</button>
             </div>
         {% endfor %}
@@ -87,7 +98,7 @@
                 return img.src; // This is the Base64 encoded image
             });
         
-            fetch('{{ url_for('download_pptx') }}', {
+            fetch('{{ url_for("download_pptx") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

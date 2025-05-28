@@ -1588,3 +1588,94 @@ def plot_individual_points_map(correlation_analysis, table_dimensions):
     finally:
         if 'buf' in locals():
             buf.close()
+
+def plot_data_points_table(data, table_names, selected_groups, max_points_per_state=10, figsize=(20, 15)):
+    """
+    Create a table showing total count of data points involved in each state for the boxplot.
+    
+    Args:
+        data: The same data structure used for boxplot - list of groups, each containing subgroups
+        table_names: List of table names
+        selected_groups: List of selected group indices
+        max_points_per_state: Maximum number of data points to show per state (default: 10)
+        figsize: Figure size tuple
+    
+    Returns:
+        Base64 encoded image of the data points table
+    """
+    try:
+        # Create a new figure instance for this plot
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111)
+        ax.axis('off')
+
+        # Build table data
+        table_data = []
+        
+        # Create header row
+        header = ["Table Name"]
+        for group_idx in selected_groups:
+            header.append(f"State {group_idx} Total Points")
+        table_data.append(header)
+        
+        # Process each table's data
+        for i, (table_name, group) in enumerate(zip(table_names, data)):
+            row = [f"{table_name}"]
+            
+            # For each selected group/state
+            for j, subgroup in enumerate(group):
+                # Convert to numpy array and flatten if needed
+                points = np.array(subgroup).flatten()
+                
+                # Just show the total count
+                points_str = f"{len(points)} points"
+                
+                row.append(points_str)
+            
+            table_data.append(row)
+        
+        # Calculate column widths based on content
+        num_columns = len(table_data[0])
+        col_widths = []
+        for col_idx in range(num_columns):
+            if col_idx == 0:  # Table name column
+                col_widths.append(0.3)
+            else:  # Data points columns
+                col_widths.append(0.7 / (num_columns - 1))
+        
+        # Create the table
+        table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
+        table.auto_set_font_size(False)
+        table.set_fontsize(12)
+        table.scale(1, 2)  # Reduce row height since we're only showing counts
+        
+        # Style the header row
+        for i in range(num_columns):
+            table[(0, i)].set_facecolor('#40466e')
+            table[(0, i)].set_text_props(weight='bold', color='white')
+        
+        # Style data rows with alternating colors
+        for i in range(1, len(table_data)):
+            for j in range(num_columns):
+                if i % 2 == 0:
+                    table[(i, j)].set_facecolor('#f0f0f0')
+                else:
+                    table[(i, j)].set_facecolor('#ffffff')
+        
+        ax.set_title('Total Data Points in Each State (for Boxplot)', fontsize=16, fontweight='bold', pad=20)
+
+        # Save plot to buffer
+        buf = BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
+        return encoded_image
+    except Exception as e:
+        print(f"Error in plot_data_points_table: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        plt.close(fig)
+        if 'buf' in locals():
+            buf.close()

@@ -1,15 +1,15 @@
-[W 2025-04-25 13:35:18.117 LabApp] 'notebook_dir' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'port' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'token' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[W 2025-04-25 13:35:18.117 LabApp] 'disable_check_xsrf' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
-[I 2025-04-25 13:35:18.120 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
-[I 2025-04-25 13:35:18.120 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
-[I 13:35:18.122 NotebookApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
-[I 13:35:18.122 NotebookApp] Jupyter Notebook 6.1.5 is running at:
-[I 13:35:18.122 NotebookApp] http://hawaii:8888/?token=...
-[I 13:35:18.122 NotebookApp]  or http://127.0.0.1:8888/?token=...
-[I 13:35:18.123 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2025-06-06 10:27:19.359 ServerApp] jupyter_server_proxy | extension was successfully linked.
+[I 2025-06-06 10:27:19.361 ServerApp] jupyterlab | extension was successfully linked.
+[I 2025-06-06 10:27:19.362 ServerApp] nbclassic | extension was successfully linked.
+[I 2025-06-06 10:27:19.485 ServerApp] notebook_shim | extension was successfully linked.
+[I 2025-06-06 10:27:19.497 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2025-06-06 10:27:19.508 ServerApp] jupyter_server_proxy | extension was successfully loaded.
+[I 2025-06-06 10:27:19.509 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
+[I 2025-06-06 10:27:19.509 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
+[I 2025-06-06 10:27:19.511 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2025-06-06 10:27:19.513 ServerApp] nbclassic | extension was successfully loaded.
+[I 2025-06-06 10:27:19.514 ServerApp] Serving notebooks from local directory: /home/admin2/webapp_2/postprocess
+[I 2025-06-06 10:27:19.514 ServerApp] Jupyter Server 1.24.0 is running at:
+[I 2025-06-06 10:27:19.514 ServerApp] http://hawaii:8888/lab?token=...
+[I 2025-06-06 10:27:19.514 ServerApp]  or http://127.0.0.1:8888/lab?token=...
+[I 2025-06-06 10:27:19.514 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).

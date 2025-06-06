@@ -54,7 +54,7 @@
                 <!-- First group: "Select Filtered", "Deselect Filtered", "Copy Selected" -->
                 <button class="btn btn-primary" id="selectAll">Select Filtered</button>
                 <button class="btn btn-secondary" id="deselectAll">Deselect Filtered</button>
-                <button class="btn btn-info" id="showSelected">Copy Selected table names</button>
+                <button class="btn btn-info" id="showSelected">Copy selected table names to the clipboard</button>
             </div>
         </div>
 
@@ -607,7 +607,15 @@
         // Download CSV Functionality
         document.getElementById('downloadSelected').addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
+            
             if (tableNames.length > 0) {
+                // Prompt user for filename
+                const filename = prompt('Enter filename for the CSV zip file (without .zip extension):', 'tables');
+                
+                if (!filename) {
+                    return; // User cancelled
+                }
+                
                 const zip = new JSZip();
 
                 // Show the loading overlay
@@ -635,7 +643,7 @@
 
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(content);
-                    link.download = 'tables.zip';
+                    link.download = `${filename.trim()}.zip`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -658,7 +666,15 @@
         // Download NPY Functionality
         document.getElementById('downloadSelectedNpy').addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
+            
             if (tableNames.length > 0) {
+                // Prompt user for filename
+                const filename = prompt('Enter filename for the NPY zip file (without .zip extension):', 'tables_npy');
+                
+                if (!filename) {
+                    return; // User cancelled
+                }
+                
                 const zip = new JSZip();
 
                 // Show the loading overlay
@@ -686,7 +702,7 @@
 
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(content);
-                    link.download = 'tables_npy.zip';
+                    link.download = `${filename.trim()}.zip`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);

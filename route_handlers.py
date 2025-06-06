@@ -376,7 +376,10 @@ def render_plot(database, table_name, plot_function):
                                      top_ios_count=form_data.get('top_ios_count', 32),
                                      ber_display_option=form_data.get('ber_display_option', 'top_ios'),
                                      initial_table_count=initial_table_count,
-                                     filtered_table_count=len(table_names) if table_names else 0)  # Pass table counts to template
+                                     filtered_table_count=len(table_names) if table_names else 0,  # Pass table counts to template
+                                     data_min_value=form_data.get('data_min_value'),
+                                     data_max_value=form_data.get('data_max_value'),
+                                     filter_negative_values=form_data.get('filter_negative_values', False))
             else:
                 return render_template('plot.html', plot_data=plot_data)
 
@@ -2953,8 +2956,10 @@ def get_form_data_generate_plot(form):
             'selected_groups_1D', 'pass_range_1D', 'state_pattern',
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
-            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division', 'color_group_keywords',
-            'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit', 'top_ios_count', 'ber_display_option'  # Added ber_display_option field
+            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division_type', 'color_group_keywords',
+            'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit', 'top_ios_count', 'ber_display_option',  # Added ber_display_option field
+            'data_min_value', 'data_max_value',  # Added data range filter fields
+            'filter_negative_values'  # Added negative value filter field
         ]
     }
 
@@ -2991,7 +2996,21 @@ def get_form_data_generate_plot(form):
     # Convert checkbox flags to boolean
     form_data['color_map_flag'] = form_data.get('color_map_flag', 'False') == 'True'
     form_data['outlier_analysis_flag'] = form_data.get('outlier_analysis_flag', 'False') == 'True'
-    form_data['custom_division'] = form_data.get('custom_division', 'False') == 'True'
+    form_data['filter_negative_values'] = form_data.get('filter_negative_values', 'False') == 'True'
+    
+    # Handle custom division - convert from dropdown selection to boolean and values
+    custom_division_type = form_data.get('custom_division_type', '')
+    if custom_division_type:
+        form_data['custom_division'] = True
+        # Parse the custom division values from the selected option
+        try:
+            form_data['custom_division_values'] = [int(x.strip()) for x in custom_division_type.split(',')]
+        except ValueError:
+            form_data['custom_division'] = False
+            form_data['custom_division_values'] = []
+    else:
+        form_data['custom_division'] = False
+        form_data['custom_division_values'] = []
 
     # Process target values
     target_values_str = form_data.get('target_values', '')
@@ -3002,7 +3021,7 @@ def get_form_data_generate_plot(form):
             form_data['target_values'] = []
     else:
         form_data['target_values'] = []
-    
+
     # Process color grouping keywords
     color_group_keywords_str = form_data.get('color_group_keywords', '')
     if color_group_keywords_str:
@@ -3070,6 +3089,24 @@ def get_form_data_generate_plot(form):
     # Set default for ber_display_option if not provided
     if 'ber_display_option' not in form_data or not form_data['ber_display_option']:
         form_data['ber_display_option'] = 'top_ios'  # Default to top_ios if not specified
+
+    # Process data range filter values
+    data_min_value_str = form.get('data_min_value', '')
+    data_max_value_str = form.get('data_max_value', '')
+    
+    try:
+        form_data['data_min_value'] = float(data_min_value_str) if data_min_value_str.strip() else None
+        print(f"Converted data_min_value to: {form_data['data_min_value']}")
+    except ValueError:
+        form_data['data_min_value'] = None
+        print(f"Failed to convert data_min_value, using None")
+    
+    try:
+        form_data['data_max_value'] = float(data_max_value_str) if data_max_value_str.strip() else None
+        print(f"Converted data_max_value to: {form_data['data_max_value']}")
+    except ValueError:
+        form_data['data_max_value'] = None
+        print(f"Failed to convert data_max_value, using None")
 
     print("Final Form Data:", form_data)  # Debug print
     return form_data

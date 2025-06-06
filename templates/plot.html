@@ -49,6 +49,44 @@
     </div>
     {% endif %}
 
+    <!-- Add Data Range Filter information if provided -->
+    {% if data_min_value is not none or data_max_value is not none %}
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-warning">
+                <strong>Data Range Filter Applied:</strong>
+                {% if data_min_value is not none and data_max_value is not none %}
+                    Data values filtered to range {{ data_min_value }} to {{ data_max_value }}
+                {% elif data_min_value is not none %}
+                    Data values filtered to ≥ {{ data_min_value }}
+                {% elif data_max_value is not none %}
+                    Data values filtered to ≤ {{ data_max_value }}
+                {% endif %}
+                <br>
+                <span class="mt-1 d-block text-muted">
+                    <small><i class="fas fa-info-circle"></i> Only data points within this range were included in the analysis</small>
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Add Negative Value Filter information if applied -->
+    {% if filter_negative_values %}
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-info">
+                <strong>Negative Value Filter Applied:</strong>
+                All negative values have been excluded from the analysis.
+                <br>
+                <span class="mt-1 d-block text-muted">
+                    <small><i class="fas fa-info-circle"></i> Only non-negative values (≥ 0) were included in the analysis</small>
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Add a Download Images as PPTX button in the second row -->
     <div class="row">
         <div class="col">
@@ -61,11 +99,11 @@
             <div class="plot-container mb-3">
                 {% if loop.index == 1 %}
                     <!-- Boxplot -->
-                    <h3>Boxplot</h3>
+                    <!-- <h3>Boxplot</h3> -->
                     <img src="data:image/png;base64,{{ plot }}" alt="Boxplot" class="img-fluid" id="plot-img-{{ loop.index }}">
                 {% elif loop.index == 2 %}
                     <!-- Data Points Table -->
-                    <h3>Total Data Points in Each State</h3>
+                    <!-- <h3>Total Data Points in Each State</h3> -->
                     <img src="data:image/png;base64,{{ plot }}" alt="Data Points Table" class="img-fluid" id="plot-img-{{ loop.index }}">
                 {% else %}
                     <!-- Other plots -->

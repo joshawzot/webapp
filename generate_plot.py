@@ -188,37 +188,49 @@ def get_group_data_1124_2(target_ranges, table_name, selected_groups, database_n
 
     # Level n BER
     for level in range(num_levels):
-        lower_bound, upper_bound = target_ranges[level * 2], target_ranges[level * 2 + 1]
-        level_data = groups[level]
-        if len(level_data) > 0:
-            out_of_range_data = level_data[
-                (level_data < lower_bound) | (level_data > upper_bound)
-            ]
-            ber_values[f"State{level}"] = round(len(out_of_range_data) / len(level_data) * 1e6)
+        if level * 2 + 1 < len(target_ranges):
+            lower_bound, upper_bound = target_ranges[level * 2], target_ranges[level * 2 + 1]
+            level_data = np.array(groups[level])
+            if len(level_data) > 0:
+                # Data is already filtered in the group processing, but double-check for NaN
+                valid_data = level_data[~np.isnan(level_data)] if len(level_data) > 0 else np.array([])
+                if len(valid_data) > 0:
+                    out_of_range_data = valid_data[
+                        (valid_data < lower_bound) | (valid_data > upper_bound)
+                    ]
+                    ber_values[f"State{level}"] = round(len(out_of_range_data) / len(valid_data) * 1e6)
+                else:
+                    ber_values[f"State{level}"] = 0
+            else:
+                ber_values[f"State{level}"] = 0
         else:
             ber_values[f"State{level}"] = 0
 
-    # Level n to level n-1 BER
-    for level in range(1, num_levels):
-        lower_bound = target_ranges[level * 2]
-        level_data = groups[level]
-        if len(level_data) > 0:
-            ber_values[f"State{level} to State{level-1}"] = round(
-                np.sum(level_data < lower_bound) / len(level_data) * 1e6
-            )
-        else:
-            ber_values[f"State{level} to State{level-1}"] = 0
-
-    # Level n to level n+1 BER
+    # Transition BER (between consecutive levels)
     for level in range(num_levels - 1):
-        upper_bound = target_ranges[level * 2 + 1]
-        level_data = groups[level]
-        if len(level_data) > 0:
-            ber_values[f"State{level} to State{level+1}"] = round(
-                np.sum(level_data > upper_bound) / len(level_data) * 1e6
-            )
+        level1_data = np.array(groups[level]) if len(groups[level]) > 0 else np.array([])
+        level2_data = np.array(groups[level + 1]) if len(groups[level + 1]) > 0 else np.array([])
+        
+        # Data is already filtered, but double-check for NaN
+        level1_data = level1_data[~np.isnan(level1_data)] if len(level1_data) > 0 else np.array([])
+        level2_data = level2_data[~np.isnan(level2_data)] if len(level2_data) > 0 else np.array([])
+        
+        if len(level1_data) > 0 and len(level2_data) > 0:
+            combined_data = np.concatenate([level1_data, level2_data])
+            if (level * 2 + 3) < len(target_ranges):
+                lower_bound1, upper_bound1 = target_ranges[level * 2], target_ranges[level * 2 + 1]
+                lower_bound2, upper_bound2 = target_ranges[(level + 1) * 2], target_ranges[(level + 1) * 2 + 1]
+                
+                # Calculate transition BER
+                out_of_range_data = combined_data[
+                    (combined_data < min(lower_bound1, lower_bound2)) | 
+                    (combined_data > max(upper_bound1, upper_bound2))
+                ]
+                ber_values[f"State{level}to{level + 1}"] = round(len(out_of_range_data) / len(combined_data) * 1e6)
+            else:
+                ber_values[f"State{level}to{level + 1}"] = 0
         else:
-            ber_values[f"State{level} to State{level+1}"] = 0
+            ber_values[f"State{level}to{level + 1}"] = 0
 
     return groups, groups_stats, real_selected_groups, ber_values
 
@@ -552,6 +564,53 @@ def generate_plot(table_names, database_name, form_data):
         elif using_linear_conversion:
             print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
             data_matrix = convert_table_to_linear(data_matrix)
+        
+        # Apply data range filtering if specified
+        data_min_value = form_data.get('data_min_value')
+        data_max_value = form_data.get('data_max_value')
+        if data_min_value is not None or data_max_value is not None:
+            print(f"Applying data range filter for table {table_name}: min={data_min_value}, max={data_max_value}")
+            original_shape = data_matrix.shape
+            original_count = data_matrix.size
+            
+            # Create a mask for values within the specified range
+            mask = np.ones(data_matrix.shape, dtype=bool)
+            if data_min_value is not None:
+                mask &= (data_matrix >= data_min_value)
+            if data_max_value is not None:
+                mask &= (data_matrix <= data_max_value)
+            
+            # Replace values outside the range with NaN
+            filtered_data_matrix = data_matrix.copy()
+            filtered_data_matrix[~mask] = np.nan
+            
+            # Count valid data points after filtering
+            valid_count = np.sum(~np.isnan(filtered_data_matrix))
+            filtered_count = original_count - valid_count
+            
+            print(f"Data filtering for {table_name}: {original_count} total points, {valid_count} valid points, {filtered_count} filtered out")
+            data_matrix = filtered_data_matrix
+            
+        # Apply negative value filtering if specified
+        filter_negative_values = form_data.get('filter_negative_values', False)
+        if filter_negative_values:
+            print(f"Applying negative value filter for table {table_name}")
+            original_shape = data_matrix.shape
+            original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
+            
+            # Create a mask for non-negative values (>= 0)
+            negative_mask = (data_matrix < 0)
+            
+            # Replace negative values with NaN
+            filtered_data_matrix = data_matrix.copy()
+            filtered_data_matrix[negative_mask] = np.nan
+            
+            # Count valid data points after filtering
+            valid_count = np.sum(~np.isnan(filtered_data_matrix))
+            filtered_count = original_count - valid_count
+            
+            print(f"Negative value filtering for {table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
+            data_matrix = filtered_data_matrix
             
         data_matrices.append((table_name, data_matrix))
     
@@ -577,7 +636,7 @@ def generate_plot(table_names, database_name, form_data):
             if form_data['state_pattern_type'] == '1D':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups = get_group_data_new_from_matrix(
-                    data_matrix, selected_groups, number_of_states, custom_division)
+                    data_matrix, selected_groups, number_of_states, custom_division, form_data.get('custom_division_values', []))
             elif form_data['state_pattern_type'] == 'predefined':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups = get_group_data_from_matrix(
@@ -586,7 +645,7 @@ def generate_plot(table_names, database_name, form_data):
             if form_data['state_pattern_type'] == '1D':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
-                    target_ranges, data_matrix, selected_groups, number_of_states, custom_division)
+                    target_ranges, data_matrix, selected_groups, number_of_states, custom_division, form_data.get('custom_division_values', []))
             elif form_data['state_pattern_type'] == 'predefined':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
@@ -1060,6 +1119,10 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
         positions = np.where(pattern_file_array == group_idx)
         values = [data_np[pos] for pos in zip(positions[0], positions[1])]
         
+        # Filter out NaN values (from data range filtering)
+        values = [v for v in values if not np.isnan(v)]
+        print(f"Group {group_idx}: {len(values)} valid values after filtering NaN")
+        
         # Store the group data for later use
         groups.append(values)
         
@@ -1079,23 +1142,28 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
 
     return groups, groups_stats, selected_groups
 
-def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division=False):
+def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division=False, custom_division_values=None):
     """Modified version of get_group_data_new that works with a data matrix directly."""
     # Debug prints to diagnose custom_division usage
     print(f"get_group_data_new_from_matrix called with custom_division={custom_division}, type={type(custom_division)}")
     print(f"number_of_states={number_of_states}, type={type(number_of_states)}")
+    print(f"custom_division_values={custom_division_values}")
     
     # Flatten the data matrix
     flattened_data = data_matrix.flatten()
     
-    # Replace zeros with a small value
+    # For 1D patterns, we need to divide into states FIRST, then filter within each state
+    # This preserves the state boundaries even when data is filtered
+    
+    # Replace zeros with a small value BEFORE dividing into states
     flattened_data = np.where(flattened_data == 0, 0.001, flattened_data)
     
-    # Sort the data
-    #sorted_data = np.sort(flattened_data)
+    # Sort the data (but keep track of original positions for state division)
+    # For 1D patterns, we typically don't sort - we divide sequentially
+    # sorted_data = np.sort(flattened_data)
     sorted_data = flattened_data
     
-    # Calculate the number of elements per group
+    # Calculate the number of elements per group based on ORIGINAL data size
     total_elements = len(sorted_data)
     elements_per_group = total_elements // int(number_of_states)
     
@@ -1103,9 +1171,9 @@ def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_state
     groups = []
     groups_stats = []
     
-    if custom_division and (number_of_states == 4 or number_of_states == "4"):
-        # Use the custom division values - these are absolute sizes, not indices
-        division_points = [21080, 19880, 21072, 20912]
+    if custom_division and (number_of_states == 4 or number_of_states == "4") and custom_division_values:
+        # Use the custom division values from form_data
+        division_points = custom_division_values
         # Total up all elements
         total_division_points = sum(division_points)
         
@@ -1124,32 +1192,60 @@ def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_state
             
             print(f"Group {i}: start_idx={start_idx}, end_idx={end_idx}, size={actual_size}")
             
-            # Get the group data
+            # Get the group data (including NaN values)
             group_data = sorted_data[start_idx:end_idx]
-            groups.append(group_data.tolist())
             
-            # Calculate statistics
-            min_val = np.min(group_data)
-            max_val = np.max(group_data)
-            avg_val = np.mean(group_data)
-            std_val = np.std(group_data)
+            # NOW filter out NaN values within this specific group
+            valid_mask = ~np.isnan(group_data)
+            filtered_group_data = group_data[valid_mask]
+            
+            print(f"Group {i}: {len(group_data)} total points, {len(filtered_group_data)} valid points after filtering")
+            
+            # Store the filtered group data
+            groups.append(filtered_group_data.tolist())
+            
+            # Calculate statistics on filtered data
+            if len(filtered_group_data) > 0:
+                min_val = np.min(filtered_group_data)
+                max_val = np.max(filtered_group_data)
+                avg_val = np.mean(filtered_group_data)
+                std_val = np.std(filtered_group_data)
+            else:
+                # Handle case where all data in group was filtered out
+                min_val = max_val = avg_val = std_val = 0.0
+            
             groups_stats.append((min_val, max_val, avg_val, std_val))
             
             # Update start index for next group
             start_idx = end_idx
     else:
-        # Create groups with equal number of elements
+        # Create groups with equal number of elements based on ORIGINAL data
         for i in range(int(number_of_states)):
             start_idx = i * elements_per_group
             end_idx = (i + 1) * elements_per_group if i < int(number_of_states) - 1 else total_elements
-            group_data = sorted_data[start_idx:end_idx]
-            groups.append(group_data.tolist())
             
-            # Calculate statistics
-            min_val = np.min(group_data)
-            max_val = np.max(group_data)
-            avg_val = np.mean(group_data)
-            std_val = np.std(group_data)
+            # Get the group data (including NaN values)
+            group_data = sorted_data[start_idx:end_idx]
+            
+            # NOW filter out NaN values within this specific group
+            valid_mask = ~np.isnan(group_data)
+            filtered_group_data = group_data[valid_mask]
+            
+            print(f"Group {i}: {len(group_data)} total points, {len(filtered_group_data)} valid points after filtering")
+            
+            # Store the filtered group data
+            groups.append(filtered_group_data.tolist())
+            
+            # Calculate statistics on filtered data
+            if len(filtered_group_data) > 0:
+                min_val = np.min(filtered_group_data)
+                max_val = np.max(filtered_group_data)
+                avg_val = np.mean(filtered_group_data)
+                std_val = np.std(filtered_group_data)
+            else:
+                # Handle case where all data in group was filtered out
+                min_val = max_val = avg_val = std_val = 0.0
+            
             groups_stats.append((min_val, max_val, avg_val, std_val))
 
     # Parse selected_groups or use default
@@ -1166,6 +1262,59 @@ def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_state
     
     return groups, groups_stats, selected_groups
 
+def calculate_ber_with_target_ranges(groups, target_ranges):
+    """Calculate BER values for different levels and transitions using target ranges."""
+    num_levels = len(groups)
+    ber_values = {}
+
+    # Level n BER
+    for level in range(num_levels):
+        if level * 2 + 1 < len(target_ranges):
+            lower_bound, upper_bound = target_ranges[level * 2], target_ranges[level * 2 + 1]
+            level_data = np.array(groups[level])
+            if len(level_data) > 0:
+                # Data is already filtered in the group processing, but double-check for NaN
+                valid_data = level_data[~np.isnan(level_data)] if len(level_data) > 0 else np.array([])
+                if len(valid_data) > 0:
+                    out_of_range_data = valid_data[
+                        (valid_data < lower_bound) | (valid_data > upper_bound)
+                    ]
+                    ber_values[f"State{level}"] = round(len(out_of_range_data) / len(valid_data) * 1e6)
+                else:
+                    ber_values[f"State{level}"] = 0
+            else:
+                ber_values[f"State{level}"] = 0
+        else:
+            ber_values[f"State{level}"] = 0
+
+    # Transition BER (between consecutive levels)
+    for level in range(num_levels - 1):
+        level1_data = np.array(groups[level]) if len(groups[level]) > 0 else np.array([])
+        level2_data = np.array(groups[level + 1]) if len(groups[level + 1]) > 0 else np.array([])
+        
+        # Data is already filtered, but double-check for NaN
+        level1_data = level1_data[~np.isnan(level1_data)] if len(level1_data) > 0 else np.array([])
+        level2_data = level2_data[~np.isnan(level2_data)] if len(level2_data) > 0 else np.array([])
+        
+        if len(level1_data) > 0 and len(level2_data) > 0:
+            combined_data = np.concatenate([level1_data, level2_data])
+            if (level * 2 + 3) < len(target_ranges):
+                lower_bound1, upper_bound1 = target_ranges[level * 2], target_ranges[level * 2 + 1]
+                lower_bound2, upper_bound2 = target_ranges[(level + 1) * 2], target_ranges[(level + 1) * 2 + 1]
+                
+                # Calculate transition BER
+                out_of_range_data = combined_data[
+                    (combined_data < min(lower_bound1, lower_bound2)) | 
+                    (combined_data > max(upper_bound1, upper_bound2))
+                ]
+                ber_values[f"State{level}to{level + 1}"] = round(len(out_of_range_data) / len(combined_data) * 1e6)
+            else:
+                ber_values[f"State{level}to{level + 1}"] = 0
+        else:
+            ber_values[f"State{level}to{level + 1}"] = 0
+
+    return ber_values
+
 def get_group_data_1124_2_from_matrix(target_ranges, data_matrix, selected_groups, pattern_file_array):
     """Modified version of get_group_data_1124_2 that works with a data matrix directly."""
     # Get groups data using existing function
@@ -1176,10 +1325,10 @@ def get_group_data_1124_2_from_matrix(target_ranges, data_matrix, selected_group
     
     return groups, groups_stats, selected_groups, table_miao_ber
 
-def get_group_data_latest_from_matrix(target_ranges, data_matrix, selected_groups, number_of_states, custom_division=False):
+def get_group_data_latest_from_matrix(target_ranges, data_matrix, selected_groups, number_of_states, custom_division=False, custom_division_values=None):
     """Modified version of get_group_data_latest that works with a data matrix directly."""
     # Get groups data using existing function
-    groups, groups_stats, selected_groups = get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division)
+    groups, groups_stats, selected_groups = get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division, custom_division_values)
     
     # Calculate BER using target ranges
     table_miao_ber = calculate_ber_with_target_ranges(groups, target_ranges)

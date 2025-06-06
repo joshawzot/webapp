@@ -577,7 +577,7 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
             buf_cdf.close()
 
 from db_operations import create_connection, fetch_data, close_connection, create_db_engine, create_db, get_all_databases, connect_to_db, fetch_tables, rename_database
-def get_group_data_new(table_name, selected_groups, database_name, number_of_states, custom_division=False):
+def get_group_data_new(table_name, selected_groups, database_name, number_of_states, custom_division=False, custom_division_values=None):
     connection = create_connection(database_name)
     query = f"SELECT * FROM `{table_name}`"
     cursor = connection.cursor()
@@ -604,9 +604,9 @@ def get_group_data_new(table_name, selected_groups, database_name, number_of_sta
     groups_stats = []  # List to store statistics for each group
 
     # Use custom division sizes if requested and number_of_states is 4
-    if custom_division and number_of_states == 4:
-        # Custom division sizes [21080, 19880, 21072, 20912]
-        custom_sizes = [21080, 19880, 21072, 20912]
+    if custom_division and number_of_states == 4 and custom_division_values:
+        # Use custom division values from parameter
+        custom_sizes = custom_division_values
         print("Using custom division sizes:", custom_sizes)
         total_rows, total_cols = data_np.shape
         
@@ -722,7 +722,7 @@ def get_group_data_new(table_name, selected_groups, database_name, number_of_sta
 
     return groups, groups_stats, real_selected_groups
 
-def get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states, custom_division=False):
+def get_group_data_latest(target_ranges, table_name, selected_groups, database_name, number_of_states, custom_division=False, custom_division_values=None):
     connection = create_connection(database_name)
     query = f"SELECT * FROM {table_name}"
     cursor = connection.cursor()
@@ -747,9 +747,9 @@ def get_group_data_latest(target_ranges, table_name, selected_groups, database_n
     groups_stats = []  # List to store statistics for each group
 
     # Use custom division sizes if requested and number_of_states is 4
-    if custom_division and number_of_states == 4:
-        # Custom division sizes [21080, 19880, 21072, 20912]
-        custom_sizes = [21080, 19880, 21072, 20912]
+    if custom_division and number_of_states == 4 and custom_division_values:
+        # Use custom division values from parameter
+        custom_sizes = custom_division_values
         print("Using custom division sizes:", custom_sizes)
         total_rows, total_cols = data_np.shape
         
@@ -1662,7 +1662,7 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
                 else:
                     table[(i, j)].set_facecolor('#ffffff')
         
-        ax.set_title('Total Data Points in Each State (for Boxplot)', fontsize=16, fontweight='bold', pad=20)
+        ax.set_title('Total Data Points in Each State', fontsize=16, fontweight='bold', pad=20)
 
         # Save plot to buffer
         buf = BytesIO()

@@ -24,11 +24,13 @@
                 <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states" onchange="checkCustomDivision()">
             </div>
             <div class="form-group" id="custom_division_container" style="display:block;">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" name="custom_division" id="custom_division" value="True" onclick="toggleCustomDivision()">
-                    <label class="form-check-label" for="custom_division">Use Custom Division [21080, 19880, 21072, 20912]</label>
-                    <small class="form-text text-muted d-block">Only applicable when number of states is 4</small>
-                </div>
+                <label for="custom_division_type">Custom Division Options:</label>
+                <select class="form-control" name="custom_division_type" id="custom_division_type" onchange="toggleCustomDivision()">
+                    <option value="">None (Equal Division)</option>
+                    <option value="21080,19880,21072,20912">Custom Division 1 [21080, 19880, 21072, 20912]</option>
+                    <option value="1625010,1612862,1640536,1591224">Custom Division 2 [1625010, 1612862, 1640536, 1591224]</option>
+                </select>
+                <small class="form-text text-muted d-block">Only applicable when number of states is 4</small>
             </div>
             <div class="form-group">
                 <label for="selected_groups_1D">Selected States:</label>
@@ -61,6 +63,7 @@
                     <option value="248x248_1state">248x248_1state</option>
                     <option value="1296x64_1state">1296x64_1state</option>
                     <option value="248x1_1state">248x1_1state</option>
+                    <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
                 </select>
             </div>
             <div class="form-group">
@@ -116,6 +119,29 @@
             <label for="num_interp_points">Interpolation Points (higher = more accurate but slower):</label>
             <input type="text" class="form-control" name="num_interp_points" id="num_interp_points" placeholder="Enter number of interpolation points" value="500">
             <small class="form-text text-muted">Default: 500 (usually 500 is good enough, we used to use 4000) </small>
+        </div>
+
+        <!-- Add the new data range filter fields -->
+        <div class="form-group">
+            <label><strong>Data Range Filter (optional):</strong></label>
+            <small class="form-text text-muted d-block mb-2">Filter data points to only include values within the specified range. Leave empty to include all data.</small>
+            <div class="row">
+                <div class="col">
+                    <label for="data_min_value">Minimum Value:</label>
+                    <input type="number" class="form-control" name="data_min_value" id="data_min_value" placeholder="Enter minimum value" step="any">
+                </div>
+                <div class="col">
+                    <label for="data_max_value">Maximum Value:</label>
+                    <input type="number" class="form-control" name="data_max_value" id="data_max_value" placeholder="Enter maximum value" step="any">
+                </div>
+            </div>
+        </div>
+
+        <!-- Add the new negative value filter option -->
+        <div class="form-group">
+            <label for="filter_negative_values">Filter out negative values:</label>
+            <input type="checkbox" name="filter_negative_values" id="filter_negative_values" value="True">
+            <small class="form-text text-muted d-block">Check this option to exclude all negative values from the analysis.</small>
         </div>
 
         <!-- BER Display Options section -->
@@ -190,10 +216,17 @@
         // Reset checkboxes
         outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
-        document.getElementById('custom_division').checked = false;
+        document.getElementById('custom_division_type').value = '';
         
         // Reset the new color grouping keywords field
         document.getElementById('color_group_keywords').value = '';
+        
+        // Reset the new data range filter fields
+        document.getElementById('data_min_value').value = '';
+        document.getElementById('data_max_value').value = '';
+        
+        // Reset the new negative value filter checkbox
+        document.getElementById('filter_negative_values').checked = false;
         
         // Call toggleStatePatternType to set proper visibility
         toggleStatePatternType();
@@ -306,6 +339,24 @@
                 return;
             }
         }
+
+        // Add validation for data range filter
+        const dataMinInput = document.getElementById('data_min_value');
+        const dataMaxInput = document.getElementById('data_max_value');
+        const dataMinValue = dataMinInput.value.trim();
+        const dataMaxValue = dataMaxInput.value.trim();
+        
+        if (dataMinValue && dataMaxValue) {
+            const minVal = parseFloat(dataMinValue);
+            const maxVal = parseFloat(dataMaxValue);
+            
+            if (!isNaN(minVal) && !isNaN(maxVal) && minVal >= maxVal) {
+                alert('Data Range Filter Error: Minimum value must be less than maximum value.');
+                event.preventDefault(); // Stop form submission
+                dataMinInput.focus();
+                return;
+            }
+        }
     });
 
     function updateCustomInput(select, inputId) {
@@ -320,16 +371,16 @@
     function checkCustomDivision() {
         var numberOfStates = document.getElementById('number_of_states').value;
         var customDivisionContainer = document.getElementById('custom_division_container');
-        var customDivisionCheckbox = document.getElementById('custom_division');
+        var customDivisionType = document.getElementById('custom_division_type');
         
         if (numberOfStates === '4') {
             customDivisionContainer.style.display = 'block';
-            // Ensure the checkbox is responsive to clicks
-            customDivisionCheckbox.disabled = false;
+            // Ensure the dropdown is responsive to changes
+            customDivisionType.disabled = false;
         } else {
             customDivisionContainer.style.display = 'none';
-            customDivisionCheckbox.checked = false;
-            customDivisionCheckbox.disabled = true;
+            customDivisionType.value = '';
+            customDivisionType.disabled = true;
         }
     }
 
@@ -352,13 +403,13 @@
         }
     }
 
-    // Function to handle custom division checkbox toggle
+    // Function to handle custom division dropdown toggle
     function toggleCustomDivision() {
-        var checkbox = document.getElementById('custom_division');
-        console.log("Custom Division Checkbox state changed to: " + checkbox.checked);
-        // Force the checkbox to visibly update
-        checkbox.blur();
-        checkbox.focus();
+        var dropdown = document.getElementById('custom_division_type');
+        console.log("Custom Division Dropdown state changed to: " + dropdown.value);
+        // Force the dropdown to visibly update
+        dropdown.blur();
+        dropdown.focus();
     }
 </script>
 

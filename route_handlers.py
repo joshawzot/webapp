@@ -125,14 +125,15 @@ def home():
             disk_info = get_disk_space()
             
             # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-            disk_stats = shutil.disk_usage("/app")  # Use parent directory to avoid permission issues
+            disk_stats = shutil.disk_usage("/")  # Use root directory, which always exists
+            #disk_stats = shutil.disk_usage("/app") original
             free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
             low_disk_space = free_space_gb < 10  # True if less than 10GB
                 
             cursor.close()
             conn.close()
             return render_template('home_page.html', 
-                                  databases=databases, 
+                                  databases=databases,
                                   username=username, 
                                   recent_visits=recent_visits,
                                   disk_info=disk_info,
@@ -1076,7 +1077,7 @@ def get_pattern_file(pattern_name):
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
-        "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
+        "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
         "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
         "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
@@ -3314,7 +3315,7 @@ def get_disk_space():
     """Get the disk space information for the MySQL data directory."""
     try:
         # Get MySQL data directory path (you may need to adjust this path)
-        mysql_path = "/app"  # Check disk usage on /app mount point to avoid permission issues
+        mysql_path = "/"  # Check disk usage on /app mount point to avoid permission issues
         
         # Get disk usage statistics
         disk_stats = shutil.disk_usage(mysql_path)
@@ -3554,33 +3555,23 @@ def check_jupyter():
                     # On Unix, this will raise an error if the process doesn't exist
                     os.kill(pid, 0)
                     
-                    # Process exists - update URL to use correct hostname instead of localhost
-                    hostname = socket.gethostname()
-                    
-                    # Process exists
-                    return jsonify({
-                        "status": "running",
-                        "url": f"http://{hostname}:8888",
-                        "token": status.get('token', '')
-                    })
-                except Exception as e:
-                    # Process doesn't exist
-                    return jsonify({
-                        "status": "stopped",
-                        "message": f"Process not running. Please restart the systemd service: sudo systemctl restart jupyter_notebook.service"
-                    })
-        except Exception as e:
+                    # Process exists, return the notebook page
+                    token = status.get('token', '')
+                    # Calculate the relative path from notebook_dir to the target notebook
+                    notebook_rel_path = os.path.relpath(notebook_path, postprocess_dir)
+                    return render_template('jupyter_notebook.html', 
+                                           token=token, 
+                                           notebook_path=notebook_rel_path,
+                                           notebook_name=notebook_name)
+                except:
+                    # Process doesn't exist anymore
+                    pass
+        except:
             # Error reading status file
-            return jsonify({
-                "status": "error",
-                "message": f"Error checking status: {str(e)}. Please restart the systemd service."
-            })
+            pass
     
-    # No status file
-    return jsonify({
-        "status": "not_started",
-        "message": "Jupyter server has not been started. Please run the systemd service."
-    })
+    # If we get here, we need to tell the user to start the Jupyter server first
+    return render_template('jupyter_start_instructions.html')
 
 @app.route('/test-machines')
 def test_machines():
@@ -4547,7 +4538,7 @@ def top_schemas_by_size():
         disk_info = get_disk_space()
         
         # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-        disk_stats = shutil.disk_usage("/app")  # Use parent directory to avoid permission issues
+        disk_stats = shutil.disk_usage("/")  # Use parent directory to avoid permission issues
         free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
         # Add free_space_gb to disk_info dictionary
         disk_info['free_space_gb'] = free_space_gb
@@ -4595,7 +4586,7 @@ def get_mysql_directory_size():
             # If direct access fails due to permissions, estimate MySQL size
             # based on disk usage (assumed to be ~80% of used space on /app)
             try:
-                disk_stats = shutil.disk_usage("/app")
+                disk_stats = shutil.disk_usage("/")
                 used_gb = disk_stats.used / (1024 * 1024 * 1024)
                 # Estimate MySQL size as 80% of used space
                 mysql_estimated_gb = used_gb * 0.8

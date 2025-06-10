@@ -553,6 +553,8 @@ def generate_plot(table_names, database_name, form_data):
 
     # Compute the global min and max values among all data matrices
     data_matrices = []
+    bitmap_mask_to_save = None  # Will store the bitmap mask if we need to generate one
+    
     for table_name in table_names:
         data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
         
@@ -564,6 +566,32 @@ def generate_plot(table_names, database_name, form_data):
         elif using_linear_conversion:
             print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
             data_matrix = convert_table_to_linear(data_matrix)
+        
+        # Check if we need to apply an existing bitmap mask
+        apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
+        if apply_bitmap_mask:
+            print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {table_name}")
+            from route_handlers import load_bitmap_mask, validate_mask_dimensions
+            
+            mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
+            if mask_array is not None:
+                # Validate dimensions
+                is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
+                if is_valid:
+                    print(f"Bitmap mask validation passed: {validation_message}")
+                    # Apply the mask: set filtered coordinates to NaN
+                    data_matrix[mask_array == 0] = np.nan
+                    valid_count = np.sum(mask_array == 1)
+                    filtered_count = np.sum(mask_array == 0)
+                    print(f"Bitmap mask applied to {table_name}: {valid_count} valid points, {filtered_count} filtered out")
+                else:
+                    print(f"Bitmap mask validation failed for {table_name}: {validation_message}")
+                    print("Skipping bitmap mask application")
+            else:
+                print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {table_name}")
+        
+        # Initialize combined mask for bitmap generation
+        combined_filter_mask = np.ones(data_matrix.shape, dtype=bool)
         
         # Apply data range filtering if specified
         data_min_value = form_data.get('data_min_value')
@@ -579,6 +607,9 @@ def generate_plot(table_names, database_name, form_data):
                 mask &= (data_matrix >= data_min_value)
             if data_max_value is not None:
                 mask &= (data_matrix <= data_max_value)
+            
+            # Update combined mask
+            combined_filter_mask &= mask
             
             # Replace values outside the range with NaN
             filtered_data_matrix = data_matrix.copy()
@@ -599,11 +630,14 @@ def generate_plot(table_names, database_name, form_data):
             original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
             
             # Create a mask for non-negative values (>= 0)
-            negative_mask = (data_matrix < 0)
+            negative_mask = (data_matrix >= 0)
+            
+            # Update combined mask
+            combined_filter_mask &= negative_mask
             
             # Replace negative values with NaN
             filtered_data_matrix = data_matrix.copy()
-            filtered_data_matrix[negative_mask] = np.nan
+            filtered_data_matrix[data_matrix < 0] = np.nan
             
             # Count valid data points after filtering
             valid_count = np.sum(~np.isnan(filtered_data_matrix))
@@ -611,6 +645,13 @@ def generate_plot(table_names, database_name, form_data):
             
             print(f"Negative value filtering for {table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
             data_matrix = filtered_data_matrix
+        
+        # Store bitmap mask for generation (use the first table's mask)
+        generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
+        if generate_bitmap_mask and bitmap_mask_to_save is None:
+            # Convert boolean mask to integer (1 for valid, 0 for filtered)
+            bitmap_mask_to_save = combined_filter_mask.astype(int)
+            print(f"Bitmap mask prepared for generation from table {table_name}")
             
         data_matrices.append((table_name, data_matrix))
     
@@ -1008,6 +1049,18 @@ def generate_plot(table_names, database_name, form_data):
             best_top_n = []
             best_top_n_with_io = []
 
+        # Save bitmap mask if requested
+        generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
+        bitmap_mask_name = form_data.get('bitmap_mask_name', '').strip()
+        if generate_bitmap_mask and bitmap_mask_name and bitmap_mask_to_save is not None:
+            print(f"Saving bitmap mask '{bitmap_mask_name}' for database '{database_name}'")
+            from route_handlers import save_bitmap_mask
+            success = save_bitmap_mask(database_name, bitmap_mask_name, bitmap_mask_to_save)
+            if success:
+                print(f"Bitmap mask '{bitmap_mask_name}' saved successfully")
+            else:
+                print(f"Failed to save bitmap mask '{bitmap_mask_name}'")
+
         # Return the plots and sorted table names
         return (encoded_plots,
                 original_sorted_table_names,  # Use original table names
@@ -1063,6 +1116,18 @@ def generate_plot(table_names, database_name, form_data):
             best_top_n = []
             best_top_n_with_io = []
     
+    # Save bitmap mask if requested
+    generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
+    bitmap_mask_name = form_data.get('bitmap_mask_name', '').strip()
+    if generate_bitmap_mask and bitmap_mask_name and bitmap_mask_to_save is not None:
+        print(f"Saving bitmap mask '{bitmap_mask_name}' for database '{database_name}'")
+        from route_handlers import save_bitmap_mask
+        success = save_bitmap_mask(database_name, bitmap_mask_name, bitmap_mask_to_save)
+        if success:
+            print(f"Bitmap mask '{bitmap_mask_name}' saved successfully")
+        else:
+            print(f"Failed to save bitmap mask '{bitmap_mask_name}'")
+
     return (encoded_plots,
             sorted_table_names,
             None,

@@ -144,6 +144,35 @@
             <small class="form-text text-muted d-block">Check this option to exclude all negative values from the analysis.</small>
         </div>
 
+        <!-- Add bitmap mask functionality -->
+        <div class="form-group">
+            <label><strong>Bitmap Mask Options:</strong></label>
+            <small class="form-text text-muted d-block mb-2">Generate or apply bitmap masks based on data filtering (filtered out coordinates = 0, valid coordinates = 1).</small>
+            
+            <!-- Option to generate a bitmap mask -->
+            <div class="custom-control custom-checkbox mb-2">
+                <input type="checkbox" class="custom-control-input" id="generate_bitmap_mask" name="generate_bitmap_mask" value="True" onchange="toggleBitmapMaskName()">
+                <label class="custom-control-label" for="generate_bitmap_mask">Generate and save bitmap mask from current filter settings</label>
+            </div>
+            
+            <!-- Mask name input (only shown when generate checkbox is checked) -->
+            <div id="bitmap_mask_name_section" style="display:none;">
+                <label for="bitmap_mask_name">Bitmap Mask Name:</label>
+                <input type="text" class="form-control" name="bitmap_mask_name" id="bitmap_mask_name" placeholder="Enter a name for the bitmap mask">
+                <small class="form-text text-muted">This mask will be saved and can be reused later.</small>
+            </div>
+            
+            <!-- Option to apply an existing bitmap mask -->
+            <div class="mt-3">
+                <label for="apply_bitmap_mask">Apply existing bitmap mask:</label>
+                <select class="form-control" name="apply_bitmap_mask" id="apply_bitmap_mask">
+                    <option value="">None - don't apply any mask</option>
+                    <!-- Options will be populated dynamically -->
+                </select>
+                <small class="form-text text-muted d-block">Select an existing bitmap mask to apply during analysis. Only data points with value 1 in the mask will be included.</small>
+            </div>
+        </div>
+
         <!-- BER Display Options section -->
         <div class="form-group">
             <label><strong>BER Display Options:</strong></label>
@@ -228,6 +257,13 @@
         // Reset the new negative value filter checkbox
         document.getElementById('filter_negative_values').checked = false;
         
+        // Reset bitmap mask options
+        document.getElementById('generate_bitmap_mask').checked = false;
+        document.getElementById('bitmap_mask_name').value = '';
+        document.getElementById('apply_bitmap_mask').value = '';
+        toggleBitmapMaskName();
+        loadBitmapMasks(false); // Don't preserve selection during form reset
+        
         // Call toggleStatePatternType to set proper visibility
         toggleStatePatternType();
         
@@ -271,6 +307,8 @@
     window.addEventListener('pageshow', function(event) {
         // Always initialize the form, whether it's a fresh load or back-forward navigation
         initializeForm();
+        // Load available bitmap masks after form initialization (preserve selection for back/forward navigation)
+        setTimeout(() => loadBitmapMasks(true), 100);
     });
 
     // Prevent form data persistence
@@ -280,6 +318,8 @@
 
     window.onload = function() {
         initializeForm();
+        // Load available bitmap masks after form initialization (preserve selection for fresh page load)
+        setTimeout(() => loadBitmapMasks(true), 100);
     };
 
     document.getElementById('plotForm').addEventListener('submit', function(event) {
@@ -357,6 +397,37 @@
                 return;
             }
         }
+
+        // Add validation for bitmap mask generation
+        const generateBitmapMask = document.getElementById('generate_bitmap_mask').checked;
+        const bitmapMaskName = document.getElementById('bitmap_mask_name').value.trim();
+        
+        if (generateBitmapMask) {
+            if (!bitmapMaskName) {
+                alert('Bitmap Mask Error: Please enter a name for the bitmap mask.');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('bitmap_mask_name').focus();
+                return;
+            }
+            
+            // Check if mask name contains only valid characters
+            if (!/^[a-zA-Z0-9_-]+$/.test(bitmapMaskName)) {
+                alert('Bitmap Mask Error: Mask name can only contain letters, numbers, underscores, and hyphens.');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('bitmap_mask_name').focus();
+                return;
+            }
+            
+            // Check if any filter is enabled when generating a mask
+            const hasDataFilter = dataMinValue || dataMaxValue;
+            const hasNegativeFilter = document.getElementById('filter_negative_values').checked;
+            
+            if (!hasDataFilter && !hasNegativeFilter) {
+                alert('Bitmap Mask Error: To generate a bitmap mask, you must enable at least one filter (Data Range Filter or Negative Value Filter).');
+                event.preventDefault(); // Stop form submission
+                return;
+            }
+        }
     });
 
     function updateCustomInput(select, inputId) {
@@ -410,6 +481,87 @@
         // Force the dropdown to visibly update
         dropdown.blur();
         dropdown.focus();
+    }
+
+    // Function to toggle bitmap mask name input visibility
+    function toggleBitmapMaskName() {
+        var generateCheckbox = document.getElementById('generate_bitmap_mask');
+        var nameSection = document.getElementById('bitmap_mask_name_section');
+        
+        if (generateCheckbox.checked) {
+            nameSection.style.display = 'block';
+        } else {
+            nameSection.style.display = 'none';
+            document.getElementById('bitmap_mask_name').value = '';
+        }
+    }
+
+    // Function to load available bitmap masks
+    function loadBitmapMasks(preserveSelection = true) {
+        // Get the database name from the form
+        var database = document.querySelector('input[name="database"]').value;
+        console.log('Loading bitmap masks for database:', database);
+        
+        if (!database) {
+            console.log('No database specified, skipping mask loading');
+            return;
+        }
+        
+        var select = document.getElementById('apply_bitmap_mask');
+        var currentSelection = preserveSelection ? select.value : '';
+        console.log('Current selection to preserve:', currentSelection);
+        
+        fetch('/get-bitmap-masks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                database: database
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received bitmap masks data:', data);
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            var selectionRestored = false;
+            
+            // Add available masks
+            if (data.masks && data.masks.length > 0) {
+                console.log(`Adding ${data.masks.length} masks to dropdown`);
+                data.masks.forEach(mask => {
+                    var option = document.createElement('option');
+                    option.value = mask.name;
+                    option.textContent = `${mask.name} (${mask.dimensions})`;
+                    select.appendChild(option);
+                    console.log(`Added mask: ${mask.name} (${mask.dimensions})`);
+                    
+                    // Restore previous selection if it matches
+                    if (preserveSelection && mask.name === currentSelection) {
+                        select.value = mask.name;
+                        selectionRestored = true;
+                        console.log(`✅ Successfully restored selection: ${mask.name}`);
+                    }
+                });
+                
+                if (preserveSelection && currentSelection && !selectionRestored) {
+                    console.log(`Warning: Could not restore previous selection '${currentSelection}' - mask may have been deleted`);
+                }
+            } else {
+                console.log('No bitmap masks found for this database');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading bitmap masks:', error);
+        });
     }
 </script>
 

@@ -482,6 +482,34 @@ def generate_plot(table_names, database_name, form_data):
     selected_groups = form_data.get('selected_groups', "")
     print("selected_groups:", selected_groups)
     
+    # Check for column by column analysis mode
+    analysis_mode = form_data.get('analysis_mode', 'default')
+    state_pattern = form_data.get('state_pattern', '')
+    print("analysis_mode:", analysis_mode)
+    print("state_pattern:", state_pattern)
+    
+    # Initialize variables for both analysis modes
+    original_table_names = table_names[:]  # Always store the original table names
+    column_pattern_arrays = {}  # Initialize empty dictionary for column patterns
+    
+    # Handle column by column analysis for 82944x78_ecc_fuxi pattern
+    if (analysis_mode == 'column_by_column' and 
+        state_pattern == '82944x78_ecc_fuxi' and 
+        form_data['state_pattern_type'] == 'predefined'):
+        
+        print("Applying column by column analysis for 82944x78_ecc_fuxi pattern")
+        
+        # Create expanded table names for each column
+        expanded_table_names = []
+        
+        for table_name in original_table_names:
+            for col_idx in range(78):  # 78 columns in the pattern
+                expanded_table_names.append(f"{table_name}_col_{col_idx}")
+        
+        # Update table_names to use the expanded list
+        table_names = expanded_table_names
+        print(f"Expanded table names count: {len(table_names)} (original: {len(original_table_names)})")
+    
     # Initialize variables for outlier analysis
     outlier_coordinates = []
     correlation_analysis = None
@@ -514,6 +542,16 @@ def generate_plot(table_names, database_name, form_data):
             if state_pattern == "82944x78_ecc_fuxi":
                 # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
                 pattern_file_array = pattern_file_array.reshape(78, 82944).T
+                
+                # For column by column analysis, we need to create individual pattern arrays for each column
+                if analysis_mode == 'column_by_column':
+                    print("Creating individual pattern arrays for column by column analysis")
+                    # We'll create a dictionary to store pattern arrays for each column
+                    column_pattern_arrays = {}
+                    for col_idx in range(78):
+                        # Extract the pattern for this specific column (82944x1)
+                        column_pattern_arrays[col_idx] = pattern_file_array[:, col_idx:col_idx+1]
+                    print(f"Created {len(column_pattern_arrays)} column pattern arrays")
         else:
             print("Invalid state pattern or file path not found.")
     elif form_data['state_pattern_type'] == '1D':
@@ -555,105 +593,217 @@ def generate_plot(table_names, database_name, form_data):
     data_matrices = []
     bitmap_mask_to_save = None  # Will store the bitmap mask if we need to generate one
     
-    for table_name in table_names:
-        data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
+    # Handle column by column analysis vs normal analysis
+    if (analysis_mode == 'column_by_column' and 
+        state_pattern == '82944x78_ecc_fuxi' and 
+        form_data['state_pattern_type'] == 'predefined'):
         
-        # Apply conductance conversion if enabled
-        if using_conductance and conductance_params:
-            print(f"Converting table {table_name} to conductance values")
-            data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
-        # Apply linear conversion if enabled
-        elif using_linear_conversion:
-            print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
-            data_matrix = convert_table_to_linear(data_matrix)
-        
-        # Check if we need to apply an existing bitmap mask
-        apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
-        if apply_bitmap_mask:
-            print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {table_name}")
-            from route_handlers import load_bitmap_mask, validate_mask_dimensions
+        # Column by column analysis - process original tables and extract columns
+        for original_table_name in original_table_names:
+            data_matrix, data_matrix_size = get_full_table_data(original_table_name, database_name)
             
-            mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
-            if mask_array is not None:
-                # Validate dimensions
-                is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
-                if is_valid:
-                    print(f"Bitmap mask validation passed: {validation_message}")
-                    # Apply the mask: set filtered coordinates to NaN
-                    data_matrix[mask_array == 0] = np.nan
-                    valid_count = np.sum(mask_array == 1)
-                    filtered_count = np.sum(mask_array == 0)
-                    print(f"Bitmap mask applied to {table_name}: {valid_count} valid points, {filtered_count} filtered out")
+            # Apply conductance conversion if enabled
+            if using_conductance and conductance_params:
+                print(f"Converting table {original_table_name} to conductance values")
+                data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+            # Apply linear conversion if enabled
+            elif using_linear_conversion:
+                print(f"Converting table {original_table_name} using linear conversion (0-63 → 60-170)")
+                data_matrix = convert_table_to_linear(data_matrix)
+            
+            # Check if we need to apply an existing bitmap mask
+            apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
+            if apply_bitmap_mask:
+                print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {original_table_name}")
+                from route_handlers import load_bitmap_mask, validate_mask_dimensions
+                
+                mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
+                if mask_array is not None:
+                    # Validate dimensions
+                    is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
+                    if is_valid:
+                        print(f"Bitmap mask validation passed: {validation_message}")
+                        # Apply the mask: set filtered coordinates to NaN
+                        data_matrix[mask_array == 0] = np.nan
+                        valid_count = np.sum(mask_array == 1)
+                        filtered_count = np.sum(mask_array == 0)
+                        print(f"Bitmap mask applied to {original_table_name}: {valid_count} valid points, {filtered_count} filtered out")
+                    else:
+                        print(f"Bitmap mask validation failed for {original_table_name}: {validation_message}")
+                        print("Skipping bitmap mask application")
                 else:
-                    print(f"Bitmap mask validation failed for {table_name}: {validation_message}")
-                    print("Skipping bitmap mask application")
-            else:
-                print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {table_name}")
-        
-        # Initialize combined mask for bitmap generation
-        combined_filter_mask = np.ones(data_matrix.shape, dtype=bool)
-        
-        # Apply data range filtering if specified
-        data_min_value = form_data.get('data_min_value')
-        data_max_value = form_data.get('data_max_value')
-        if data_min_value is not None or data_max_value is not None:
-            print(f"Applying data range filter for table {table_name}: min={data_min_value}, max={data_max_value}")
-            original_shape = data_matrix.shape
-            original_count = data_matrix.size
+                    print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {original_table_name}")
             
-            # Create a mask for values within the specified range
-            mask = np.ones(data_matrix.shape, dtype=bool)
-            if data_min_value is not None:
-                mask &= (data_matrix >= data_min_value)
-            if data_max_value is not None:
-                mask &= (data_matrix <= data_max_value)
+            # Initialize combined mask for bitmap generation
+            combined_filter_mask = np.ones(data_matrix.shape, dtype=bool)
             
-            # Update combined mask
-            combined_filter_mask &= mask
+            # Apply data range filtering if specified
+            data_min_value = form_data.get('data_min_value')
+            data_max_value = form_data.get('data_max_value')
+            if data_min_value is not None or data_max_value is not None:
+                print(f"Applying data range filter for table {original_table_name}: min={data_min_value}, max={data_max_value}")
+                original_shape = data_matrix.shape
+                original_count = data_matrix.size
+                
+                # Create a mask for values within the specified range
+                mask = np.ones(data_matrix.shape, dtype=bool)
+                if data_min_value is not None:
+                    mask &= (data_matrix >= data_min_value)
+                if data_max_value is not None:
+                    mask &= (data_matrix <= data_max_value)
+                
+                # Update combined mask
+                combined_filter_mask &= mask
+                
+                # Replace values outside the range with NaN
+                filtered_data_matrix = data_matrix.copy()
+                filtered_data_matrix[~mask] = np.nan
+                
+                # Count valid data points after filtering
+                valid_count = np.sum(~np.isnan(filtered_data_matrix))
+                filtered_count = original_count - valid_count
+                
+                print(f"Data filtering for {original_table_name}: {original_count} total points, {valid_count} valid points, {filtered_count} filtered out")
+                data_matrix = filtered_data_matrix
+                
+            # Apply negative value filtering if specified
+            filter_negative_values = form_data.get('filter_negative_values', False)
+            if filter_negative_values:
+                print(f"Applying negative value filter for table {original_table_name}")
+                original_shape = data_matrix.shape
+                original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
+                
+                # Create a mask for non-negative values (>= 0)
+                negative_mask = (data_matrix >= 0)
+                
+                # Update combined mask
+                combined_filter_mask &= negative_mask
+                
+                # Replace negative values with NaN
+                filtered_data_matrix = data_matrix.copy()
+                filtered_data_matrix[data_matrix < 0] = np.nan
+                
+                # Count valid data points after filtering
+                valid_count = np.sum(~np.isnan(filtered_data_matrix))
+                filtered_count = original_count - valid_count
+                
+                print(f"Negative value filtering for {original_table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
+                data_matrix = filtered_data_matrix
             
-            # Replace values outside the range with NaN
-            filtered_data_matrix = data_matrix.copy()
-            filtered_data_matrix[~mask] = np.nan
+            # Store bitmap mask for generation (use the first table's mask)
+            generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
+            if generate_bitmap_mask and bitmap_mask_to_save is None:
+                # Convert boolean mask to integer (1 for valid, 0 for filtered)
+                bitmap_mask_to_save = combined_filter_mask.astype(int)
+                print(f"Bitmap mask prepared for generation from table {original_table_name}")
             
-            # Count valid data points after filtering
-            valid_count = np.sum(~np.isnan(filtered_data_matrix))
-            filtered_count = original_count - valid_count
+            # Extract each column (82944x1) from the full matrix (82944x78)
+            for col_idx in range(78):  # 78 columns
+                column_data = data_matrix[:, col_idx:col_idx+1]  # Extract column as 82944x1
+                column_table_name = f"{original_table_name}_col_{col_idx}"
+                data_matrices.append((column_table_name, column_data))
+                print(f"Extracted column {col_idx} from {original_table_name} as {column_table_name}")
+    else:
+        # Normal analysis - process tables as they are
+        for table_name in table_names:
+            data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
             
-            print(f"Data filtering for {table_name}: {original_count} total points, {valid_count} valid points, {filtered_count} filtered out")
-            data_matrix = filtered_data_matrix
+            # Apply conductance conversion if enabled
+            if using_conductance and conductance_params:
+                print(f"Converting table {table_name} to conductance values")
+                data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+            # Apply linear conversion if enabled
+            elif using_linear_conversion:
+                print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
+                data_matrix = convert_table_to_linear(data_matrix)
             
-        # Apply negative value filtering if specified
-        filter_negative_values = form_data.get('filter_negative_values', False)
-        if filter_negative_values:
-            print(f"Applying negative value filter for table {table_name}")
-            original_shape = data_matrix.shape
-            original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
+            # Check if we need to apply an existing bitmap mask
+            apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
+            if apply_bitmap_mask:
+                print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {table_name}")
+                from route_handlers import load_bitmap_mask, validate_mask_dimensions
+                
+                mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
+                if mask_array is not None:
+                    # Validate dimensions
+                    is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
+                    if is_valid:
+                        print(f"Bitmap mask validation passed: {validation_message}")
+                        # Apply the mask: set filtered coordinates to NaN
+                        data_matrix[mask_array == 0] = np.nan
+                        valid_count = np.sum(mask_array == 1)
+                        filtered_count = np.sum(mask_array == 0)
+                        print(f"Bitmap mask applied to {table_name}: {valid_count} valid points, {filtered_count} filtered out")
+                    else:
+                        print(f"Bitmap mask validation failed for {table_name}: {validation_message}")
+                        print("Skipping bitmap mask application")
+                else:
+                    print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {table_name}")
             
-            # Create a mask for non-negative values (>= 0)
-            negative_mask = (data_matrix >= 0)
+            # Initialize combined mask for bitmap generation
+            combined_filter_mask = np.ones(data_matrix.shape, dtype=bool)
             
-            # Update combined mask
-            combined_filter_mask &= negative_mask
+            # Apply data range filtering if specified
+            data_min_value = form_data.get('data_min_value')
+            data_max_value = form_data.get('data_max_value')
+            if data_min_value is not None or data_max_value is not None:
+                print(f"Applying data range filter for table {table_name}: min={data_min_value}, max={data_max_value}")
+                original_shape = data_matrix.shape
+                original_count = data_matrix.size
+                
+                # Create a mask for values within the specified range
+                mask = np.ones(data_matrix.shape, dtype=bool)
+                if data_min_value is not None:
+                    mask &= (data_matrix >= data_min_value)
+                if data_max_value is not None:
+                    mask &= (data_matrix <= data_max_value)
+                
+                # Update combined mask
+                combined_filter_mask &= mask
+                
+                # Replace values outside the range with NaN
+                filtered_data_matrix = data_matrix.copy()
+                filtered_data_matrix[~mask] = np.nan
+                
+                # Count valid data points after filtering
+                valid_count = np.sum(~np.isnan(filtered_data_matrix))
+                filtered_count = original_count - valid_count
+                
+                print(f"Data filtering for {table_name}: {original_count} total points, {valid_count} valid points, {filtered_count} filtered out")
+                data_matrix = filtered_data_matrix
+                
+            # Apply negative value filtering if specified
+            filter_negative_values = form_data.get('filter_negative_values', False)
+            if filter_negative_values:
+                print(f"Applying negative value filter for table {table_name}")
+                original_shape = data_matrix.shape
+                original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
+                
+                # Create a mask for non-negative values (>= 0)
+                negative_mask = (data_matrix >= 0)
+                
+                # Update combined mask
+                combined_filter_mask &= negative_mask
+                
+                # Replace negative values with NaN
+                filtered_data_matrix = data_matrix.copy()
+                filtered_data_matrix[data_matrix < 0] = np.nan
+                
+                # Count valid data points after filtering
+                valid_count = np.sum(~np.isnan(filtered_data_matrix))
+                filtered_count = original_count - valid_count
+                
+                print(f"Negative value filtering for {table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
+                data_matrix = filtered_data_matrix
             
-            # Replace negative values with NaN
-            filtered_data_matrix = data_matrix.copy()
-            filtered_data_matrix[data_matrix < 0] = np.nan
-            
-            # Count valid data points after filtering
-            valid_count = np.sum(~np.isnan(filtered_data_matrix))
-            filtered_count = original_count - valid_count
-            
-            print(f"Negative value filtering for {table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
-            data_matrix = filtered_data_matrix
-        
-        # Store bitmap mask for generation (use the first table's mask)
-        generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
-        if generate_bitmap_mask and bitmap_mask_to_save is None:
-            # Convert boolean mask to integer (1 for valid, 0 for filtered)
-            bitmap_mask_to_save = combined_filter_mask.astype(int)
-            print(f"Bitmap mask prepared for generation from table {table_name}")
-            
-        data_matrices.append((table_name, data_matrix))
+            # Store bitmap mask for generation (use the first table's mask)
+            generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
+            if generate_bitmap_mask and bitmap_mask_to_save is None:
+                # Convert boolean mask to integer (1 for valid, 0 for filtered)
+                bitmap_mask_to_save = combined_filter_mask.astype(int)
+                print(f"Bitmap mask prepared for generation from table {table_name}")
+                
+            data_matrices.append((table_name, data_matrix))
     
     # Ensure all data matrices are converted to float
     data_matrices = [(label, data_matrix.astype(float)) for label, data_matrix in data_matrices]
@@ -670,8 +820,31 @@ def generate_plot(table_names, database_name, form_data):
     all_ber_results = []  # Store all BER results for filtering
 
     for i, table_name in enumerate(table_names):
-        # Use the already processed data matrix
-        data_matrix = data_matrices[i][1]
+        # Find the corresponding data matrix for this table name
+        data_matrix = None
+        for data_name, data_mat in data_matrices:
+            if data_name == table_name:
+                data_matrix = data_mat
+                break
+        
+        if data_matrix is None:
+            print(f"Error: Could not find data matrix for table {table_name}")
+            continue
+        
+        # Determine which pattern array to use for column by column analysis
+        current_pattern_array = pattern_file_array if 'pattern_file_array' in locals() else None
+        if (analysis_mode == 'column_by_column' and 
+            state_pattern == '82944x78_ecc_fuxi' and 
+            form_data['state_pattern_type'] == 'predefined' and
+            '_col_' in table_name):
+            # Extract column index from table name
+            col_idx = int(table_name.split('_col_')[-1])
+            if col_idx in column_pattern_arrays:
+                current_pattern_array = column_pattern_arrays[col_idx]
+                print(f"Using column pattern array for {table_name} (column {col_idx})")
+            else:
+                print(f"Warning: Column pattern array not found for column {col_idx}, using full pattern array")
+                current_pattern_array = pattern_file_array
         
         if target_range_flag == 0:
             if form_data['state_pattern_type'] == '1D':
@@ -679,18 +852,26 @@ def generate_plot(table_names, database_name, form_data):
                 groups, stats, selected_groups = get_group_data_new_from_matrix(
                     data_matrix, selected_groups, number_of_states, custom_division, form_data.get('custom_division_values', []))
             elif form_data['state_pattern_type'] == 'predefined':
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups = get_group_data_from_matrix(
-                    data_matrix, selected_groups, pattern_file_array)
+                if current_pattern_array is not None:
+                    # Modify to use the data matrix directly
+                    groups, stats, selected_groups = get_group_data_from_matrix(
+                        data_matrix, selected_groups, current_pattern_array)
+                else:
+                    print(f"Warning: No pattern array available for {table_name}, skipping...")
+                    continue
         elif target_range_flag == 1:
             if form_data['state_pattern_type'] == '1D':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
                     target_ranges, data_matrix, selected_groups, number_of_states, custom_division, form_data.get('custom_division_values', []))
             elif form_data['state_pattern_type'] == 'predefined':
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                    target_ranges, data_matrix, selected_groups, pattern_file_array)
+                if current_pattern_array is not None:
+                    # Modify to use the data matrix directly
+                    groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                        target_ranges, data_matrix, selected_groups, current_pattern_array)
+                else:
+                    print(f"Warning: No pattern array available for {table_name}, skipping...")
+                    continue
             miao_ber.append(table_miao_ber)
 
         # Extract average and standard deviation values for each selected group
@@ -787,9 +968,25 @@ def generate_plot(table_names, database_name, form_data):
 
     # Calculate BER values using transformed CDF for each table
     print("Calculating BER values using transformed CDF...")
-    temp_plot_data_sigma, temp_plot_data_cdf, temp_plot_data_interpolated_cdf, ber_results, sigma_intersections = plot_transformed_cdf_2(
-        group_data, table_names, selected_groups, colors, target_x_diff, figsize=(15, 10), num_interp_points=form_data.get('num_interp_points', 500)
-    )
+    print(f"Debug: len(group_data)={len(group_data)}, len(table_names)={len(table_names)}, len(colors)={len(colors)}")
+    print(f"Debug: table_names[:5]={table_names[:5] if len(table_names) >= 5 else table_names}")
+    print(f"Debug: len(data_matrices)={len(data_matrices)}")
+    
+    try:
+        temp_plot_data_sigma, temp_plot_data_cdf, temp_plot_data_interpolated_cdf, ber_results, sigma_intersections = plot_transformed_cdf_2(
+            group_data, table_names, selected_groups, colors, target_x_diff, figsize=(15, 10), num_interp_points=form_data.get('num_interp_points', 500)
+        )
+    except IndexError as e:
+        print(f"IndexError in plot_transformed_cdf_2: {e}")
+        print(f"len(group_data)={len(group_data)}, len(table_names)={len(table_names)}, len(colors)={len(colors)}")
+        print(f"group_data structure: {[len(group) if isinstance(group, list) else 'not a list' for group in group_data]}")
+        raise e
+    except Exception as e:
+        print(f"Unexpected error in plot_transformed_cdf_2: {e}")
+        print(f"Error type: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
     # Calculate max BER per table
     max_ber_per_table = {}
@@ -871,13 +1068,38 @@ def generate_plot(table_names, database_name, form_data):
                     data_matrix, title=f"Colormap for {table_name}", g_range=g_range))
 
     # Generate plots for filtered tables
-    encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
+    try:
+        encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
+    except Exception as e:
+        print(f"Error in plot_boxplot: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
     
     # Add data points table right after boxplot
-    encoded_plots.append(plot_data_points_table(filtered_group_data, filtered_table_names, selected_groups))
+    try:
+        encoded_plots.append(plot_data_points_table(filtered_group_data, filtered_table_names, selected_groups))
+    except Exception as e:
+        print(f"Error in plot_data_points_table: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
     
-    encoded_plots.append(plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups))
-    encoded_plots.append(plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups))
+    try:
+        encoded_plots.append(plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups))
+    except Exception as e:
+        print(f"Error in plot_average_values_table: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
+        
+    try:
+        encoded_plots.append(plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups))
+    except Exception as e:
+        print(f"Error in plot_std_values_table: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
     # Get num_interp_points from form_data or use default
     num_interp_points = form_data.get('num_interp_points', 500)
@@ -891,14 +1113,26 @@ def generate_plot(table_names, database_name, form_data):
         num_interp_points = 500  # Default if not an integer
 
     # Re-calculate plot data with filtered tables
-    plot_data_sigma, plot_data_cdf, plot_data_interpolated_cdf, filtered_ber_results, filtered_sigma_intersections = plot_transformed_cdf_2(
-        filtered_group_data, filtered_table_names, selected_groups, filtered_colors, target_x_diff, 
-        figsize=(15, 10), num_interp_points=num_interp_points
-    )
+    try:
+        plot_data_sigma, plot_data_cdf, plot_data_interpolated_cdf, filtered_ber_results, filtered_sigma_intersections = plot_transformed_cdf_2(
+            filtered_group_data, filtered_table_names, selected_groups, filtered_colors, target_x_diff, 
+            figsize=(15, 10), num_interp_points=num_interp_points
+        )
+    except Exception as e:
+        print(f"Error in second plot_transformed_cdf_2 call: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
     
-    encoded_plots.append(plot_data_sigma)
-    encoded_plots.append(plot_data_cdf)
-    encoded_plots.append(plot_data_interpolated_cdf)
+    try:
+        encoded_plots.append(plot_data_sigma)
+        encoded_plots.append(plot_data_cdf)
+        encoded_plots.append(plot_data_interpolated_cdf)
+    except Exception as e:
+        print(f"Error appending CDF plots: {e}")
+        import traceback
+        traceback.print_exc()
+        raise e
 
     # Create a table for sigma intersections
     sigma_points = [-4, -3, -2, -1, 0, 1, 2, 3, 4]
@@ -988,8 +1222,12 @@ def generate_plot(table_names, database_name, form_data):
                     first_table_name = filtered_table_names[0]
                     data_matrix, data_matrix_size = get_full_table_data(first_table_name, database_name)
                     rows, cols = data_matrix_size
-                    cluster_map = plot_individual_points_map(correlation_analysis, table_dimensions=(rows, cols))
-                    print("cluster_map generated:", cluster_map is not None)
+                    try:
+                        cluster_map = plot_individual_points_map(correlation_analysis, table_dimensions=(rows, cols))
+                        print("cluster_map generated:", cluster_map is not None)
+                    except Exception as cluster_error:
+                        print(f"Error generating cluster map: {cluster_error}")
+                        cluster_map = None
             except Exception as e:
                 print(f"Error in correlation analysis: {str(e)}")
                 correlation_analysis = {
@@ -1176,17 +1414,25 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
     else:
         selected_groups = group_indices
 
-    # Filter out selected_groups that don't exist in the dataset
-    selected_groups = [g for g in selected_groups if g in group_indices]
+    # Don't filter out selected_groups - keep all requested groups even if they're empty
+    # This ensures consistent table structure across all columns
+    print(f"Processing selected_groups: {selected_groups}")
+    print(f"Available group_indices in pattern: {group_indices}")
 
     for group_idx in selected_groups:
-        # Find positions where pattern_file_array equals the current group index
-        positions = np.where(pattern_file_array == group_idx)
-        values = [data_np[pos] for pos in zip(positions[0], positions[1])]
-        
-        # Filter out NaN values (from data range filtering)
-        values = [v for v in values if not np.isnan(v)]
-        print(f"Group {group_idx}: {len(values)} valid values after filtering NaN")
+        # Check if this group exists in the pattern array
+        if group_idx in group_indices:
+            # Find positions where pattern_file_array equals the current group index
+            positions = np.where(pattern_file_array == group_idx)
+            values = [data_np[pos] for pos in zip(positions[0], positions[1])]
+            
+            # Filter out NaN values (from data range filtering)
+            values = [v for v in values if not np.isnan(v)]
+            print(f"Group {group_idx}: {len(values)} valid values after filtering NaN")
+        else:
+            # Group doesn't exist in this column's pattern - create empty group
+            values = []
+            print(f"Group {group_idx}: not present in pattern, creating empty group")
         
         # Store the group data for later use
         groups.append(values)

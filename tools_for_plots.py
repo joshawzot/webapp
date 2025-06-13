@@ -218,10 +218,23 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
             sigma_intersections[table_name] = []
 
             for j, subgroup in enumerate(group):
-                state_index = selected_groups[j]
+                # Handle cases where different datasets have different numbers of groups
+                if j < len(selected_groups):
+                    state_index = selected_groups[j]
+                else:
+                    state_index = j  # Use the index itself as fallback
                 label = table_name if table_name not in added_to_legend else None
                 if label:
                     added_to_legend.add(label)
+
+                # Skip empty subgroups
+                if len(subgroup) == 0:
+                    print(f"Skipping empty subgroup for table {table_name}, state {state_index}")
+                    # Add empty arrays to maintain structure
+                    transformed_data.append((np.array([]), np.array([])))
+                    # Add empty array for sigma intersections (same structure as calculate_sigma_intersections returns)
+                    sigma_intersections[table_name].append(np.full(9, np.nan))  # 9 target sigmas: [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+                    continue
 
                 # Use more efficient sorting and min/max finding
                 sorted_data = np.sort(subgroup)
@@ -292,10 +305,23 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
 
+                    # Skip if either array is empty
+                    if len(x1) == 0 or len(x2) == 0:
+                        print(f"Skipping interpolation for table {table_names[i]}, states {k} to {k+1} - empty data")
+                        continue
+
                     y1 = -y1  # Reverse y-axis for first state
 
-                    start_state = selected_groups[k]
-                    end_state = selected_groups[k + 1]
+                    # Handle cases where different datasets have different numbers of groups
+                    if k < len(selected_groups):
+                        start_state = selected_groups[k]
+                    else:
+                        start_state = k
+                    
+                    if k + 1 < len(selected_groups):
+                        end_state = selected_groups[k + 1]
+                    else:
+                        end_state = k + 1
                     table_name = table_names[i]
 
                     # Optimize min/max calculations
@@ -409,10 +435,23 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
             sigma_intersections[table_name] = []
 
             for j, subgroup in enumerate(group):
-                state_index = selected_groups[j]
+                # Handle cases where different datasets have different numbers of groups
+                if j < len(selected_groups):
+                    state_index = selected_groups[j]
+                else:
+                    state_index = j  # Use the index itself as fallback
                 label = table_name if table_name not in added_to_legend else None
                 if label:
                     added_to_legend.add(label)
+
+                # Skip empty subgroups
+                if len(subgroup) == 0:
+                    print(f"Skipping empty subgroup for table {table_name}, state {state_index}")
+                    # Add empty arrays to maintain structure
+                    transformed_data.append((np.array([]), np.array([])))
+                    # Add empty array for sigma intersections (same structure as calculate_sigma_intersections returns)
+                    sigma_intersections[table_name].append(np.full(9, np.nan))  # 9 target sigmas: [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+                    continue
 
                 sorted_data = np.sort(subgroup)
                 global_x_min = min(global_x_min, sorted_data[0])
@@ -477,10 +516,23 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
 
+                    # Skip if either array is empty
+                    if len(x1) == 0 or len(x2) == 0:
+                        print(f"Skipping interpolation for table {table_names[i]}, states {k} to {k+1} - empty data")
+                        continue
+
                     y1 = -y1  # Reverse y-axis for first state
 
-                    start_state = selected_groups[k]
-                    end_state = selected_groups[k + 1]
+                    # Handle cases where different datasets have different numbers of groups
+                    if k < len(selected_groups):
+                        start_state = selected_groups[k]
+                    else:
+                        start_state = k
+                    
+                    if k + 1 < len(selected_groups):
+                        end_state = selected_groups[k + 1]
+                    else:
+                        end_state = k + 1
                     table_name = table_names[i]
 
                     common_x_min_all = min(min(x1), min(x2))
@@ -981,6 +1033,8 @@ def get_column_widths(table_data):
     return column_widths
 
 def plot_average_values_table(avg_values, table_names, selected_groups, base_figsize=(1, 2)):
+    fig = None
+    buf = None
     try:
         # Find the maximum value in each column and create a list of tuples
         table_data_list = []
@@ -1005,7 +1059,12 @@ def plot_average_values_table(avg_values, table_names, selected_groups, base_fig
             row = [f"{table_name}"]
             row_data = []
 
-            for j, avg in enumerate(values):
+            # Only iterate over selected groups, not all values
+            for j, group_idx in enumerate(selected_groups):
+                if j < len(values):
+                    avg = values[j]
+                else:
+                    avg = 0.0  # Default value if index is out of range
                 row.append(f"{avg:.2f}")
                 row_data.append(avg)
                 column_data[j].append(avg)
@@ -1051,11 +1110,14 @@ def plot_average_values_table(avg_values, table_names, selected_groups, base_fig
         encoded_image = base64.b64encode(buf.read()).decode('utf-8')
         return encoded_image
     finally:
-        plt.close(fig)
-        if 'buf' in locals():
+        if fig is not None:
+            plt.close(fig)
+        if buf is not None:
             buf.close()
 
 def plot_std_values_table(std_values, table_names, selected_groups, base_figsize=(1, 2)):
+    fig = None
+    buf = None
     try:
         # Organize the data in the same way as in plot_average_values_table
         table_data_list = []
@@ -1080,7 +1142,12 @@ def plot_std_values_table(std_values, table_names, selected_groups, base_figsize
             row = [f"{table_name}"]
             row_data = []
 
-            for j, std in enumerate(values):
+            # Only iterate over selected groups, not all values
+            for j, group_idx in enumerate(selected_groups):
+                if j < len(values):
+                    std = values[j]
+                else:
+                    std = 0.0  # Default value if index is out of range
                 row.append(f"{std:.2f}")
                 row_data.append(std)
                 column_data[j].append(std)
@@ -1126,8 +1193,9 @@ def plot_std_values_table(std_values, table_names, selected_groups, base_figsize
         encoded_image = base64.b64encode(buf.read()).decode('utf-8')
         return encoded_image
     finally:
-        plt.close(fig)
-        if 'buf' in locals():
+        if fig is not None:
+            plt.close(fig)
+        if buf is not None:
             buf.close()
 
 def plot_pass_range_ber_table(pass_range_ber_values, table_names, selected_groups, figsize=(15, 10)):
@@ -1603,6 +1671,8 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
     Returns:
         Base64 encoded image of the data points table
     """
+    fig = None
+    buf = None
     try:
         # Create a new figure instance for this plot
         fig = plt.figure(figsize=figsize)
@@ -1622,13 +1692,16 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
         for i, (table_name, group) in enumerate(zip(table_names, data)):
             row = [f"{table_name}"]
             
-            # For each selected group/state
-            for j, subgroup in enumerate(group):
-                # Convert to numpy array and flatten if needed
-                points = np.array(subgroup).flatten()
-                
-                # Just show the total count
-                points_str = f"{len(points)} points"
+            # For each selected group/state, ensure we have data for all expected columns
+            for group_idx in selected_groups:
+                if group_idx < len(group):
+                    # Convert to numpy array and flatten if needed
+                    points = np.array(group[group_idx]).flatten()
+                    # Just show the total count
+                    points_str = f"{len(points)} points"
+                else:
+                    # No data for this group/state
+                    points_str = "0 points"
                 
                 row.append(points_str)
             
@@ -1642,6 +1715,19 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
                 col_widths.append(0.3)
             else:  # Data points columns
                 col_widths.append(0.7 / (num_columns - 1))
+        
+        # Validate all rows have the same number of columns
+        if table_data:
+            expected_cols = len(table_data[0])
+            for idx, row in enumerate(table_data):
+                if len(row) != expected_cols:
+                    print(f"Error: Row {idx} has {len(row)} columns, expected {expected_cols}")
+                    print(f"Row content: {row}")
+                    # Pad or truncate the row to match expected columns
+                    if len(row) < expected_cols:
+                        row.extend(["N/A"] * (expected_cols - len(row)))
+                    elif len(row) > expected_cols:
+                        table_data[idx] = row[:expected_cols]
         
         # Create the table
         table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
@@ -1676,6 +1762,7 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
         traceback.print_exc()
         return None
     finally:
-        plt.close(fig)
-        if 'buf' in locals():
+        if fig is not None:
+            plt.close(fig)
+        if buf is not None:
             buf.close()

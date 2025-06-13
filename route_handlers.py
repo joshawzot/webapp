@@ -2961,7 +2961,8 @@ def get_form_data_generate_plot(form):
             'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit', 'top_ios_count', 'ber_display_option',  # Added ber_display_option field
             'data_min_value', 'data_max_value',  # Added data range filter fields
             'filter_negative_values',  # Added negative value filter field
-            'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask'  # Added bitmap mask fields
+            'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
+            'analysis_mode'  # Added analysis mode field
         ]
     }
 

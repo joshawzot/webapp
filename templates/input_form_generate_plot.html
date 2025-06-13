@@ -55,7 +55,7 @@
         <div id="predefined-fields" style="display:none;">
             <div class="form-group">
                 <label for="state_pattern">Select a State Pattern:</label>
-                <select class="form-control" name="state_pattern" id="state_pattern">
+                <select class="form-control" name="state_pattern" id="state_pattern" onchange="toggleColumnAnalysisOption()">
                     <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
                     <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
                     <option value="3x4_4states_debug">3x4_4states_debug</option>
@@ -65,6 +65,14 @@
                     <option value="248x1_1state">248x1_1state</option>
                     <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
                 </select>
+            </div>
+            <div class="form-group" id="column_analysis_option" style="display:none;">
+                <label for="analysis_mode">Analysis Mode:</label>
+                <select class="form-control" name="analysis_mode" id="analysis_mode">
+                    <option value="default">Default (treat as single 82944x78 dataset)</option>
+                    <option value="column_by_column">Column by Column Analysis (treat each 82944x1 as separate dataset)</option>
+                </select>
+                <small class="form-text text-muted">Column by Column Analysis will process each of the 78 columns separately, creating individual results for each column.</small>
             </div>
             <div class="form-group">
                 <label for="selected_groups_predefined">Selected States:</label>
@@ -264,11 +272,17 @@
         toggleBitmapMaskName();
         loadBitmapMasks(false); // Don't preserve selection during form reset
         
+        // Reset analysis mode option
+        document.getElementById('analysis_mode').value = 'default';
+        
         // Call toggleStatePatternType to set proper visibility
         toggleStatePatternType();
         
         // Check custom division visibility
         checkCustomDivision();
+        
+        // Check column analysis option visibility
+        toggleColumnAnalysisOption();
 
         // Set default BER display option
         document.getElementById('option_top_ios').checked = true;
@@ -493,6 +507,20 @@
         } else {
             nameSection.style.display = 'none';
             document.getElementById('bitmap_mask_name').value = '';
+        }
+    }
+
+    // Function to toggle column analysis option visibility
+    function toggleColumnAnalysisOption() {
+        var statePattern = document.getElementById('state_pattern').value;
+        var columnAnalysisOption = document.getElementById('column_analysis_option');
+        
+        if (statePattern === '82944x78_ecc_fuxi') {
+            columnAnalysisOption.style.display = 'block';
+        } else {
+            columnAnalysisOption.style.display = 'none';
+            // Reset to default when hiding
+            document.getElementById('analysis_mode').value = 'default';
         }
     }
 

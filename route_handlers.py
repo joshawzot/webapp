@@ -125,14 +125,15 @@ def home():
             disk_info = get_disk_space()
             
             # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-            disk_stats = shutil.disk_usage("/app")  # Use parent directory to avoid permission issues
+            disk_stats = shutil.disk_usage("/app")  # Use root directory, which always exists
+            #disk_stats = shutil.disk_usage("/app") original
             free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
             low_disk_space = free_space_gb < 10  # True if less than 10GB
                 
             cursor.close()
             conn.close()
             return render_template('home_page.html', 
-                                  databases=databases, 
+                                  databases=databases,
                                   username=username, 
                                   recent_visits=recent_visits,
                                   disk_info=disk_info,
@@ -1074,6 +1075,7 @@ def get_pattern_file(pattern_name):
     # Pattern files location
     pattern_files = {
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
         "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
@@ -2959,7 +2961,8 @@ def get_form_data_generate_plot(form):
             'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division_type', 'color_group_keywords',
             'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit', 'top_ios_count', 'ber_display_option',  # Added ber_display_option field
             'data_min_value', 'data_max_value',  # Added data range filter fields
-            'filter_negative_values'  # Added negative value filter field
+            'filter_negative_values',  # Added negative value filter field
+            'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask'  # Added bitmap mask fields
         ]
     }
 
@@ -2997,6 +3000,7 @@ def get_form_data_generate_plot(form):
     form_data['color_map_flag'] = form_data.get('color_map_flag', 'False') == 'True'
     form_data['outlier_analysis_flag'] = form_data.get('outlier_analysis_flag', 'False') == 'True'
     form_data['filter_negative_values'] = form_data.get('filter_negative_values', 'False') == 'True'
+    form_data['generate_bitmap_mask'] = form_data.get('generate_bitmap_mask', 'False') == 'True'
     
     # Handle custom division - convert from dropdown selection to boolean and values
     custom_division_type = form_data.get('custom_division_type', '')
@@ -4872,3 +4876,264 @@ def process_plot_form():
     
     # Redirect to render-plot with a special parameter indicating to use session data
     return redirect(f"/render-plot/{database}/from_session/{plot_function}")
+
+def save_bitmap_mask(database_name, mask_name, mask_array):
+    """Save a bitmap mask to the database"""
+    try:
+        print(f"=== SAVING BITMAP MASK ===")
+        print(f"Database: {database_name}")
+        print(f"Mask name: {mask_name}")
+        print(f"Mask shape: {mask_array.shape}")
+        print(f"Mask type: {type(mask_array)}")
+        
+        # Use a global connection to store bitmap masks in a dedicated place
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Create bitmap_masks database if it doesn't exist
+        cursor.execute("CREATE DATABASE IF NOT EXISTS bitmap_masks_db")
+        cursor.execute("USE bitmap_masks_db")
+        
+        print(f"Using bitmap_masks_db database")
+        
+        # Check if bitmap_masks table exists
+        cursor.execute("SHOW TABLES LIKE 'bitmap_masks'")
+        table_exists = cursor.fetchone()
+        
+        print(f"Bitmap_masks table exists: {table_exists is not None}")
+        
+        if not table_exists:
+            print("Creating bitmap_masks table...")
+            cursor.execute("""
+                CREATE TABLE bitmap_masks (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    database_name VARCHAR(255) NOT NULL,
+                    mask_name VARCHAR(255) NOT NULL,
+                    dimensions VARCHAR(100) NOT NULL,
+                    mask_data LONGTEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_mask (database_name, mask_name)
+                )
+            """)
+            connection.commit()
+            print("Table created successfully")
+        
+        # Convert numpy array to JSON string for storage
+        import json
+        mask_data_json = json.dumps(mask_array.tolist())
+        dimensions = f"{mask_array.shape[0]}x{mask_array.shape[1]}"
+        
+        print(f"Mask dimensions: {dimensions}")
+        print(f"JSON data length: {len(mask_data_json)}")
+        
+        # Insert or update the mask
+        cursor.execute("""
+            INSERT INTO bitmap_masks (database_name, mask_name, dimensions, mask_data)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+            dimensions = VALUES(dimensions),
+            mask_data = VALUES(mask_data),
+            created_at = CURRENT_TIMESTAMP
+        """, (database_name, mask_name, dimensions, mask_data_json))
+        
+        affected_rows = cursor.rowcount
+        print(f"Database operation affected {affected_rows} rows")
+        
+        connection.commit()
+        cursor.close()
+        connection.close()
+        
+        print(f"Bitmap mask '{mask_name}' saved successfully for database '{database_name}'")
+        return True
+        
+    except Exception as e:
+        import traceback
+        print(f"Error saving bitmap mask: {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return False
+
+def load_bitmap_mask(database_name, mask_name):
+    """Load a bitmap mask from the database"""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Use the bitmap_masks_db database
+        cursor.execute("USE bitmap_masks_db")
+        
+        cursor.execute("""
+            SELECT mask_data, dimensions 
+            FROM bitmap_masks 
+            WHERE database_name = %s AND mask_name = %s
+        """, (database_name, mask_name))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        
+        if result:
+            import json
+            import numpy as np
+            mask_data = json.loads(result[0])
+            mask_array = np.array(mask_data)
+            dimensions = result[1]
+            print(f"Bitmap mask '{mask_name}' loaded successfully: {dimensions}")
+            return mask_array, dimensions
+        else:
+            print(f"Bitmap mask '{mask_name}' not found for database '{database_name}'")
+            return None, None
+            
+    except Exception as e:
+        print(f"Error loading bitmap mask: {e}")
+        return None, None
+
+def validate_mask_dimensions(mask_array, data_matrix):
+    """Validate that mask dimensions match data matrix dimensions"""
+    if mask_array.shape != data_matrix.shape:
+        return False, f"Dimension mismatch: mask is {mask_array.shape}, data is {data_matrix.shape}"
+    return True, "Dimensions match"
+
+@app.route('/list-all-bitmap-masks')
+def list_all_bitmap_masks():
+    """List all bitmap masks in the database"""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if bitmap_masks_db database exists
+        cursor.execute("SHOW DATABASES LIKE 'bitmap_masks_db'")
+        db_exists = cursor.fetchone()
+        
+        if not db_exists:
+            return "<h3>No bitmap_masks_db database found</h3><p>The database will be created when you save your first bitmap mask.</p>"
+        
+        # Use the bitmap_masks_db database
+        cursor.execute("USE bitmap_masks_db")
+        
+        # Check if bitmap_masks table exists
+        cursor.execute("SHOW TABLES LIKE 'bitmap_masks'")
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            return "<h3>No bitmap_masks table found in bitmap_masks_db</h3><p>The table will be created when you save your first bitmap mask.</p>"
+        
+        # Get all masks
+        cursor.execute("""
+            SELECT id, database_name, mask_name, dimensions, created_at 
+            FROM bitmap_masks 
+            ORDER BY created_at DESC
+        """)
+        
+        masks = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        
+        if not masks:
+            return "<h3>No bitmap masks found</h3><p>Create your first bitmap mask by using the Data Range Filter with 'Generate and save bitmap mask' checked.</p>"
+        
+        result = "<h3>All Bitmap Masks:</h3><ul>"
+        for mask in masks:
+            result += f"<li><strong>{mask[2]}</strong> (Database: {mask[1]}, Dimensions: {mask[3]}, Created: {mask[4]})</li>"
+        result += "</ul>"
+        
+        return result
+        
+    except Exception as e:
+        return f"Error checking bitmap masks: {str(e)}"
+
+@app.route('/debug-bitmap-masks/<database>')
+def debug_bitmap_masks(database):
+    """Debug route to check bitmap masks in the database"""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if bitmap_masks table exists
+        cursor.execute("SHOW TABLES LIKE 'bitmap_masks'")
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            return f"bitmap_masks table does not exist for database {database}"
+        
+        # Get all masks for this database
+        cursor.execute("""
+            SELECT id, database_name, mask_name, dimensions, created_at 
+            FROM bitmap_masks 
+            WHERE database_name = %s 
+            ORDER BY created_at DESC
+        """, (database,))
+        
+        masks = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        
+        if not masks:
+            return f"No bitmap masks found for database {database}"
+        
+        result = f"<h3>Bitmap masks for database '{database}':</h3><ul>"
+        for mask in masks:
+            result += f"<li>ID: {mask[0]}, Name: {mask[1]}, Database: {mask[2]}, Dimensions: {mask[3]}, Created: {mask[4]}</li>"
+        result += "</ul>"
+        
+        return result
+        
+    except Exception as e:
+        return f"Error checking bitmap masks: {str(e)}"
+
+@app.route('/get-bitmap-masks', methods=['POST'])
+def get_bitmap_masks():
+    """Get available bitmap masks for a database"""
+    try:
+        data = request.get_json()
+        database = data.get('database')
+        
+        if not database:
+            return jsonify({'error': 'Database parameter required'}), 400
+        
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Check if bitmap_masks_db database exists
+        cursor.execute("SHOW DATABASES LIKE 'bitmap_masks_db'")
+        db_exists = cursor.fetchone()
+        
+        if not db_exists:
+            cursor.close()
+            connection.close()
+            return jsonify({'masks': []})
+        
+        # Use the bitmap_masks_db database
+        cursor.execute("USE bitmap_masks_db")
+        
+        # Check if bitmap_masks table exists
+        cursor.execute("SHOW TABLES LIKE 'bitmap_masks'")
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            cursor.close()
+            connection.close()
+            return jsonify({'masks': []})
+        
+        # Get available masks for this database
+        cursor.execute("""
+            SELECT mask_name, dimensions 
+            FROM bitmap_masks 
+            WHERE database_name = %s 
+            ORDER BY created_at DESC
+        """, (database,))
+        
+        masks = []
+        for row in cursor.fetchall():
+            masks.append({
+                'name': row[0],
+                'dimensions': row[1]
+            })
+        
+        cursor.close()
+        connection.close()
+        
+        return jsonify({'masks': masks})
+        
+    except Exception as e:
+        print(f"Error getting bitmap masks: {e}")
+        return jsonify({'error': str(e)}), 500

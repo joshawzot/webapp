@@ -13,3 +13,6 @@
 [I 2025-06-06 10:27:19.514 ServerApp] http://hawaii:8888/lab?token=...
 [I 2025-06-06 10:27:19.514 ServerApp]  or http://127.0.0.1:8888/lab?token=...
 [I 2025-06-06 10:27:19.514 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[W 2025-06-11 17:42:19.855 NotebookApp] 405 HEAD /notebooks/F2MT-301.ipynb?token=[secret] (192.168.68.2) 47.05ms referer=http://192.168.68.215:3004/
+[W 2025-06-11 17:42:19.895 NotebookApp] 405 HEAD /notebooks/F2MT-301.ipynb (192.168.68.2) 1.83ms referer=http://192.168.68.215:3004/
+[W 2025-06-11 17:42:19.903 NotebookApp] 405 HEAD /tree/F2MT-301.ipynb?token=[secret] (192.168.68.2) 2.08ms referer=http://192.168.68.215:3004/

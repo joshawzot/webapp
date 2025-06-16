@@ -55,7 +55,7 @@
         <div id="predefined-fields" style="display:none;">
             <div class="form-group">
                 <label for="state_pattern">Select a State Pattern:</label>
-                <select class="form-control" name="state_pattern" id="state_pattern" onchange="toggleColumnAnalysisOption()">
+                <select class="form-control" name="state_pattern" id="state_pattern" onchange="toggleAnalysisType()">
                     <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
                     <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
                     <option value="3x4_4states_debug">3x4_4states_debug</option>
@@ -66,14 +66,34 @@
                     <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
                 </select>
             </div>
-            <div class="form-group" id="column_analysis_option" style="display:none;">
-                <label for="analysis_mode">Analysis Mode:</label>
-                <select class="form-control" name="analysis_mode" id="analysis_mode">
-                    <option value="default">Default (treat as single 82944x78 dataset)</option>
-                    <option value="column_by_column">Column by Column Analysis (treat each 82944x1 as separate dataset)</option>
+            
+            <!-- New analysis type field for 82944x78_ecc_fuxi -->
+            <div class="form-group" id="analysis_type_container" style="display:none;">
+                <label for="analysis_type">Analysis Type:</label>
+                <select class="form-control" name="analysis_type" id="analysis_type" onchange="toggleColumnSelection()">
+                    <option value="default">Default (treat as 82944x78)</option>
+                    <option value="column_by_column">Column by Column Analysis (78 separate 82944x1 datasets)</option>
                 </select>
-                <small class="form-text text-muted">Column by Column Analysis will process each of the 78 columns separately, creating individual results for each column.</small>
+                <small class="form-text text-muted">Choose how to analyze the 82944x78 data: as one dataset or as 78 separate column datasets.</small>
             </div>
+            
+            <!-- Column selection field for column-by-column analysis -->
+            <div class="form-group" id="column_selection_container" style="display:none;">
+                <label for="column_selection_type">Column Selection:</label>
+                <select class="form-control" name="column_selection_type" id="column_selection_type" onchange="toggleCustomColumnInput()">
+                    <option value="all">All Columns (0-77)</option>
+                    <option value="custom">Custom Column Selection</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_column_selection" id="custom_column_selection" placeholder="e.g., 0,1,2 or 0-5 or 1-10,45,23" style="display:none;" />
+                <small class="form-text text-muted">
+                    Specify which columns to analyze:<br>
+                    • <strong>Single columns:</strong> 0,1,2,5<br>
+                    • <strong>Ranges:</strong> 0-5, 10-15<br>
+                    • <strong>Mixed:</strong> 1-10,45,23,50-55<br>
+                    • <strong>Valid range:</strong> 0-77 (78 total columns)
+                </small>
+            </div>
+            
             <div class="form-group">
                 <label for="selected_groups_predefined">Selected States:</label>
                 <select class="form-control" name="selected_groups_predefined" id="selected_groups_predefined" onchange="updateCustomInput(this, 'custom_selected_groups_predefined')">
@@ -272,21 +292,28 @@
         toggleBitmapMaskName();
         loadBitmapMasks(false); // Don't preserve selection during form reset
         
-        // Reset analysis mode option
-        document.getElementById('analysis_mode').value = 'default';
+        // Reset analysis type options
+        document.getElementById('analysis_type').value = 'default';
+        document.getElementById('analysis_type_container').style.display = 'none';
+        
+        // Reset column selection options
+        document.getElementById('column_selection_type').value = 'all';
+        document.getElementById('custom_column_selection').value = '';
+        document.getElementById('custom_column_selection').style.display = 'none';
+        document.getElementById('column_selection_container').style.display = 'none';
         
         // Call toggleStatePatternType to set proper visibility
         toggleStatePatternType();
         
         // Check custom division visibility
         checkCustomDivision();
-        
-        // Check column analysis option visibility
-        toggleColumnAnalysisOption();
 
         // Set default BER display option
         document.getElementById('option_top_ios').checked = true;
         toggleBERDisplayOptions();
+        
+        // Initialize column selection visibility
+        toggleColumnSelection();
     }
 
     // Toggle between Top IOs and BER Range options
@@ -412,6 +439,29 @@
             }
         }
 
+        // Add validation for column selection
+        const statePattern = document.getElementById('state_pattern').value;
+        const analysisType = document.getElementById('analysis_type').value;
+        const columnSelectionType = document.getElementById('column_selection_type').value;
+        const customColumnSelection = document.getElementById('custom_column_selection').value.trim();
+        
+        if (statePattern === '82944x78_ecc_fuxi' && analysisType === 'column_by_column' && columnSelectionType === 'custom') {
+            if (!customColumnSelection) {
+                alert('Column Selection Error: Please enter a column selection or choose "All Columns".');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('custom_column_selection').focus();
+                return;
+            }
+            
+            // Validate column selection format
+            if (!validateColumnSelection(customColumnSelection)) {
+                alert('Column Selection Error: Invalid format. Use formats like:\n• Single columns: 0,1,2,5\n• Ranges: 0-5, 10-15\n• Mixed: 1-10,45,23,50-55\n• Valid range: 0-77');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('custom_column_selection').focus();
+                return;
+            }
+        }
+
         // Add validation for bitmap mask generation
         const generateBitmapMask = document.getElementById('generate_bitmap_mask').checked;
         const bitmapMaskName = document.getElementById('bitmap_mask_name').value.trim();
@@ -510,20 +560,6 @@
         }
     }
 
-    // Function to toggle column analysis option visibility
-    function toggleColumnAnalysisOption() {
-        var statePattern = document.getElementById('state_pattern').value;
-        var columnAnalysisOption = document.getElementById('column_analysis_option');
-        
-        if (statePattern === '82944x78_ecc_fuxi') {
-            columnAnalysisOption.style.display = 'block';
-        } else {
-            columnAnalysisOption.style.display = 'none';
-            // Reset to default when hiding
-            document.getElementById('analysis_mode').value = 'default';
-        }
-    }
-
     // Function to load available bitmap masks
     function loadBitmapMasks(preserveSelection = true) {
         // Get the database name from the form
@@ -590,6 +626,72 @@
         .catch(error => {
             console.error('Error loading bitmap masks:', error);
         });
+    }
+
+    function toggleAnalysisType() {
+        var statePattern = document.getElementById('state_pattern').value;
+        var analysisTypeContainer = document.getElementById('analysis_type_container');
+        
+        if (statePattern === '82944x78_ecc_fuxi') {
+            analysisTypeContainer.style.display = 'block';
+            toggleColumnSelection(); // Also check if column selection should be shown
+        } else {
+            analysisTypeContainer.style.display = 'none';
+            document.getElementById('column_selection_container').style.display = 'none';
+        }
+    }
+    
+    function toggleColumnSelection() {
+        var statePattern = document.getElementById('state_pattern').value;
+        var analysisType = document.getElementById('analysis_type').value;
+        var columnSelectionContainer = document.getElementById('column_selection_container');
+        
+        if (statePattern === '82944x78_ecc_fuxi' && analysisType === 'column_by_column') {
+            columnSelectionContainer.style.display = 'block';
+        } else {
+            columnSelectionContainer.style.display = 'none';
+        }
+    }
+    
+    function validateColumnSelection(selection) {
+        // Remove spaces and split by commas
+        const parts = selection.replace(/\s/g, '').split(',');
+        
+        for (const part of parts) {
+            if (part === '') continue; // Skip empty parts
+            
+            if (part.includes('-')) {
+                // Handle range (e.g., "0-5")
+                const rangeParts = part.split('-');
+                if (rangeParts.length !== 2) return false;
+                
+                const start = parseInt(rangeParts[0]);
+                const end = parseInt(rangeParts[1]);
+                
+                if (isNaN(start) || isNaN(end) || start < 0 || end > 77 || start > end) {
+                    return false;
+                }
+            } else {
+                // Handle single number (e.g., "5")
+                const num = parseInt(part);
+                if (isNaN(num) || num < 0 || num > 77) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+
+    function toggleCustomColumnInput() {
+        var columnSelectionType = document.getElementById('column_selection_type').value;
+        var customColumnInput = document.getElementById('custom_column_selection');
+        
+        if (columnSelectionType === 'custom') {
+            customColumnInput.style.display = 'block';
+        } else {
+            customColumnInput.style.display = 'none';
+        }
     }
 </script>
 

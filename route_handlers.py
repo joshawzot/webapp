@@ -2962,7 +2962,8 @@ def get_form_data_generate_plot(form):
             'data_min_value', 'data_max_value',  # Added data range filter fields
             'filter_negative_values',  # Added negative value filter field
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
-            'analysis_mode'  # Added analysis mode field
+            'analysis_type',  # Added analysis type field for column-by-column analysis
+            'column_selection_type', 'custom_column_selection'  # Added column selection fields
         ]
     }
 
@@ -3112,8 +3113,60 @@ def get_form_data_generate_plot(form):
         form_data['data_max_value'] = None
         print(f"Failed to convert data_max_value, using None")
 
+    # Process column selection for column-by-column analysis
+    if (form_data.get('state_pattern') == '82944x78_ecc_fuxi' and 
+        form_data.get('analysis_type') == 'column_by_column'):
+        
+        column_selection_type = form_data.get('column_selection_type', 'all')
+        if column_selection_type == 'custom':
+            custom_selection = form_data.get('custom_column_selection', '').strip()
+            if custom_selection:
+                try:
+                    form_data['selected_columns'] = parse_column_selection(custom_selection)
+                except ValueError as e:
+                    print(f"Error parsing column selection: {e}")
+                    form_data['selected_columns'] = list(range(78))  # Default to all columns
+            else:
+                form_data['selected_columns'] = list(range(78))  # Default to all columns
+        else:
+            form_data['selected_columns'] = list(range(78))  # All columns (0-77)
+    else:
+        form_data['selected_columns'] = list(range(78))  # Default for non-column analysis
+
     print("Final Form Data:", form_data)  # Debug print
     return form_data
+
+def parse_column_selection(selection_str):
+    """
+    Parse column selection string into list of column indices.
+    Supports formats like: "0,1,2", "0-5", "1-10,45,23", etc.
+    """
+    selected_columns = []
+    parts = selection_str.replace(' ', '').split(',')
+    
+    for part in parts:
+        if '-' in part:
+            # Handle range (e.g., "0-5")
+            range_parts = part.split('-')
+            if len(range_parts) == 2:
+                start = int(range_parts[0])
+                end = int(range_parts[1])
+                if 0 <= start <= 77 and 0 <= end <= 77 and start <= end:
+                    selected_columns.extend(range(start, end + 1))
+                else:
+                    raise ValueError(f"Invalid range: {part}")
+            else:
+                raise ValueError(f"Invalid range format: {part}")
+        else:
+            # Handle single number (e.g., "5")
+            num = int(part)
+            if 0 <= num <= 77:
+                selected_columns.append(num)
+            else:
+                raise ValueError(f"Invalid column number: {num}")
+    
+    # Remove duplicates and sort
+    return sorted(list(set(selected_columns)))
 
 def flatten_sections(array_3d):
     """Flatten 16x16 sections from a 3D array."""

@@ -125,7 +125,7 @@ def home():
             disk_info = get_disk_space()
             
             # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-            disk_stats = shutil.disk_usage("/app")  # Use root directory, which always exists
+            disk_stats = shutil.disk_usage("/")  # Use root directory, which always exists
             #disk_stats = shutil.disk_usage("/app") original
             free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
             low_disk_space = free_space_gb < 10  # True if less than 10GB
@@ -1075,10 +1075,9 @@ def get_pattern_file(pattern_name):
     # Pattern files location
     pattern_files = {
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
-        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
-        "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
+        "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
         "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
         "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
@@ -2963,7 +2962,8 @@ def get_form_data_generate_plot(form):
             'data_min_value', 'data_max_value',  # Added data range filter fields
             'filter_negative_values',  # Added negative value filter field
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
-            'analysis_mode'  # Added analysis mode field
+            'analysis_type',  # Added analysis type field for column-by-column analysis
+            'column_selection_type', 'custom_column_selection'  # Added column selection fields
         ]
     }
 
@@ -3113,8 +3113,60 @@ def get_form_data_generate_plot(form):
         form_data['data_max_value'] = None
         print(f"Failed to convert data_max_value, using None")
 
+    # Process column selection for column-by-column analysis
+    if (form_data.get('state_pattern') == '82944x78_ecc_fuxi' and 
+        form_data.get('analysis_type') == 'column_by_column'):
+        
+        column_selection_type = form_data.get('column_selection_type', 'all')
+        if column_selection_type == 'custom':
+            custom_selection = form_data.get('custom_column_selection', '').strip()
+            if custom_selection:
+                try:
+                    form_data['selected_columns'] = parse_column_selection(custom_selection)
+                except ValueError as e:
+                    print(f"Error parsing column selection: {e}")
+                    form_data['selected_columns'] = list(range(78))  # Default to all columns
+            else:
+                form_data['selected_columns'] = list(range(78))  # Default to all columns
+        else:
+            form_data['selected_columns'] = list(range(78))  # All columns (0-77)
+    else:
+        form_data['selected_columns'] = list(range(78))  # Default for non-column analysis
+
     print("Final Form Data:", form_data)  # Debug print
     return form_data
+
+def parse_column_selection(selection_str):
+    """
+    Parse column selection string into list of column indices.
+    Supports formats like: "0,1,2", "0-5", "1-10,45,23", etc.
+    """
+    selected_columns = []
+    parts = selection_str.replace(' ', '').split(',')
+    
+    for part in parts:
+        if '-' in part:
+            # Handle range (e.g., "0-5")
+            range_parts = part.split('-')
+            if len(range_parts) == 2:
+                start = int(range_parts[0])
+                end = int(range_parts[1])
+                if 0 <= start <= 77 and 0 <= end <= 77 and start <= end:
+                    selected_columns.extend(range(start, end + 1))
+                else:
+                    raise ValueError(f"Invalid range: {part}")
+            else:
+                raise ValueError(f"Invalid range format: {part}")
+        else:
+            # Handle single number (e.g., "5")
+            num = int(part)
+            if 0 <= num <= 77:
+                selected_columns.append(num)
+            else:
+                raise ValueError(f"Invalid column number: {num}")
+    
+    # Remove duplicates and sort
+    return sorted(list(set(selected_columns)))
 
 def flatten_sections(array_3d):
     """Flatten 16x16 sections from a 3D array."""
@@ -3319,7 +3371,7 @@ def get_disk_space():
     """Get the disk space information for the MySQL data directory."""
     try:
         # Get MySQL data directory path (you may need to adjust this path)
-        mysql_path = "/app"  # Check disk usage on /app mount point to avoid permission issues
+        mysql_path = "/"  # Check disk usage on /app mount point to avoid permission issues
         
         # Get disk usage statistics
         disk_stats = shutil.disk_usage(mysql_path)
@@ -3559,33 +3611,23 @@ def check_jupyter():
                     # On Unix, this will raise an error if the process doesn't exist
                     os.kill(pid, 0)
                     
-                    # Process exists - update URL to use correct hostname instead of localhost
-                    hostname = socket.gethostname()
-                    
-                    # Process exists
-                    return jsonify({
-                        "status": "running",
-                        "url": f"http://{hostname}:8888",
-                        "token": status.get('token', '')
-                    })
-                except Exception as e:
-                    # Process doesn't exist
-                    return jsonify({
-                        "status": "stopped",
-                        "message": f"Process not running. Please restart the systemd service: sudo systemctl restart jupyter_notebook.service"
-                    })
-        except Exception as e:
+                    # Process exists, return the notebook page
+                    token = status.get('token', '')
+                    # Calculate the relative path from notebook_dir to the target notebook
+                    notebook_rel_path = os.path.relpath(notebook_path, postprocess_dir)
+                    return render_template('jupyter_notebook.html', 
+                                           token=token, 
+                                           notebook_path=notebook_rel_path,
+                                           notebook_name=notebook_name)
+                except:
+                    # Process doesn't exist anymore
+                    pass
+        except:
             # Error reading status file
-            return jsonify({
-                "status": "error",
-                "message": f"Error checking status: {str(e)}. Please restart the systemd service."
-            })
+            pass
     
-    # No status file
-    return jsonify({
-        "status": "not_started",
-        "message": "Jupyter server has not been started. Please run the systemd service."
-    })
+    # If we get here, we need to tell the user to start the Jupyter server first
+    return render_template('jupyter_start_instructions.html')
 
 @app.route('/test-machines')
 def test_machines():
@@ -4552,7 +4594,7 @@ def top_schemas_by_size():
         disk_info = get_disk_space()
         
         # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-        disk_stats = shutil.disk_usage("/app")  # Use parent directory to avoid permission issues
+        disk_stats = shutil.disk_usage("/")  # Use parent directory to avoid permission issues
         free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
         # Add free_space_gb to disk_info dictionary
         disk_info['free_space_gb'] = free_space_gb
@@ -4567,6 +4609,122 @@ def top_schemas_by_size():
     except Exception as e:
         print(f"Error in top_schemas_by_size: {e}")
         return f"Error loading top schemas by size: {str(e)}"
+
+def save_bitmap_mask(database_name, mask_name, mask_array):
+    """Save a bitmap mask to the database"""
+    try:
+        print(f"=== SAVING BITMAP MASK ===")
+        print(f"Database: {database_name}")
+        print(f"Mask name: {mask_name}")
+        print(f"Mask shape: {mask_array.shape}")
+        print(f"Mask type: {type(mask_array)}")
+        
+        # Use a global connection to store bitmap masks in a dedicated place
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Create bitmap_masks database if it doesn't exist
+        cursor.execute("CREATE DATABASE IF NOT EXISTS bitmap_masks_db")
+        cursor.execute("USE bitmap_masks_db")
+        
+        print(f"Using bitmap_masks_db database")
+        
+        # Check if bitmap_masks table exists
+        cursor.execute("SHOW TABLES LIKE 'bitmap_masks'")
+        table_exists = cursor.fetchone()
+        
+        print(f"Bitmap_masks table exists: {table_exists is not None}")
+        
+        if not table_exists:
+            print("Creating bitmap_masks table...")
+            cursor.execute("""
+                CREATE TABLE bitmap_masks (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    database_name VARCHAR(255) NOT NULL,
+                    mask_name VARCHAR(255) NOT NULL,
+                    dimensions VARCHAR(100) NOT NULL,
+                    mask_data LONGTEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_mask (database_name, mask_name)
+                )
+            """)
+            connection.commit()
+            print("Table created successfully")
+        
+        # Convert numpy array to JSON string for storage
+        import json
+        mask_data_json = json.dumps(mask_array.tolist())
+        dimensions = f"{mask_array.shape[0]}x{mask_array.shape[1]}"
+        
+        print(f"Mask dimensions: {dimensions}")
+        print(f"JSON data length: {len(mask_data_json)}")
+        
+        # Insert or update the mask
+        cursor.execute("""
+            INSERT INTO bitmap_masks (database_name, mask_name, dimensions, mask_data)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+            dimensions = VALUES(dimensions),
+            mask_data = VALUES(mask_data),
+            created_at = CURRENT_TIMESTAMP
+        """, (database_name, mask_name, dimensions, mask_data_json))
+        
+        affected_rows = cursor.rowcount
+        print(f"Database operation affected {affected_rows} rows")
+        
+        connection.commit()
+        cursor.close()
+        connection.close()
+        
+        print(f"Bitmap mask '{mask_name}' saved successfully for database '{database_name}'")
+        return True
+        
+    except Exception as e:
+        import traceback
+        print(f"Error saving bitmap mask: {e}")
+        print(f"Full traceback: {traceback.format_exc()}")
+        return False
+
+def load_bitmap_mask(database_name, mask_name):
+    """Load a bitmap mask from the database"""
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        
+        # Use the bitmap_masks_db database
+        cursor.execute("USE bitmap_masks_db")
+        
+        cursor.execute("""
+            SELECT mask_data, dimensions 
+            FROM bitmap_masks 
+            WHERE database_name = %s AND mask_name = %s
+        """, (database_name, mask_name))
+        
+        result = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        
+        if result:
+            import json
+            import numpy as np
+            mask_data = json.loads(result[0])
+            mask_array = np.array(mask_data)
+            dimensions = result[1]
+            print(f"Bitmap mask '{mask_name}' loaded successfully: {dimensions}")
+            return mask_array, dimensions
+        else:
+            print(f"Bitmap mask '{mask_name}' not found for database '{database_name}'")
+            return None, None
+            
+    except Exception as e:
+        print(f"Error loading bitmap mask: {e}")
+        return None, None
+
+def validate_mask_dimensions(mask_array, data_matrix):
+    """Validate that mask dimensions match data matrix dimensions"""
+    if mask_array.shape != data_matrix.shape:
+        return False, f"Dimension mismatch: mask is {mask_array.shape}, data is {data_matrix.shape}"
+    return True, "Dimensions match"
 
 def get_mysql_directory_size():
     """Get the actual disk space used by the MySQL data directory."""
@@ -4600,7 +4758,7 @@ def get_mysql_directory_size():
             # If direct access fails due to permissions, estimate MySQL size
             # based on disk usage (assumed to be ~80% of used space on /app)
             try:
-                disk_stats = shutil.disk_usage("/app")
+                disk_stats = shutil.disk_usage("/")
                 used_gb = disk_stats.used / (1024 * 1024 * 1024)
                 # Estimate MySQL size as 80% of used space
                 mysql_estimated_gb = used_gb * 0.8
@@ -4877,122 +5035,6 @@ def process_plot_form():
     
     # Redirect to render-plot with a special parameter indicating to use session data
     return redirect(f"/render-plot/{database}/from_session/{plot_function}")
-
-def save_bitmap_mask(database_name, mask_name, mask_array):
-    """Save a bitmap mask to the database"""
-    try:
-        print(f"=== SAVING BITMAP MASK ===")
-        print(f"Database: {database_name}")
-        print(f"Mask name: {mask_name}")
-        print(f"Mask shape: {mask_array.shape}")
-        print(f"Mask type: {type(mask_array)}")
-        
-        # Use a global connection to store bitmap masks in a dedicated place
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Create bitmap_masks database if it doesn't exist
-        cursor.execute("CREATE DATABASE IF NOT EXISTS bitmap_masks_db")
-        cursor.execute("USE bitmap_masks_db")
-        
-        print(f"Using bitmap_masks_db database")
-        
-        # Check if bitmap_masks table exists
-        cursor.execute("SHOW TABLES LIKE 'bitmap_masks'")
-        table_exists = cursor.fetchone()
-        
-        print(f"Bitmap_masks table exists: {table_exists is not None}")
-        
-        if not table_exists:
-            print("Creating bitmap_masks table...")
-            cursor.execute("""
-                CREATE TABLE bitmap_masks (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    database_name VARCHAR(255) NOT NULL,
-                    mask_name VARCHAR(255) NOT NULL,
-                    dimensions VARCHAR(100) NOT NULL,
-                    mask_data LONGTEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY unique_mask (database_name, mask_name)
-                )
-            """)
-            connection.commit()
-            print("Table created successfully")
-        
-        # Convert numpy array to JSON string for storage
-        import json
-        mask_data_json = json.dumps(mask_array.tolist())
-        dimensions = f"{mask_array.shape[0]}x{mask_array.shape[1]}"
-        
-        print(f"Mask dimensions: {dimensions}")
-        print(f"JSON data length: {len(mask_data_json)}")
-        
-        # Insert or update the mask
-        cursor.execute("""
-            INSERT INTO bitmap_masks (database_name, mask_name, dimensions, mask_data)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-            dimensions = VALUES(dimensions),
-            mask_data = VALUES(mask_data),
-            created_at = CURRENT_TIMESTAMP
-        """, (database_name, mask_name, dimensions, mask_data_json))
-        
-        affected_rows = cursor.rowcount
-        print(f"Database operation affected {affected_rows} rows")
-        
-        connection.commit()
-        cursor.close()
-        connection.close()
-        
-        print(f"Bitmap mask '{mask_name}' saved successfully for database '{database_name}'")
-        return True
-        
-    except Exception as e:
-        import traceback
-        print(f"Error saving bitmap mask: {e}")
-        print(f"Full traceback: {traceback.format_exc()}")
-        return False
-
-def load_bitmap_mask(database_name, mask_name):
-    """Load a bitmap mask from the database"""
-    try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
-        # Use the bitmap_masks_db database
-        cursor.execute("USE bitmap_masks_db")
-        
-        cursor.execute("""
-            SELECT mask_data, dimensions 
-            FROM bitmap_masks 
-            WHERE database_name = %s AND mask_name = %s
-        """, (database_name, mask_name))
-        
-        result = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        
-        if result:
-            import json
-            import numpy as np
-            mask_data = json.loads(result[0])
-            mask_array = np.array(mask_data)
-            dimensions = result[1]
-            print(f"Bitmap mask '{mask_name}' loaded successfully: {dimensions}")
-            return mask_array, dimensions
-        else:
-            print(f"Bitmap mask '{mask_name}' not found for database '{database_name}'")
-            return None, None
-            
-    except Exception as e:
-        print(f"Error loading bitmap mask: {e}")
-        return None, None
-
-def validate_mask_dimensions(mask_array, data_matrix):
-    """Validate that mask dimensions match data matrix dimensions"""
-    if mask_array.shape != data_matrix.shape:
-        return False, f"Dimension mismatch: mask is {mask_array.shape}, data is {data_matrix.shape}"
-    return True, "Dimensions match"
 
 @app.route('/list-all-bitmap-masks')
 def list_all_bitmap_masks():

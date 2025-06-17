@@ -91,6 +91,9 @@
     <div class="row">
         <div class="col">
             <button class="btn btn-success" id="downloadPPTX">Download all as PPTX</button>
+            <button class="btn btn-info ms-2" id="downloadAvgCSV">Download Average Table CSV</button>
+            <button class="btn btn-warning ms-2" id="downloadStdCSV">Download Standard Deviation Table CSV</button>
+            <button class="btn btn-danger ms-2" id="downloadBerCSV">Download BER PPM Table CSV</button>
         </div>
     </div>
 
@@ -155,6 +158,230 @@
                 a.remove();
             });
         });
+
+        // Average Table CSV Download
+        document.getElementById('downloadAvgCSV').addEventListener('click', function() {
+            try {
+                console.log('Average CSV button clicked');
+                
+                var tableNames = {{ table_names|tojson|safe }};
+                var avgValuesData = {{ avg_values_data|tojson|safe }};
+                
+                console.log('Table names:', tableNames);
+                console.log('Avg values data:', avgValuesData);
+                
+                if (!avgValuesData || !avgValuesData.avg_values || avgValuesData.avg_values.length === 0) {
+                    alert('Average data not available. Data: ' + JSON.stringify(avgValuesData));
+                    return;
+                }
+                
+                var csvData = [];
+                var avgValues = avgValuesData.avg_values;
+                var groupNames = avgValuesData.group_names || [];
+                
+                // Create default group names if not provided
+                if (groupNames.length === 0) {
+                    for (var i = 0; i < (avgValues[0] ? avgValues[0].length : 4); i++) {
+                        groupNames.push('State ' + i);
+                    }
+                }
+                
+                // Create header row
+                var header = ['State/Group'].concat(tableNames || []).concat(['Row Average']);
+                csvData.push(header);
+                
+                // Create data rows
+                for (var i = 0; i < groupNames.length; i++) {
+                    var row = [groupNames[i]];
+                    var rowValues = [];
+                    
+                    // Add values for each table
+                    for (var j = 0; j < avgValues.length; j++) {
+                        if (avgValues[j] && avgValues[j][i] !== undefined) {
+                            var value = parseFloat(avgValues[j][i]).toFixed(3);
+                            row.push(value);
+                            rowValues.push(parseFloat(value));
+                        } else {
+                            row.push('N/A');
+                        }
+                    }
+                    
+                    // Calculate and add row average
+                    if (rowValues.length > 0) {
+                        var rowAvg = (rowValues.reduce((a, b) => a + b, 0) / rowValues.length).toFixed(3);
+                        row.push(rowAvg);
+                    } else {
+                        row.push('N/A');
+                    }
+                    
+                    csvData.push(row);
+                }
+                
+                downloadCSVTable(csvData, 'average_table.csv');
+            } catch (error) {
+                console.error('Error in average CSV download:', error);
+                alert('Error generating average CSV: ' + error.message);
+            }
+        });
+
+        // Standard Deviation Table CSV Download
+        document.getElementById('downloadStdCSV').addEventListener('click', function() {
+            try {
+                console.log('Std CSV button clicked');
+                
+                var tableNames = {{ table_names|tojson|safe }};
+                var stdValuesData = {{ std_values_data|tojson|safe }};
+                
+                console.log('Table names:', tableNames);
+                console.log('Std values data:', stdValuesData);
+                
+                if (!stdValuesData || !stdValuesData.std_values || stdValuesData.std_values.length === 0) {
+                    alert('Standard deviation data not available. Data: ' + JSON.stringify(stdValuesData));
+                    return;
+                }
+                
+                var csvData = [];
+                var stdValues = stdValuesData.std_values;
+                var groupNames = stdValuesData.group_names || [];
+                
+                // Create default group names if not provided
+                if (groupNames.length === 0) {
+                    for (var i = 0; i < (stdValues[0] ? stdValues[0].length : 4); i++) {
+                        groupNames.push('State ' + i);
+                    }
+                }
+                
+                // Create header row
+                var header = ['State/Group'].concat(tableNames || []).concat(['Row Average']);
+                csvData.push(header);
+                
+                // Create data rows
+                for (var i = 0; i < groupNames.length; i++) {
+                    var row = [groupNames[i]];
+                    var rowValues = [];
+                    
+                    // Add values for each table
+                    for (var j = 0; j < stdValues.length; j++) {
+                        if (stdValues[j] && stdValues[j][i] !== undefined) {
+                            var value = parseFloat(stdValues[j][i]).toFixed(3);
+                            row.push(value);
+                            rowValues.push(parseFloat(value));
+                        } else {
+                            row.push('N/A');
+                        }
+                    }
+                    
+                    // Calculate and add row average
+                    if (rowValues.length > 0) {
+                        var rowAvg = (rowValues.reduce((a, b) => a + b, 0) / rowValues.length).toFixed(3);
+                        row.push(rowAvg);
+                    } else {
+                        row.push('N/A');
+                    }
+                    
+                    csvData.push(row);
+                }
+                
+                downloadCSVTable(csvData, 'standard_deviation_table.csv');
+            } catch (error) {
+                console.error('Error in std CSV download:', error);
+                alert('Error generating standard deviation CSV: ' + error.message);
+            }
+        });
+
+        // BER PPM Table CSV Download
+        document.getElementById('downloadBerCSV').addEventListener('click', function() {
+            try {
+                console.log('BER CSV button clicked');
+                
+                var tableNames = {{ table_names|tojson|safe }};
+                var berValuesData = {{ ber_values_data|tojson|safe }};
+                
+                console.log('Table names:', tableNames);
+                console.log('BER values data:', berValuesData);
+                
+                if (!berValuesData || !berValuesData.ber_values || berValuesData.ber_values.length === 0) {
+                    alert('BER data not available. Data: ' + JSON.stringify(berValuesData));
+                    return;
+                }
+                
+                var csvData = [];
+                var berValues = berValuesData.ber_values;
+                var groupNames = berValuesData.group_names || [];
+                
+                // Create default group names if not provided
+                if (groupNames.length === 0) {
+                    for (var i = 0; i < (berValues[0] ? berValues[0].length : 4); i++) {
+                        groupNames.push('State ' + i);
+                    }
+                }
+                
+                // Create header row
+                var header = ['State/Group'].concat(tableNames || []).concat(['Row Average']);
+                csvData.push(header);
+                
+                // Create data rows
+                for (var i = 0; i < groupNames.length; i++) {
+                    var row = [groupNames[i]];
+                    var rowValues = [];
+                    
+                    // Add values for each table
+                    for (var j = 0; j < berValues.length; j++) {
+                        if (berValues[j] && berValues[j][i] !== undefined) {
+                            var value = parseFloat(berValues[j][i]).toFixed(0);
+                            row.push(value);
+                            rowValues.push(parseFloat(value));
+                        } else {
+                            row.push('N/A');
+                        }
+                    }
+                    
+                    // Calculate and add row average
+                    if (rowValues.length > 0) {
+                        var rowAvg = (rowValues.reduce((a, b) => a + b, 0) / rowValues.length).toFixed(0);
+                        row.push(rowAvg);
+                    } else {
+                        row.push('N/A');
+                    }
+                    
+                    csvData.push(row);
+                }
+                
+                downloadCSVTable(csvData, 'ber_ppm_table.csv');
+            } catch (error) {
+                console.error('Error in BER CSV download:', error);
+                alert('Error generating BER CSV: ' + error.message);
+            }
+        });
+
+        // Helper function to download CSV data
+        function downloadCSVTable(csvData, filename) {
+            fetch('{{ url_for("download_csv_table") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    csv_data: csvData,
+                    filename: filename
+                })
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                // Create a link to download the blob
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch(error => {
+                console.error('Error downloading CSV:', error);
+                alert('Error downloading CSV file');
+            });
+        }
         
         // Add event listeners to download buttons
         document.addEventListener('DOMContentLoaded', function() {

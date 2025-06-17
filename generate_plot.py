@@ -554,6 +554,7 @@ def generate_plot(table_names, database_name, form_data):
     std_values = []
     miao_ber = []
     sub_array_size = []
+    filtered_ber_results = []  # Initialize for BER results from CDF analysis
 
     # Compute the global min and max values among all data matrices
     data_matrices = []
@@ -838,7 +839,7 @@ def generate_plot(table_names, database_name, form_data):
         if len(filtered_table_names) == 0:
             print("Warning: No tables match the BER filter criteria!")
             # Return empty results to indicate no tables match
-            return ([], [], None, None, None, None, [], [], [], None, None, {}, 0, [], {}, [])
+            return ([], [], None, None, None, None, [], [], [], None, None, {}, 0, [], {}, [], [], [], {}, [])
     # Apply Top IOs filtering if ber_display_option is 'top_ios' and top_ios_count is specified
     elif form_data.get('ber_display_option') == 'top_ios':
         top_ios_count = form_data.get('top_ios_count')
@@ -860,8 +861,14 @@ def generate_plot(table_names, database_name, form_data):
     filtered_std_values = [std_values[i] for i in filtered_indices]
     filtered_colors = [colors[i] for i in filtered_indices]
     
+    # Initialize filtered_miao_ber
+    filtered_miao_ber = {}
     if target_range_flag == 1:
         filtered_miao_ber = {name: miao_ber[name] for name in filtered_table_names if name in miao_ber}
+        print(f"Debug in generate_plot: target_range_flag=1, miao_ber keys: {list(miao_ber.keys())}")
+        print(f"Debug in generate_plot: filtered_miao_ber: {filtered_miao_ber}")
+    else:
+        print(f"Debug in generate_plot: target_range_flag=0, no BER data calculated")
     
     filtered_data_matrices = [(name, matrix) for name, matrix in data_matrices if name in filtered_table_names]
     
@@ -1093,7 +1100,11 @@ def generate_plot(table_names, database_name, form_data):
                 num_states,
                 filtered_table_names,
                 sigma_table,  # Add sigma intersections table
-                sigma_points)  # Add sigma points
+                sigma_points,  # Add sigma points
+                filtered_avg_values,  # Add real average values
+                filtered_std_values,  # Add real standard deviation values
+                filtered_ber_results,  # Add real BER results from CDF analysis
+                selected_groups)  # Add selected groups for state names
     else:
         sorted_table_names = None  # Handle the case where there is only one selected group
 
@@ -1159,7 +1170,11 @@ def generate_plot(table_names, database_name, form_data):
             num_states,
             filtered_table_names,
             sigma_table,  # Add sigma intersections table
-            sigma_points)  # Add sigma points
+            sigma_points,  # Add sigma points
+            filtered_avg_values,  # Add real average values
+            filtered_std_values,  # Add real standard deviation values
+            filtered_ber_results,  # Add real BER results from CDF analysis
+            selected_groups)  # Add selected groups for state names
 
 # Add helper functions to work with matrices directly instead of fetching from database
 

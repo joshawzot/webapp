@@ -101,6 +101,91 @@ def record_folder_visit(folder_name, username):
         print(f"Error recording folder visit: {e}")
         return False
 
+def extract_statistical_data(table_names, database_name, form_data):
+    """Extract average, standard deviation, and BER data for CSV downloads"""
+    try:
+        from generate_plot import get_group_data_from_matrix, get_group_data_new_from_matrix
+        from tools_for_plots import get_full_table_data
+        
+        # Prepare lists to store data
+        avg_values = []
+        std_values = []
+        ber_values = []
+        group_names = []
+        
+        # Get form data parameters
+        number_of_states = form_data.get('number_of_states', 4)
+        selected_groups = form_data.get('selected_groups', '')
+        target_ranges = form_data.get('target_ranges', [])
+        
+        # Process each table
+        for table_name in table_names:
+            try:
+                # Get data matrix for the table
+                data_matrix, _ = get_full_table_data(table_name, database_name)
+                
+                # Process based on pattern type
+                if form_data.get('state_pattern_type') == '1D':
+                    # For 1D patterns
+                    groups, stats, selected_groups_list = get_group_data_new_from_matrix(
+                        data_matrix, selected_groups, number_of_states)
+                elif form_data.get('state_pattern_type') == 'predefined':
+                    # For predefined patterns, we need pattern file array
+                    pattern_file_array = get_pattern_file(form_data.get('state_pattern'))
+                    groups, stats, selected_groups_list = get_group_data_from_matrix(
+                        data_matrix, selected_groups, pattern_file_array)
+                else:
+                    continue
+                
+                # Extract average and std values
+                table_avg_values = [stat[2] for stat in stats]  # Index 2 is average
+                table_std_values = [stat[3] for stat in stats]  # Index 3 is standard deviation
+                
+                avg_values.append(table_avg_values)
+                std_values.append(table_std_values)
+                
+                # Calculate BER values if target ranges are available
+                if target_ranges and len(target_ranges) > 0:
+                    ber_table_values = []
+                    for i, group in enumerate(groups):
+                        if i * 2 + 1 < len(target_ranges):
+                            lower_bound = target_ranges[i * 2]
+                            upper_bound = target_ranges[i * 2 + 1]
+                            out_of_range = sum(1 for val in group if val < lower_bound or val > upper_bound)
+                            ber_ppm = (out_of_range / len(group) * 1e6) if len(group) > 0 else 0
+                            ber_table_values.append(ber_ppm)
+                        else:
+                            ber_table_values.append(0)
+                    ber_values.append(ber_table_values)
+                else:
+                    ber_values.append([0] * len(table_avg_values))
+                
+                # Set group names if not already set
+                if not group_names:
+                    group_names = [f"State {i}" for i in range(len(table_avg_values))]
+                    
+            except Exception as e:
+                print(f"Error processing table {table_name}: {e}")
+                continue
+        
+        return {
+            'avg_values': avg_values,
+            'std_values': std_values, 
+            'ber_values': ber_values,
+            'table_names': table_names,
+            'group_names': group_names
+        }
+        
+    except Exception as e:
+        print(f"Error in extract_statistical_data: {e}")
+        return {
+            'avg_values': None,
+            'std_values': None,
+            'ber_values': None,
+            'table_names': table_names,
+            'group_names': []
+        }
+
 @app.route('/')
 def home():
     username = session.get('username')
@@ -291,6 +376,10 @@ def render_plot(database, table_name, plot_function):
             plt.switch_backend('Agg')
             
             if plot_function == 'generate_plot':
+                # Get the raw table names for processing
+                input_table_names = table_name.split(',')
+                
+                # Call the generate_plot function 
                 (plot_data,
                  sorted_table_names,
                  sorted_table_names_100ppm,  # These values are now None (removed functionality)
@@ -306,7 +395,92 @@ def render_plot(database, table_name, plot_function):
                  num_states,
                  table_names,
                  sigma_table,
-                 sigma_points) = plot_function_impl(table_name.split(','), database, form_data)
+                 sigma_points,
+                 filtered_avg_values,  # Real average values
+                 filtered_std_values,  # Real standard deviation values
+                 filtered_ber_results,  # Real BER results from CDF analysis
+                 selected_groups) = plot_function_impl(input_table_names, database, form_data)
+                
+                # Create real statistical data for CSV downloads from actual analysis
+                print(f"Creating real statistical data for tables: {table_names}")
+                print(f"Debug: filtered_ber_results type: {type(filtered_ber_results)}")
+                print(f"Debug: filtered_ber_results length: {len(filtered_ber_results) if filtered_ber_results else 0}")
+                print(f"Debug: filtered_avg_values length: {len(filtered_avg_values) if filtered_avg_values else 0}")
+                print(f"Debug: filtered_std_values length: {len(filtered_std_values) if filtered_std_values else 0}")
+                if filtered_ber_results and len(filtered_ber_results) > 0:
+                    print(f"Debug: Sample BER result: {filtered_ber_results[0]}")
+                
+                if table_names and len(table_names) > 0 and filtered_avg_values and filtered_std_values:
+                    # Create group names from selected_groups
+                    group_names = [f"State {group}" for group in selected_groups] if selected_groups else []
+                    
+                    # Extract BER data from filtered_ber_results
+                    # filtered_ber_results is a list of tuples: (table_name, state_transition, sigma, ?, ppm_ber, uS_value, ?)
+                    ber_data_by_table = {}
+                    ber_transitions = set()
+                    
+                    if filtered_ber_results and len(filtered_ber_results) > 0:
+                        for entry in filtered_ber_results:
+                            table_name = entry[0]
+                            state_transition = entry[1]
+                            ppm_ber = entry[4]  # PPM BER value is at index 4
+                            
+                            if table_name not in ber_data_by_table:
+                                ber_data_by_table[table_name] = {}
+                            ber_data_by_table[table_name][state_transition] = ppm_ber
+                            ber_transitions.add(state_transition)
+                    
+                    # Sort transitions to get consistent order
+                    sorted_transitions = sorted(ber_transitions)
+                    print(f"Debug: Found BER transitions: {sorted_transitions}")
+                    print(f"Debug: BER data by table: {ber_data_by_table}")
+                    
+                    # Create group names for BER (use actual transition names from data)
+                    ber_group_names = sorted_transitions
+                    
+                    # Convert BER data to list format matching table order
+                    ber_values_list = []
+                    for table_name in table_names:
+                        table_ber_list = []
+                        if table_name in ber_data_by_table:
+                            for transition in sorted_transitions:
+                                ber_value = ber_data_by_table[table_name].get(transition, 0)
+                                table_ber_list.append(ber_value)
+                            print(f"Debug: BER values for {table_name}: {table_ber_list}")
+                        else:
+                            # If table not found, use zeros
+                            table_ber_list = [0 for _ in range(len(sorted_transitions))]
+                            print(f"Debug: Table {table_name} not found, using zeros")
+                        ber_values_list.append(table_ber_list)
+                    
+                    # Create the data structures for CSV download using real data
+                    avg_values_data = {
+                        'avg_values': filtered_avg_values,
+                        'group_names': group_names
+                    }
+                    
+                    std_values_data = {
+                        'std_values': filtered_std_values,
+                        'group_names': group_names
+                    }
+                    
+                    ber_values_data = {
+                        'ber_values': ber_values_list,
+                        'group_names': ber_group_names
+                    }
+                    
+                    print(f"Created real data successfully:")
+                    print(f"Tables: {table_names}")
+                    print(f"Groups: {group_names}")
+                    print(f"Real avg data: {len(filtered_avg_values)} tables x {len(filtered_avg_values[0]) if filtered_avg_values else 0} states")
+                    print(f"Real std data: {len(filtered_std_values)} tables x {len(filtered_std_values[0]) if filtered_std_values else 0} states")
+                    print(f"Real BER data: {len(ber_values_list)} tables")
+                    
+                else:
+                    # No tables or no data, create empty data
+                    avg_values_data = {'avg_values': [], 'group_names': []}
+                    std_values_data = {'std_values': [], 'group_names': []}
+                    ber_values_data = {'ber_values': [], 'group_names': []}
             else:
                 plot_data = plot_function_impl(table_name.split(','), database, form_data)
                 sorted_table_names = sorted_table_names_100ppm = \
@@ -380,7 +554,10 @@ def render_plot(database, table_name, plot_function):
                                      filtered_table_count=len(table_names) if table_names else 0,  # Pass table counts to template
                                      data_min_value=form_data.get('data_min_value'),
                                      data_max_value=form_data.get('data_max_value'),
-                                     filter_negative_values=form_data.get('filter_negative_values', False))
+                                     filter_negative_values=form_data.get('filter_negative_values', False),
+                                     avg_values_data=avg_values_data,
+                                     std_values_data=std_values_data,
+                                     ber_values_data=ber_values_data)
             else:
                 return render_template('plot.html', plot_data=plot_data)
 
@@ -852,61 +1029,78 @@ def create_database():
 
 @app.route('/download_pptx', methods=['POST'])
 def download_pptx():
-    template_path = '/home/admin2/webapp_2/pptx_template/template.pptx'
+    try:
+        from pptx import Presentation
+        from pptx.util import Inches
+        from io import BytesIO
+        import base64
 
-    plots = request.json.get('plots', [])  # Retrieve the Base64 encoded images from the POST request
+        # Get the plots data from the request
+        data = request.get_json()
+        plots = data.get('plots', [])
 
-    prs = Presentation(template_path)  # Open the template PowerPoint file as the base for the new presentation
-    
-    # Retrieve the Base64 encoded images from the POST request
-    plots = request.json.get('plots', [])
-    
-    for plot_data in plots:
-        # Decode each Base64 image
-        image_data = base64.b64decode(plot_data.split(",")[-1])
-        # Open the image for analysis
-        image = Image.open(BytesIO(image_data))
+        # Create a new presentation
+        prs = Presentation()
+
+        for i, plot_data in enumerate(plots):
+            # Add a slide with a blank layout
+            slide_layout = prs.slide_layouts[6]  # Blank layout
+            slide = prs.slides.add_slide(slide_layout)
+
+            # Extract base64 image data
+            image_data = plot_data.split(',')[1]
+            image_binary = base64.b64decode(image_data)
+
+            # Add image to slide
+            image_stream = BytesIO(image_binary)
+            slide.shapes.add_picture(image_stream, Inches(0.5), Inches(0.5), width=Inches(9), height=Inches(6.5))
+
+        # Save the presentation to a BytesIO object
+        ppt_io = BytesIO()
+        prs.save(ppt_io)
+        ppt_io.seek(0)
+
+        return send_file(ppt_io, as_attachment=True, download_name='plots.pptx', mimetype='application/vnd.openxmlformats-officedocument.presentationml.presentation')
+
+    except Exception as e:
+        print(f"Error creating PPTX: {e}")
+        return f"Error creating PPTX: {str(e)}", 500
+
+@app.route('/download_csv_table', methods=['POST'])
+def download_csv_table():
+    try:
+        from io import StringIO
         
-        # Choose a slide layout (6 is usually a blank slide)
-        slide_layout = prs.slide_layouts[6]
-        slide = prs.slides.add_slide(slide_layout)
+        data = request.get_json()
+        table_type = data.get('table_type')
+        csv_data = data.get('csv_data')
+        filename = data.get('filename', 'table_data.csv')
         
-        # Remove all shapes (including text boxes) from the slide
-        for shape in slide.shapes:
-            sp = shape._element
-            sp.getparent().remove(sp)
+        if not csv_data:
+            return "Error: No CSV data provided", 400
+            
+        # Create CSV content
+        output = StringIO()
+        writer = csv.writer(output)
         
-        # Get the image size
-        img_width, img_height = image.size
-        # Get the slide dimensions
-        slide_width = prs.slide_width
-        slide_height = prs.slide_height
+        # Write headers and data
+        for row in csv_data:
+            writer.writerow(row)
         
-        # Calculate the scaling factor to maintain aspect ratio
-        ratio = min(slide_width / img_width, slide_height / img_height)
-        new_width = int(img_width * ratio)
-        new_height = int(img_height * ratio)
+        # Get CSV string
+        csv_content = output.getvalue()
+        output.close()
         
-        # Center the image
-        left = int((slide_width - new_width) / 2)
-        top = int((slide_height - new_height) / 2)
+        # Create response
+        response = make_response(csv_content)
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
         
-        # Convert the image data back to a BytesIO object
-        img_io = BytesIO(image_data)
-        # Add the image to the slide
-        slide.shapes.add_picture(img_io, left, top, width=new_width, height=new_height)
-    
-    # Prepare the presentation to be sent in the response
-    pptx_io = BytesIO()
-    prs.save(pptx_io)
-    pptx_io.seek(0)
-    
-    # Set up the response with the correct headers
-    response = make_response(pptx_io.getvalue())
-    response.headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
-    response.headers.set('Content-Disposition', 'attachment; filename="Downloaded_Presentation.pptx"')
-    
-    return response
+        return response
+        
+    except Exception as e:
+        print(f"Error creating CSV: {e}")
+        return f"Error creating CSV: {str(e)}", 500
 
 @app.route('/getDatabases', methods=['GET'])
 def get_databases():

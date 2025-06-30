@@ -497,7 +497,7 @@ def generate_plot(table_names, database_name, form_data):
         state_pattern = form_data.get('state_pattern')
         print("state_pattern:", state_pattern)
         # Define a dictionary to map state patterns to their file paths
-        '''pattern_files = {
+        pattern_files = {
             "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
             "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
@@ -506,14 +506,16 @@ def generate_plot(table_names, database_name, form_data):
             "248x248_1state": "State_pattern_files/248x248_1state.npy",
             "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "State_pattern_files/248x248_16states.npy",
+            "248x248_2states": "State_pattern_files/248x248_2states.npy",
+            "62x62_2states": "State_pattern_files/62x62_2states.npy",
             "248x1_1state": "State_pattern_files/248x1_1state.npy",
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
             "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
             
-        }'''
+        }
 
-        pattern_files = {
+        '''pattern_files = {
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
             "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
@@ -522,12 +524,14 @@ def generate_plot(table_names, database_name, form_data):
             "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
             "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
+            "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
+            "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
             "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
             "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
             "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
             "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
             
-        }
+        }'''
 
         # Fetch the file path based on the state pattern using a dictionary lookup
         file_path = pattern_files.get(state_pattern)

@@ -498,6 +498,7 @@ def generate_plot(table_names, database_name, form_data):
         # Define a dictionary to map state patterns to their file paths
         pattern_files = {
             "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
             "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
             "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
             "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",

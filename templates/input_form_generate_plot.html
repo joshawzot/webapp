@@ -66,6 +66,7 @@
                 <option value="248x248_16states">248x248_16states</option>
                 <option value="248x1_1state">248x1_1state</option>
                 <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
+                <option value="248x256_1state">248x256_1state</option>
                 </select>
             </div>
             
@@ -125,6 +126,11 @@
         <div class="form-group">
             <label for="color_map_flag">Enable Color Map:</label>
             <input type="checkbox" name="color_map_flag" id="color_map_flag" value="True">
+        </div>
+
+        <div class="form-group">
+            <label for="yanCullinan_flag">Yan Cullinan:</label>
+            <input type="checkbox" name="yanCullinan_flag" id="yanCullinan_flag" value="True">
         </div>
 
         <div class="form-group">
@@ -275,6 +281,7 @@
         // Reset checkboxes
         outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
+        document.getElementById('yanCullinan_flag').checked = false;
         document.getElementById('custom_division_type').value = '';
         
         // Reset the new color grouping keywords field

@@ -1276,7 +1276,8 @@ def get_pattern_file(pattern_name):
         "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
         "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
-        "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy"
+        "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
+        "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
     }
     
     # Return the path for the pattern name
@@ -3157,7 +3158,7 @@ def get_form_data_generate_plot(form):
             'filter_negative_values',  # Added negative value filter field
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
             'analysis_type',  # Added analysis type field for column-by-column analysis
-            'column_selection_type', 'custom_column_selection'  # Added column selection fields
+            'column_selection_type', 'custom_column_selection', 'yanCullinan_flag'  # Added column selection fields
         ]
     }
 
@@ -3193,6 +3194,7 @@ def get_form_data_generate_plot(form):
 
     # Convert checkbox flags to boolean
     form_data['color_map_flag'] = form_data.get('color_map_flag', 'False') == 'True'
+    form_data['yanCullinan_flag'] = form_data.get('yanCullinan_flag', 'False') == 'True'
     form_data['outlier_analysis_flag'] = form_data.get('outlier_analysis_flag', 'False') == 'True'
     form_data['filter_negative_values'] = form_data.get('filter_negative_values', 'False') == 'True'
     form_data['generate_bitmap_mask'] = form_data.get('generate_bitmap_mask', 'False') == 'True'

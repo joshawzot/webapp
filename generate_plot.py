@@ -445,6 +445,7 @@ def calculate_sigma_distances(data, target_values, table_names):
 def generate_plot(table_names, database_name, form_data):
     print("form_data:", form_data)
     color_map_flag = form_data['color_map_flag']  # This is now a boolean
+    yanCullinan_flag = form_data.get('yanCullinan_flag', False)  # PLACEHOLDER CHIN EDIT HERE
     outlier_analysis_flag = form_data.get('outlier_analysis_flag', False)  # Default to False if not provided
     target_values = form_data.get('target_values', [])  # Get target values from form_data
     custom_division = form_data.get('custom_division', False)  # Get custom_division flag, default to False
@@ -506,8 +507,27 @@ def generate_plot(table_names, database_name, form_data):
             "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "State_pattern_files/248x248_16states.npy",
             "248x1_1state": "State_pattern_files/248x1_1state.npy",
-            "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy"
+            "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
+            "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            
         }
+
+        '''pattern_files = {
+            "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
+            "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
+            "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
+            "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
+            "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
+            "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
+            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+            "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
+            "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
+            
+        }'''
 
         # Fetch the file path based on the state pattern using a dictionary lookup
         file_path = pattern_files.get(state_pattern)
@@ -894,6 +914,16 @@ def generate_plot(table_names, database_name, form_data):
                 encoded_plots.append(plot_colormap(
                     data_matrix, title=f"Colormap for {table_name}", g_range=g_range))
 
+
+    #Boxplot for Yan TEST
+    if yanCullinan_flag:
+        for table_name, data_matrix in filtered_data_matrices:
+            data_matrix = 649.5 - (2.549*data_matrix)
+            encoded_plots.append(plot_2d_yan(data_matrix, title=f"2d Visualization for {table_name}"))
+            encoded_plots.append(plot_boxplot_yan(data_matrix, title=f"Colormap for {table_name}"))
+            encoded_plots.append(plot_cdf_yan(data_matrix, title=f"CDF for {table_name}"))
+
+            
     # Generate plots for filtered tables
     encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
     
@@ -1602,7 +1632,11 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
             num_states,
             all_column_names,  # Use column names instead of table names
             sigma_table,
-            sigma_points)
+            sigma_points,
+            None,
+            None,
+            None,
+            None)
 
 def plot_column_data_points_summary(all_column_group_data, all_column_names, selected_groups):
     """

@@ -26,6 +26,104 @@ except ImportError:
     HAS_NUMBA = False
     print("Numba not available. Some optimizations will be disabled.")
 
+def plot_cdf_yan(data, title="CDF Plot of Data"):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    flat_data = data.flatten()
+    target = 100
+    mean_value = np.mean(flat_data)
+    std_value = np.std(flat_data)
+    above_target_count = np.sum(flat_data > target)
+    total_count = len(flat_data)
+    percentage_above_target = (above_target_count / total_count) * 100
+    try:
+        
+        sorted_data = np.sort(flat_data)
+        cdf = np.arange(len(sorted_data)) / len(sorted_data)
+        ax.plot(sorted_data, cdf, marker=".", linestyle="none", label="CDF")
+        ax.axvline(target, color="r", linestyle="--", label=f"Target = {target}")
+        ax.axvline(mean_value, color="g", linestyle="--", label=f"Mean = {mean_value:.2f}")
+        ax.axvline(mean_value + std_value, color="b", linestyle="--", label=f"Mean + 1STD")
+        ax.axvline(mean_value - std_value, color="b", linestyle="--", label=f"Mean - 1STD")
+        ax.set_xlim(0,650)
+
+        # Annotate statistics
+        ax.text(target + 5, 0.5, f"{percentage_above_target:.2f}% > {target}",
+                color="red", fontsize=12, verticalalignment='center')
+        ax.text(mean_value, 0.1, f"Mean: {mean_value:.2f}\nStd: {std_value:.2f}",
+                color="black", fontsize=12, horizontalalignment='center', verticalalignment='center')
+
+        ax.set_xlabel("Value")
+        ax.set_ylabel("CDF")
+        ax.set_title(title)
+        ax.legend()
+        ax.grid(True)
+
+
+        buf = BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
+        return encoded_image
+    
+    finally:
+        plt.close(fig)
+        if 'buf' in locals():
+            buf.close()
+
+
+
+def plot_2d_yan(data, title = "2d Data Visualization"):
+    fig, ax = plt.subplots(figsize=(6, 6))        
+    
+    try:
+        cax = ax.imshow(data, cmap="jet", vmin=0, vmax=650)
+        fig.colorbar(cax, ax=ax, label="Value Scale (0-650)")
+        ax.set_title(title)
+
+        buf = BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
+        return encoded_image
+    
+    finally:
+        plt.close(fig)
+        if 'buf' in locals():
+            buf.close()
+
+def plot_boxplot_yan(data, title = "Box Plot of Data"):
+    target = 100  
+    flat_data = np.array(data).flatten()
+    
+    mean_value = np.mean(flat_data)
+    std_value = np.std(flat_data)
+    fig, ax = plt.subplots(figsize=(5, 5))
+    try:
+        ax.boxplot(flat_data, vert=True, patch_artist=True)
+        ax.axhline(target, color="r", linestyle="--", label=f"Target = {target}")
+        ax.axhline(mean_value, color="g", linestyle="--", label=f"Mean = {mean_value:.2f}")
+        ax.axhline(mean_value + std_value, color="b", linestyle="--", label=f"Mean + 1STD")
+        ax.axhline(mean_value - std_value, color="b", linestyle="--", label=f"Mean - 1STD")
+        ax.set_ylim(0, 650)
+
+        # Annotate statistics
+        ax.text(1.1, mean_value, f"Mean: {mean_value:.2f}\nStd: {std_value:.2f}",
+                color="black", fontsize=12, verticalalignment='center')
+
+        ax.set_ylabel("Value")
+        ax.set_title(title)
+        ax.legend()
+        ax.grid(True)
+        buf = BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight')
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
+        return encoded_image
+    finally:
+        plt.close(fig)
+        if 'buf' in locals():
+            buf.close()
+        
 def plot_boxplot(data, table_names, figsize=(15, 10)):
     # Create a new figure instance for this plot
     fig = plt.figure(figsize=figsize)

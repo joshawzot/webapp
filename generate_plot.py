@@ -497,6 +497,22 @@ def generate_plot(table_names, database_name, form_data):
         state_pattern = form_data.get('state_pattern')
         print("state_pattern:", state_pattern)
         # Define a dictionary to map state patterns to their file paths
+        '''pattern_files = {
+            "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
+            "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
+            "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
+            "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
+            "248x248_1state": "State_pattern_files/248x248_1state.npy",
+            "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
+            "248x248_16states": "State_pattern_files/248x248_16states.npy",
+            "248x1_1state": "State_pattern_files/248x1_1state.npy",
+            "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
+            "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            
+        }'''
+
         pattern_files = {
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",

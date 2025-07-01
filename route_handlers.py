@@ -8,7 +8,7 @@
 # - /api/create-file
 # - /api/create-directory
 
-from run import app, cache, redis_client
+from run import cache, redis_client
 from db_operations import *
 from tools_for_plots import get_full_table_data, plot_individual_points_map  # Add plot_individual_points_map to the import
 from flask_caching import Cache
@@ -23,7 +23,7 @@ from io import BytesIO
 # External libraries
 import pandas as pd
 import mysql.connector
-from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash
+from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash, Blueprint
 from pptx import Presentation
 import zipfile
 import numpy as np
@@ -64,6 +64,9 @@ from generate_plot import generate_plot
 # Add this near the top of the file, with the other imports
 import json
 from datetime import datetime
+
+
+bp = Blueprint('route_handlers', __name__)
 
 # Add this after the other Redis-related code
 def record_folder_visit(folder_name, username):
@@ -186,7 +189,7 @@ def extract_statistical_data(table_names, database_name, form_data):
             'group_names': []
         }
 
-@app.route('/')
+@bp.route('/')
 def home():
     username = session.get('username')
     print(username)
@@ -228,7 +231,7 @@ def home():
     else:
         return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
@@ -238,12 +241,12 @@ def login():
         return render_template('login.html', error="Please enter a username")
     return render_template('login.html')
 
-@app.route('/logout')
+@bp.route('/logout')
 def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
-@app.route('/create-db')
+@bp.route('/create-db')
 def create_db_page():
     conn = create_connection()
     cursor = conn.cursor()
@@ -253,7 +256,7 @@ def create_db_page():
 
     return render_template('create_db_page.html')
 
-@app.route('/save-txt-content/<database>/<table_name>', methods=['POST'])
+@bp.route('/save-txt-content/<database>/<table_name>', methods=['POST'])
 def save_txt_content(database, table_name):
     try:
         content = request.json['content']
@@ -267,7 +270,7 @@ def save_txt_content(database, table_name):
     except mysql.connector.Error as err:
         return str(err), 400
 
-@app.route('/list-tables', methods=['POST', 'GET'])
+@bp.route('/list-tables', methods=['POST', 'GET'])
 def list_tables():
     # Get the username from the session
     username = session.get('username')
@@ -291,7 +294,7 @@ def list_tables():
 
     return render_template('list_tables.html', tables=tables, table_names=table_names, database=database, plot_function=plot_function)
 
-@app.route('/view-table/<database>/<table_name>', methods=['GET'])
+@bp.route('/view-table/<database>/<table_name>', methods=['GET'])
 def view_table(database, table_name):
     """View the content of a specific table."""
     print('database:', database)
@@ -321,7 +324,7 @@ generate_plot_functions = {
     "generate_plot": generate_plot,
 }
 
-@app.route('/render-plot/<database>/<table_name>/<plot_function>')
+@bp.route('/render-plot/<database>/<table_name>/<plot_function>')
 def render_plot(database, table_name, plot_function):
     try:
         if 'username' not in session:
@@ -568,7 +571,7 @@ def render_plot(database, table_name, plot_function):
     except Exception as e:
         return f"Error: {str(e)}", 500
 
-@app.route('/download_csv/<unique_id>/<data_type>')
+@bp.route('/download_csv/<unique_id>/<data_type>')
 def download_csv2(unique_id, data_type):
     # Retrieve plot data either from cache or Redis
     cache_key = f"plot_data_{unique_id}"
@@ -655,7 +658,7 @@ def generate_csv_response(data, filename):
     response.headers["Content-type"] = "text/csv"
     return response
 
-@app.route('/download_csv')
+@bp.route('/download_csv')
 def download_csv():
     database = request.args.get('database')
     table_name = request.args.get('table_name')
@@ -674,7 +677,7 @@ def download_csv():
     except Exception as e:
         return str(e), 500
 
-@app.route('/download_npy')
+@bp.route('/download_npy')
 def download_npy():
     database = request.args.get('database')
     table_name = request.args.get('table_name')
@@ -695,7 +698,7 @@ def download_npy():
         print(f"Download error: {e}")
         return str(e), 500
 
-@app.route('/view-plot/<database>/<table_name>/<plot_function>', methods=['GET', 'POST'])
+@bp.route('/view-plot/<database>/<table_name>/<plot_function>', methods=['GET', 'POST'])
 def view_plot(database, table_name, plot_function):
     print("view_plot")
     
@@ -771,14 +774,14 @@ def view_plot(database, table_name, plot_function):
                               linear_min=linear_min,
                               linear_max=linear_max)
 
-@app.route('/set-conductance-values/<database>/<table_name>')
+@bp.route('/set-conductance-values/<database>/<table_name>')
 def set_conductance_values(database, table_name):
     """Route to display the form for setting conductance calculation values."""
     return render_template('set_conductance_values.html', 
                           database=database, 
                           table_name=table_name)
 
-@app.route('/calculate-conductance/<database>/<table_name>', methods=['POST'])
+@bp.route('/calculate-conductance/<database>/<table_name>', methods=['POST'])
 def calculate_conductance(database, table_name):
     """Route to calculate conductance values based on form inputs."""
     try:
@@ -833,7 +836,7 @@ def calculate_conductance(database, table_name):
         flash(f"Error calculating conductance: {str(e)}", 'danger')
         return redirect(f'/view-plot/{database}/{table_name}/choose')
 
-@app.route('/upload-file', methods=['POST'])
+@bp.route('/upload-file', methods=['POST'])
 def upload_file():   #auto upload
     print("upload_file()")
     print("request.form:", request.form)
@@ -893,7 +896,7 @@ def upload_file():   #auto upload
 
     return jsonify(results=results)
 
-@app.route('/delete-record/<database>/<table_name>', methods=['DELETE'])  # delete a table
+@bp.route('/delete-record/<database>/<table_name>', methods=['DELETE'])  # delete a table
 def delete_record(database, table_name):
     try:
         connection = create_connection(database)
@@ -909,7 +912,7 @@ def delete_record(database, table_name):
     except mysql.connector.Error as err:
         return str(err), 400
 
-@app.route('/delete-records/<database>', methods=['DELETE'])  # delete multiple tables
+@bp.route('/delete-records/<database>', methods=['DELETE'])  # delete multiple tables
 def delete_records(database):
     try:
         # Check if request.json exists
@@ -1005,7 +1008,7 @@ def delete_records(database):
 from datetime import datetime
 from flask import request
 
-@app.route('/create-database', methods=['POST'])
+@bp.route('/create-database', methods=['POST'])
 def create_database():
     user_name = request.form.get('userName')
     device_info = request.form.get('deviceInfo')
@@ -1027,7 +1030,7 @@ def create_database():
     else:
         return jsonify({'message': f"Failed to create Database '{db_name}'."}), 500
 
-@app.route('/download_pptx', methods=['POST'])
+@bp.route('/download_pptx', methods=['POST'])
 def download_pptx():
     try:
         from pptx import Presentation
@@ -1066,7 +1069,7 @@ def download_pptx():
         print(f"Error creating PPTX: {e}")
         return f"Error creating PPTX: {str(e)}", 500
 
-@app.route('/download_csv_table', methods=['POST'])
+@bp.route('/download_csv_table', methods=['POST'])
 def download_csv_table():
     try:
         from io import StringIO
@@ -1102,7 +1105,7 @@ def download_csv_table():
         print(f"Error creating CSV: {e}")
         return f"Error creating CSV: {str(e)}", 500
 
-@app.route('/getDatabases', methods=['GET'])
+@bp.route('/getDatabases', methods=['GET'])
 def get_databases():
     # Create a database connection
     try:
@@ -1123,7 +1126,7 @@ def get_databases():
         # In case of any database connection errors, return an error message
         return jsonify({"error": str(err)}), 500
 
-@app.route('/add-item', methods=['POST'])
+@bp.route('/add-item', methods=['POST'])
 def create_item():
     item_id = request.form['item_id']
     item_data = request.form['item_data']
@@ -1138,7 +1141,7 @@ def create_item():
     except ClientError as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/items', methods=['GET'])
+@bp.route('/items', methods=['GET'])
 def list_items():
     try:
         response = table.scan()
@@ -1147,7 +1150,7 @@ def list_items():
     except ClientError as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/generate_zip', methods=['POST'])
+@bp.route('/generate_zip', methods=['POST'])
 def generate_zip():
     data = request.get_json()
     table_names = data.get('tableNames', [])
@@ -1212,7 +1215,7 @@ def rename_duplicate_columns(df):
     df.columns = new_columns
     return df
 
-@app.route('/mergeTablesInput', methods=['POST'])
+@bp.route('/mergeTablesInput', methods=['POST'])
 def merge_tables_input():
     database = request.form.get('database')
     table_names = request.form.getlist('tableNames')
@@ -1267,7 +1270,7 @@ def get_pattern_file(pattern_name):
         Full path to the pattern file
     """
     # Pattern files location
-    pattern_files = {
+    '''pattern_files = {
         "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
@@ -1279,12 +1282,14 @@ def get_pattern_file(pattern_name):
         "62x62_2states": "State_pattern_files/62x62_2states.npy",
         "248x1_1state": "State_pattern_files/248x1_1state.npy",
         "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
+        "65536x78_ecc": "State_pattern_files/65536x78_ecc.npy",
+        "65536x78_ecc": "/home/admin2/webapp_2/State_pattern_files/65536x78_ecc.npy",
         "248x256_1state": "State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
-    }
+    }'''
 
-    '''pattern_files = {
+    pattern_files = {
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
@@ -1299,12 +1304,12 @@ def get_pattern_file(pattern_name):
         "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
-    }'''
+    }
     
     # Return the path for the pattern name
     return pattern_files.get(pattern_name, "")
 
-@app.route('/mergeTablesProcess', methods=['POST'])
+@bp.route('/mergeTablesProcess', methods=['POST'])
 def merge_tables_process():
     database = request.form.get('database')
     table_names = request.form.getlist('tableNames')
@@ -1385,7 +1390,15 @@ def merge_tables_process():
             if len(pattern_array.shape) == 3:
                 pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
             print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
-        
+
+        # Special handling for 65536x78_ecc.npy which is actually (78, 32, 2048)
+        if state_pattern == "65536x78_ecc":
+            # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
+            print(f"DEBUG: Special handling for 65536x78_ecc pattern")
+            if len(pattern_array.shape) == 3:
+                pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+            print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
+                
         print(f"DEBUG: Pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
         
         a, b = pattern_array.shape
@@ -1666,7 +1679,7 @@ def merge_tables_process():
         print(f"DEBUG: Traceback: {traceback.format_exc()}")
         return str(e), 500
 
-@app.route('/copy_tables', methods=['POST'])
+@bp.route('/copy_tables', methods=['POST'])
 def copy_tables():
     data = request.get_json()
     source_db = data.get('sourceDatabase')
@@ -2090,7 +2103,7 @@ def copy_tables():
     # Return success message at the end of try block (after the for loop)
     return jsonify({'message': 'Tables copied successfully.'}), 200
 
-@app.route('/concatenate_tables', methods=['POST'])
+@bp.route('/concatenate_tables', methods=['POST'])
 def concatenate_tables():
     data = request.json
     database = data.get('database')
@@ -2642,7 +2655,7 @@ def infer_mysql_type_from_pandas(series):
     # Default to TEXT for any other type
     return "TEXT"
 
-@app.route('/rename-table', methods=['POST'])
+@bp.route('/rename-table', methods=['POST'])
 def rename_table():
     data = request.get_json()
     database = data.get('database')
@@ -2663,7 +2676,7 @@ def rename_table():
         print(f'Error in rename_table route: {e}')
         return str(e), 500
 
-@app.route('/run-forming-progress')
+@bp.route('/run-forming-progress')
 def run_forming_progress():
     try:
         # Run the script and capture the output
@@ -2692,7 +2705,7 @@ def run_forming_progress():
         error_details = traceback.format_exc()
         return f"An error occurred while running the script: {e}\n{error_details}", 500
 
-@app.route('/simple_combine', methods=['POST'])
+@bp.route('/simple_combine', methods=['POST'])
 def simple_combine():
     data = request.get_json()
     database = data.get('database')
@@ -2736,7 +2749,7 @@ def simple_combine():
         print(f"Error: {e}")
         return jsonify(success=False, message='An error occurred while combining the table.')
 
-@app.route('/check_single_column_tables', methods=['POST'])
+@bp.route('/check_single_column_tables', methods=['POST'])
 def check_single_column_tables():
     data = request.get_json()
     database = data.get('database')
@@ -2762,7 +2775,7 @@ def check_single_column_tables():
         print(f'Error: {e}')
         return jsonify(success=False, message='An error occurred while checking tables.')
 
-@app.route('/combine_single_columns', methods=['POST'])
+@bp.route('/combine_single_columns', methods=['POST'])
 def combine_single_columns():
     data = request.get_json()
     database = data.get('database')
@@ -2804,7 +2817,7 @@ def combine_single_columns():
         print(f"Error: {e}")
         return jsonify(success=False, message='An error occurred while combining the tables.')
 
-@app.route('/check_two_column_table', methods=['POST'])
+@bp.route('/check_two_column_table', methods=['POST'])
 def check_two_column_table():
     data = request.get_json()
     database = data.get('database')
@@ -2834,7 +2847,7 @@ def check_two_column_table():
         print(f'Error: {e}')
         return jsonify(success=False, message='An error occurred while checking the table.')
 
-@app.route('/generate_scatter_plot/<database>/<table_name>', methods=['GET'])
+@bp.route('/generate_scatter_plot/<database>/<table_name>', methods=['GET'])
 def generate_scatter_plot(database, table_name):
     try:
         x_column = request.args.get('x_column')
@@ -2882,7 +2895,7 @@ def generate_scatter_plot(database, table_name):
         print(f'Error: {e}')
         return 'An error occurred while generating the scatter plot.', 500
 
-@app.route('/get_table_columns', methods=['POST'])
+@bp.route('/get_table_columns', methods=['POST'])
 def get_table_columns():
     data = request.get_json()
     database = data.get('database')
@@ -2902,7 +2915,7 @@ def get_table_columns():
         print(f'Error: {e}')
         return jsonify(success=False, message='An error occurred while fetching columns.')
 
-@app.route('/merge-schemas', methods=['POST'])
+@bp.route('/merge-schemas', methods=['POST'])
 def merge_schemas():
     try:
         data = request.get_json()
@@ -3577,7 +3590,7 @@ def process_file(file_stream, file_extension, db_name):
     return df
 
 # Add custom Jinja2 filter for NaN values
-@app.template_filter('is_nan')
+@bp.template_filter('is_nan')
 def is_nan_filter(value):
     try:
         return np.isnan(value)
@@ -3621,7 +3634,7 @@ def get_disk_space():
         return {"free_space": "Unknown", "total_space": "Unknown", "used_space": "Unknown", "usage_percent": "Unknown"}
 
 # Jupyter Notebook integration
-@app.route('/notebook')
+@bp.route('/notebook')
 def jupyter_notebook():
     """
     Redirect to the notebook selector page instead of directly showing a specific notebook.
@@ -3629,7 +3642,7 @@ def jupyter_notebook():
     """
     return redirect(url_for('notebook_selector'))
 
-@app.route('/notebook-selector')
+@bp.route('/notebook-selector')
 def notebook_selector():
     """
     Display a page with a list of available notebooks and an option to create a new one.
@@ -3654,7 +3667,7 @@ def notebook_selector():
     
     return render_template('notebook_selector.html', notebooks=notebooks, notebook_dates=notebook_dates)
 
-@app.route('/open-notebook/<notebook_name>')
+@bp.route('/open-notebook/<notebook_name>')
 def open_notebook(notebook_name):
     """
     Open a specific Jupyter notebook.
@@ -3705,7 +3718,7 @@ def open_notebook(notebook_name):
     # If we get here, we need to tell the user to start the Jupyter server first
     return render_template('jupyter_start_instructions.html')
 
-@app.route('/create-notebook', methods=['POST'])
+@bp.route('/create-notebook', methods=['POST'])
 def create_notebook():
     """
     Create a new Jupyter notebook with the given name.
@@ -3783,7 +3796,7 @@ def create_notebook():
     # Redirect to open the new notebook
     return redirect(url_for('open_notebook', notebook_name=notebook_name))
 
-@app.route('/jupyter/<path:path>')
+@bp.route('/jupyter/<path:path>')
 def jupyter_proxy(path=''):
     """
     Proxy requests to the Jupyter server.
@@ -3811,7 +3824,7 @@ def jupyter_proxy(path=''):
     
     return redirect(jupyter_url)
 
-@app.route('/check-jupyter')
+@bp.route('/check-jupyter')
 def check_jupyter():
     """API endpoint to check if Jupyter server is running"""
     status_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.jupyter_status.json')
@@ -3846,7 +3859,7 @@ def check_jupyter():
     # If we get here, we need to tell the user to start the Jupyter server first
     return render_template('jupyter_start_instructions.html')
 
-@app.route('/test-machines')
+@bp.route('/test-machines')
 def test_machines():
     """
     Page to display the available test machines
@@ -3864,7 +3877,7 @@ def test_machines():
     ]
     return render_template('test_machines.html', test_machines=test_machines)
 
-@app.route('/test-ssh-connection', methods=['POST'])
+@bp.route('/test-ssh-connection', methods=['POST'])
 def test_ssh_connection():
     """
     Test SSH connection to a remote machine
@@ -3925,7 +3938,7 @@ def test_ssh_connection():
                 "error": str(e)
             })
 
-@app.route('/execute-ssh-command', methods=['POST'])
+@bp.route('/execute-ssh-command', methods=['POST'])
 def execute_ssh_command():
     """
     Execute a command on a remote machine via SSH and return the result as JSON.
@@ -4060,7 +4073,7 @@ def execute_ssh_command():
                 "error": str(e)
             })
 
-@app.route('/remote-commands')
+@bp.route('/remote-commands')
 def remote_commands():
     """
     Display the remote commands interface for a specific machine.
@@ -4076,7 +4089,7 @@ def remote_commands():
                           machine_ip=machine_ip, 
                           machine_user=machine_user)
 
-@app.route('/execute-remote-command', methods=['POST'])
+@bp.route('/execute-remote-command', methods=['POST'])
 def execute_remote_command():
     """
     Execute a command on a remote machine via SSH
@@ -4173,7 +4186,7 @@ def execute_remote_command():
     
     return jsonify({'success': False, 'message': 'Invalid request method'})
 
-@app.route('/browse-remote-directory', methods=['POST'])
+@bp.route('/browse-remote-directory', methods=['POST'])
 def browse_remote_directory():
     """
     Fetch directory contents from a remote machine for the file browser.
@@ -4261,7 +4274,7 @@ def browse_remote_directory():
     
     return jsonify({'success': False, 'message': 'Invalid request method'})
 
-@app.route('/tab-completion', methods=['POST'])
+@bp.route('/tab-completion', methods=['POST'])
 def tab_completion():
     """
     Handle tab completion requests for the terminal.
@@ -4402,7 +4415,7 @@ def tab_completion():
                 "error": str(e)
             })
 
-@app.route('/list-remote-files', methods=['POST'])
+@bp.route('/list-remote-files', methods=['POST'])
 def list_remote_files():
     """List files and directories on a remote machine"""
     if request.method == 'POST':
@@ -4512,7 +4525,7 @@ def list_remote_files():
                 "message": str(e)
             })
 
-@app.route('/get-remote-file', methods=['POST'])
+@bp.route('/get-remote-file', methods=['POST'])
 def get_remote_file():
     """Get the contents of a file on a remote machine"""
     if request.method == 'POST':
@@ -4588,7 +4601,7 @@ def get_remote_file():
                 "message": str(e)
             })
 
-@app.route('/save-remote-file', methods=['POST'])
+@bp.route('/save-remote-file', methods=['POST'])
 def save_remote_file():
     """Save contents to a file on a remote machine"""
     if request.method == 'POST':
@@ -4652,7 +4665,7 @@ def save_remote_file():
                 "message": str(e)
             })
 
-@app.route('/database-stats')
+@bp.route('/database-stats')
 def database_stats():
     """Separate page for displaying database statistics."""
     try:
@@ -4696,7 +4709,7 @@ def database_stats():
         print(f"Error in database_stats: {e}")
         return f"Error loading database statistics: {str(e)}"
 
-@app.route('/reset-conductance/<database>/<table_name>')
+@bp.route('/reset-conductance/<database>/<table_name>')
 def reset_conductance(database, table_name):
     """Route to reset to original values by clearing conversion settings from the session."""
     # Clear conversion-related session variables
@@ -4712,7 +4725,7 @@ def reset_conductance(database, table_name):
     # Redirect back to the Choose Plot Function page
     return redirect(f'/view-plot/{database}/{table_name}/choose')
 
-@app.route('/linear-conversion/<database>/<table_name>')
+@bp.route('/linear-conversion/<database>/<table_name>')
 def linear_conversion(database, table_name):
     """Route to show custom linear conversion form."""
     try:
@@ -4733,7 +4746,7 @@ def linear_conversion(database, table_name):
         flash(f"Error showing linear conversion form: {str(e)}", 'danger')
         return redirect(f'/view-plot/{database}/{table_name}/choose')
 
-@app.route('/apply-custom-linear-conversion/<database>/<table_name>', methods=['POST'])
+@bp.route('/apply-custom-linear-conversion/<database>/<table_name>', methods=['POST'])
 def apply_custom_linear_conversion(database, table_name):
     """Apply custom linear conversion with user-provided values."""
     try:
@@ -4780,7 +4793,7 @@ def apply_custom_linear_conversion(database, table_name):
         flash(f"Error applying custom linear conversion: {str(e)}", 'danger')
         return redirect(f'/view-plot/{database}/{table_name}/choose')
 
-@app.route('/top-schemas-by-size')
+@bp.route('/top-schemas-by-size')
 def top_schemas_by_size():
     """Display all schemas by size with search filtering."""
     try:
@@ -5155,7 +5168,7 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
         traceback.print_exc()
         raise e
 
-@app.route('/plot-selected', methods=['POST'])
+@bp.route('/plot-selected', methods=['POST'])
 def plot_selected():
     """
     Handle POST requests for plotting multiple tables.
@@ -5174,7 +5187,7 @@ def plot_selected():
     # Redirect to view_plot with a special parameter indicating to use session data
     return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
 
-@app.route('/process-plot-form', methods=['POST'])
+@bp.route('/process-plot-form', methods=['POST'])
 def process_plot_form():
     """
     Handle POST form submission from input_form_generate_plot.html.
@@ -5253,7 +5266,7 @@ def process_plot_form():
     # Redirect to render-plot with a special parameter indicating to use session data
     return redirect(f"/render-plot/{database}/from_session/{plot_function}")
 
-@app.route('/list-all-bitmap-masks')
+@bp.route('/list-all-bitmap-masks')
 def list_all_bitmap_masks():
     """List all bitmap masks in the database"""
     try:
@@ -5301,7 +5314,7 @@ def list_all_bitmap_masks():
     except Exception as e:
         return f"Error checking bitmap masks: {str(e)}"
 
-@app.route('/debug-bitmap-masks/<database>')
+@bp.route('/debug-bitmap-masks/<database>')
 def debug_bitmap_masks(database):
     """Debug route to check bitmap masks in the database"""
     try:
@@ -5340,7 +5353,7 @@ def debug_bitmap_masks(database):
     except Exception as e:
         return f"Error checking bitmap masks: {str(e)}"
 
-@app.route('/get-bitmap-masks', methods=['POST'])
+@bp.route('/get-bitmap-masks', methods=['POST'])
 def get_bitmap_masks():
     """Get available bitmap masks for a database"""
     try:
@@ -5397,3 +5410,19 @@ def get_bitmap_masks():
     except Exception as e:
         print(f"Error getting bitmap masks: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploaded_files')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@bp.route('/upload', methods=['POST'])
+def upload():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "No file part in the request"}), 400
+    if request.files['file'].filename == '':
+        return jsonify({"success": False, "message": "No selected file"}), 400
+    file = request.files['file']
+
+    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(filepath)
+    return jsonify({'message': f'Saved to {filepath}'})

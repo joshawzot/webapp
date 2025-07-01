@@ -497,7 +497,7 @@ def generate_plot(table_names, database_name, form_data):
         state_pattern = form_data.get('state_pattern')
         print("state_pattern:", state_pattern)
         # Define a dictionary to map state patterns to their file paths
-        pattern_files = {
+        '''pattern_files = {
             "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
             "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
@@ -515,9 +515,9 @@ def generate_plot(table_names, database_name, form_data):
             "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
             
-        }
+        }'''
 
-        '''pattern_files = {
+        pattern_files = {
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
             "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
@@ -535,7 +535,7 @@ def generate_plot(table_names, database_name, form_data):
             "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
             
-        }'''
+        }
 
         # Fetch the file path based on the state pattern using a dictionary lookup
         file_path = pattern_files.get(state_pattern)
@@ -547,6 +547,10 @@ def generate_plot(table_names, database_name, form_data):
             if state_pattern == "82944x78_ecc_fuxi":
                 # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
                 pattern_file_array = pattern_file_array.reshape(78, 82944).T
+                        # Special handling for 65536x78_ecc.npy which is actually (78, 32, 2048)
+            if state_pattern == "65536x78_ecc":
+                # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
+                pattern_file_array = pattern_file_array.reshape(78, 65536).T
         else:
             print("Invalid state pattern or file path not found.")
     elif form_data['state_pattern_type'] == '1D':

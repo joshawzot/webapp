@@ -1280,6 +1280,8 @@ def get_pattern_file(pattern_name):
         "248x1_1state": "State_pattern_files/248x1_1state.npy",
         "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
         "248x256_1state": "State_pattern_files/248x256_1state.npy",
+        "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
+        "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
     }
 
     '''pattern_files = {
@@ -1295,6 +1297,8 @@ def get_pattern_file(pattern_name):
         "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
         "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
         "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
+        "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
+        "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
     }'''
     
     # Return the path for the pattern name

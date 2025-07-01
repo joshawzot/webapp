@@ -512,6 +512,8 @@ def generate_plot(table_names, database_name, form_data):
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
             "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
+            "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
             
         }
 
@@ -530,6 +532,8 @@ def generate_plot(table_names, database_name, form_data):
             "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
             "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
             "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
+            "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
+            "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
             
         }'''
 

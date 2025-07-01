@@ -9,14 +9,9 @@ import threading
 import time
 import os
 from flask import request
-import eventlet
-from route_handlers import bp
-# Ensure eventlet is properly initialized
-eventlet.monkey_patch()
 
 # Initialize Flask app
 app = Flask(__name__)
-app.register_blueprint(bp)
 
 # Redis config
 redis_client = redis.Redis(host='localhost', port=6379, db=0)
@@ -784,7 +779,8 @@ from route_handlers import *
 
 # If we're running the script directly, start the server with SocketIO
 if __name__ == '__main__':
-
+    import eventlet
+    eventlet.monkey_patch()
     
     # Run the app on multiple ports (3001-3020)
     import multiprocessing
@@ -808,7 +804,10 @@ else:
     # WSGI entry point - this is used by Gunicorn
     # We need to make sure Gunicorn can work with SocketIO
     from eventlet import wsgi
-
+    import eventlet
+    
+    # Ensure eventlet is properly initialized
+    eventlet.monkey_patch()
     
     def run_with_socketio(port):
         """Run the server with SocketIO support"""

@@ -6,6 +6,58 @@ import re
 from conductance_calculator import convert_table_to_conductance, convert_table_to_linear
 import matplotlib.pyplot as plt
 
+def get_pattern_files():
+    """
+    Get the pattern files dictionary based on the configuration setting in run.py
+    Returns dictionary with appropriate paths (absolute or relative)
+    """
+    try:
+        # Import Flask app to access configuration
+        from run import app
+        use_absolute_paths = app.config.get('USE_ABSOLUTE_STATE_PATTERN_PATHS', True)
+    except:
+        # Fallback to True if import fails or config not found
+        use_absolute_paths = True
+    
+    if use_absolute_paths:
+        # Absolute paths dictionary
+        return {
+            "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
+            "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
+            "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
+            "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
+            "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
+            "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
+            "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
+            "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
+            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+            "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
+            "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
+            "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
+        }
+    else:
+        # Relative paths dictionary
+        return {
+            "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
+            "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
+            "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
+            "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
+            "248x248_1state": "State_pattern_files/248x248_1state.npy",
+            "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
+            "248x248_16states": "State_pattern_files/248x248_16states.npy",
+            "248x248_2states": "State_pattern_files/248x248_2states.npy",
+            "62x62_2states": "State_pattern_files/62x62_2states.npy",
+            "248x1_1state": "State_pattern_files/248x1_1state.npy",
+            "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
+            "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
+            "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
+        }
+
 def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array):
     connection = create_connection(database_name)
     query = f"SELECT * FROM {table_name}"
@@ -517,25 +569,7 @@ def generate_plot(table_names, database_name, form_data):
             
         }'''
 
-        pattern_files = {
-            "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
-            "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
-            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
-            "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
-            "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
-            "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
-            "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
-            "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
-            "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
-            "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
-            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
-            "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
-            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
-            "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
-            "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
-            "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
-            
-        }
+        pattern_files = get_pattern_files()
 
         # Fetch the file path based on the state pattern using a dictionary lookup
         file_path = pattern_files.get(state_pattern)

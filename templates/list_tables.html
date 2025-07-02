@@ -49,6 +49,11 @@
         <div class="row custom-row mb-3">
             <div class="col">
                 <p>Schema: {{ database }}</p>
+                <button id = "openModal">View Preprocessed Graphs</button>
+                <div id="graphViewer">
+                    <img id="selectedGraph" style="max-width: 100%; display: none;">
+                </div>
+                {% include 'choose_plot.html' %}
                 <p id="tableCount">Number of tables: {{ tables|length }}</p>
                 <p id="selectedCount">Number of tables selected: 0</p>
                 <!-- First group: "Select Filtered", "Deselect Filtered", "Copy Selected" -->

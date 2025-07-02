@@ -23,7 +23,7 @@ from io import BytesIO
 # External libraries
 import pandas as pd
 import mysql.connector
-from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash
+from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash, send_from_directory
 from pptx import Presentation
 import zipfile
 import numpy as np
@@ -289,7 +289,18 @@ def list_tables():
 
     plot_function = "None"  # This could also be dynamically set based on POST or other conditions
 
-    return render_template('list_tables.html', tables=tables, table_names=table_names, database=database, plot_function=plot_function)
+    import hashlib
+    hash_object = hashlib.sha256()
+    hash_object.update(database.encode('utf-8'))
+    hash_hex = hash_object.hexdigest()
+    
+    filepath = os.path.join("uploaded_files", hash_hex)
+    if os.path.exists(filepath):
+        images = os.listdir(filepath)
+    else:
+        images = []
+
+    return render_template('list_tables.html', tables=tables, table_names=table_names, database=database, plot_function=plot_function, images = images, hash_hex = hash_hex)
 
 @app.route('/view-table/<database>/<table_name>', methods=['GET'])
 def view_table(database, table_name):
@@ -5407,3 +5418,28 @@ def get_bitmap_masks():
     except Exception as e:
         print(f"Error getting bitmap masks: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploaded_files')
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "No file part in the request"}), 400
+    if request.files['file'].filename == '':
+        return jsonify({"success": False, "message": "No selected file"}), 400
+    file = request.files['file']
+    
+    import hashlib
+    hash_object = hashlib.sha256()
+    print('key is', request.form['key'].encode('utf-8'))
+    hash_object.update(request.form['key'].encode('utf-8'))
+    hash_hex = hash_object.hexdigest()
+    filepath = os.path.join(UPLOAD_FOLDER, hash_hex, file.filename)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    file.save(filepath)
+    return jsonify({'message': f'Saved to {filepath}'})
+
+@app.route('/uploaded_files/<hash_hex>/<filename>')
+def serve_uploaded_file(hash_hex, filename):
+    return send_from_directory(os.path.join('uploaded_files', hash_hex), filename)

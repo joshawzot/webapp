@@ -1,8 +1,7 @@
-<div id = "plots_modal" class="modal"> 
+<div id = "plots_modal" class="modal" style = "display: none; justify-content: center; align-items: flex-start; padding-top: 65px;"> 
     <div class = "plot_modal_content">
         <span class = 'close'>&times;</span>
         <h3>Select a Graph</h3>
-
         <div class="graph-list">
             {% for img in images %}
                 <button onclick="viewGraph('{{ img }}')">{{ img }}</button>
@@ -19,7 +18,7 @@
         const modal = document.getElementById("plots_modal");
         const graphImg = document.getElementById("selectedGraph");
         modal.style.display = 'none';
-        graphImg.src = `/../uploaded_files/${hashHex}/${filename}`;
+        graphImg.src = `/../../uploaded_files/${hashHex}/${filename}`;
         graphImg.style.display = 'block';
         }
 
@@ -31,7 +30,7 @@
         const graphImg = document.getElementById("graphImg");
         
         openModal.onclick = () => {
-            modal.style.display = 'block';
+            modal.style.display = 'flex';
 
             };
 

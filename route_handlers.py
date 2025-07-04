@@ -8,6 +8,7 @@
 # - /api/create-file
 # - /api/create-directory
 
+from collections import defaultdict
 from run import app, cache, redis_client
 from db_operations import *
 from tools_for_plots import get_full_table_data, plot_individual_points_map  # Add plot_individual_points_map to the import
@@ -64,6 +65,9 @@ from generate_plot import generate_plot
 # Add this near the top of the file, with the other imports
 import json
 from datetime import datetime
+
+UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploaded_files'))
+
 
 # Add this after the other Redis-related code
 def record_folder_visit(folder_name, username):
@@ -294,7 +298,7 @@ def list_tables():
     hash_object.update(database.encode('utf-8'))
     hash_hex = hash_object.hexdigest()
     
-    filepath = os.path.join("uploaded_files", hash_hex)
+    filepath = os.path.join(UPLOAD_FOLDER, hash_hex)
     if os.path.exists(filepath):
         images = os.listdir(filepath)
     else:
@@ -5420,7 +5424,6 @@ def get_bitmap_masks():
         return jsonify({'error': str(e)}), 500
 
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploaded_files')
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -5442,4 +5445,30 @@ def upload():
 
 @app.route('/uploaded_files/<hash_hex>/<filename>')
 def serve_uploaded_file(hash_hex, filename):
-    return send_from_directory(os.path.join('uploaded_files', hash_hex), filename)
+    return send_from_directory(os.path.join(UPLOAD_FOLDER, hash_hex), filename)
+
+@app.route('/recent_tables', methods=['POST', 'GET'])
+def recent_tables():
+    import hashlib
+
+    dic = {}
+    imageMap = defaultdict(list)
+    engine = create_db_engine('Recent_Tables')
+
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT name FROM records"))
+        tables = [row[0] for row in result][::-1]
+
+    for t in tables:
+        hash_object = hashlib.sha256()
+        hash_object.update(t.encode('utf-8'))
+        hash_hex = hash_object.hexdigest()
+        dic[t] = hash_hex
+    
+        filepath = os.path.join(UPLOAD_FOLDER, hash_hex)
+        if os.path.exists(filepath):
+            imageMap[t] = os.listdir(filepath)
+        else:
+            imageMap[t] = []
+
+    return render_template('recent_plot.html', tables= tables, imageMap = imageMap, dic = dic)

@@ -75,9 +75,10 @@
         <!-- Third row with download buttons -->
         <div class="row custom-row mb-3">
             <div class="col">
-                <!-- Third group: "Download Selected as CSV", "Download Selected as NPY" -->
+                <!-- Third group: "Download Selected as CSV", "Download Selected as NPY", "Download as metadata" -->
                 <button class="btn btn-success" id="downloadSelected">Download Selected as CSV</button>
                 <button class="btn btn-primary" id="downloadSelectedNpy">Download Selected as NPY</button>
+                <button class="btn btn-warning" id="downloadSelectedMetadata">Download as metadata</button>
             </div>
         </div>
 
@@ -724,6 +725,144 @@
                 }
             } else {
                 alert('Please select at least one table to download.');
+            }
+        });
+
+        // Download Metadata CSV Functionality
+        document.getElementById('downloadSelectedMetadata').addEventListener('click', async function() {
+            const tableNames = getSelectedVisibleTableNames();
+            
+            if (tableNames.length > 0) {
+                // Show state pattern selection modal
+                const modalHtml = `
+                <div id="statePatternModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Select State Pattern for Metadata Download</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Choose a state pattern to determine the Level for each coordinate:</p>
+                            <div class="form-group">
+                                <label for="statePatternSelect">State Pattern:</label>
+                                <select id="statePatternSelect" class="form-control">
+                                    <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
+                                    <option value="2048x32_rowbar_4states">2048x32_rowbar_4states</option>
+                                    <option value="3x4_4states_debug">3x4_4states_debug</option>
+                                    <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
+                                    <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
+                                    <option value="248x248_1state">248x248_1state</option>
+                                    <option value="1296x64_1state">1296x64_1state</option>
+                                    <option value="248x248_16states">248x248_16states</option>
+                                    <option value="248x248_2states">248x248_2states</option>
+                                    <option value="62x62_2states">62x62_2states</option>
+                                    <option value="248x1_1state">248x1_1state</option>
+                                    <option value="248x256_1state">248x256_1state</option>
+                                    <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
+                                    <option value="65536x78_ecc">65536x78_ecc</option>
+                                    <option value="256x32_pr0">256x32_pr0</option>
+                                    <option value="256x32_pr1">256x32_pr1</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="metadataFilename">Filename (without .zip extension):</label>
+                                <input type="text" id="metadataFilename" class="form-control" value="tables_metadata" placeholder="Enter filename">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="confirmMetadataDownload">Download</button>
+                        </div>
+                    </div>
+                </div>
+                `;
+                
+                // Append modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                const modal = document.getElementById('statePatternModal');
+                modal.style.display = 'block';
+                
+                // Set up close button handlers
+                const closeButtons = modal.querySelectorAll('.close, .close-modal');
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        modal.remove();
+                    });
+                });
+                
+                // Handle confirm button
+                document.getElementById('confirmMetadataDownload').addEventListener('click', async function() {
+                    const selectedPattern = document.getElementById('statePatternSelect').value;
+                    const filename = document.getElementById('metadataFilename').value.trim();
+                    
+                    if (!filename) {
+                        alert('Please enter a filename');
+                        return;
+                    }
+                    
+                    modal.remove();
+                    
+                    // Show the loading overlay with a message for large datasets
+                    document.getElementById('loadingOverlay').style.display = 'flex';
+                    const loadingText = document.querySelector('#loadingOverlay div:last-child');
+                    if (loadingText) {
+                        loadingText.textContent = 'Generating metadata CSV files... This may take a while for large datasets.';
+                    }
+
+                    try {
+                        // Use the new backend ZIP generation endpoint for better performance
+                        const response = await fetch('/download_metadata_zip_with_pattern', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                database: '{{ database }}',
+                                table_names: tableNames,
+                                state_pattern: selectedPattern,
+                                filename: filename
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Server error: ${errorText}`);
+                        }
+
+                        // Get the ZIP file as a blob
+                        const blob = await response.blob();
+                        
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${filename}.zip`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up the blob URL
+                        URL.revokeObjectURL(link.href);
+                        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred while generating the metadata zip file: ' + error.message);
+                    } finally {
+                        // Hide the loading overlay and reset text
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        if (loadingText) {
+                            loadingText.textContent = 'Processing files...';
+                        }
+                        var progressBar = document.getElementById('progress_bar');
+                        progressBar.style.width = '0%';
+                        progressBar.setAttribute('aria-valuenow', 0);
+                        progressBar.textContent = '0%';
+                    }
+                });
+            } else {
+                alert('Please select at least one table to download as metadata.');
             }
         });
 

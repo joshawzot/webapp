@@ -293,6 +293,249 @@ def get_csv_from_table(database, table_name):
         cursor.close()
         connection.close()
 
+def get_metadata_csv_from_table(database, table_name):
+    """
+    Convert bitmap table data to metadata format with BL, WL, value columns.
+    BL = row coordinate (Bit Line)
+    WL = column coordinate (Word Line)
+    value = the actual value at that position
+    """
+    connection = create_connection(database)
+    if connection is None:
+        raise Exception("Failed to connect to the database.")
+
+    cursor = connection.cursor()
+    try:
+        # Construct the SQL query to fetch all data from the specified table
+        query = f"SELECT * FROM `{table_name}`;"
+        cursor.execute(query)
+
+        # Get column headers
+        column_headers = [i[0] for i in cursor.description]
+        rows = cursor.fetchall()
+
+        # Use StringIO to capture CSV output
+        output = io.StringIO()
+        csv_writer = csv.writer(output)
+
+        # Write header for metadata format
+        csv_writer.writerow(['BL', 'WL', 'value'])
+
+        # Convert bitmap data to BL, WL, value format
+        for bl_index, row in enumerate(rows):
+            for wl_index, value in enumerate(row):
+                # Skip if value is None or empty
+                if value is not None and str(value).strip() != '':
+                    csv_writer.writerow([bl_index, wl_index, value])
+
+        # Get CSV string from StringIO
+        csv_string = output.getvalue()
+        output.close()
+
+        return csv_string
+    except Exception as e:
+        print(f"Error fetching metadata from table {table_name}: {e}")
+        return None
+    finally:
+        cursor.close()
+        connection.close()
+
+def get_pattern_files():
+    """
+    Get the pattern files dictionary with paths to state pattern files.
+    Returns dictionary with appropriate paths (absolute or relative)
+    """
+    try:
+        # Import Flask app to access configuration
+        from run import app
+        use_absolute_paths = app.config.get('USE_ABSOLUTE_STATE_PATTERN_PATHS', True)
+    except:
+        # Fallback to True if import fails or config not found
+        use_absolute_paths = True
+    
+    if use_absolute_paths:
+        # Absolute paths dictionary
+        return {
+            "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+            "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
+            "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
+            "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
+            "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
+            "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
+            "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
+            "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
+            "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
+            "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+            "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
+            "65536x78_ecc": "/home/admin2/webapp_2/State_pattern_files/65536x78_ecc.npy",
+            "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
+            "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
+        }
+    else:
+        # Relative paths dictionary
+        return {
+            "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
+            "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
+            "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
+            "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
+            "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
+            "248x248_1state": "State_pattern_files/248x248_1state.npy",
+            "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
+            "248x248_16states": "State_pattern_files/248x248_16states.npy",
+            "248x248_2states": "State_pattern_files/248x248_2states.npy",
+            "62x62_2states": "State_pattern_files/62x62_2states.npy",
+            "248x1_1state": "State_pattern_files/248x1_1state.npy",
+            "248x256_1state": "State_pattern_files/248x256_1state.npy",
+            "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
+            "65536x78_ecc": "State_pattern_files/65536x78_ecc.npy",
+            "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
+            "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
+        }
+
+def get_table_dimensions(database, table_name):
+    """
+    Get the dimensions of a table by examining its structure.
+    Returns a tuple (rows, columns) representing the table dimensions.
+    """
+    connection = create_connection(database)
+    if connection is None:
+        raise Exception("Failed to connect to the database.")
+
+    cursor = connection.cursor()
+    try:
+        # Get table column count
+        query = f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s"
+        cursor.execute(query, (database, table_name))
+        column_count = cursor.fetchone()[0]
+        
+        # Get table row count
+        query = f"SELECT COUNT(*) FROM `{table_name}`"
+        cursor.execute(query)
+        row_count = cursor.fetchone()[0]
+        
+        return (row_count, column_count)
+        
+    except Exception as e:
+        raise Exception(f"Error getting dimensions for table {table_name}: {str(e)}")
+    finally:
+        connection.close()
+
+def get_metadata_csv_with_pattern_from_table(database, table_name, state_pattern):
+    """
+    Convert bitmap table data to metadata format with BL, WL, value, Level columns.
+    BL = row coordinate (Bit Line)
+    WL = column coordinate (Word Line)
+    value = the actual value at that position
+    Level = the state/level from the state pattern file
+    
+    Optimized version using vectorized numpy operations for large datasets.
+    """
+    import numpy as np
+    
+    connection = create_connection(database)
+    if connection is None:
+        raise Exception("Failed to connect to the database.")
+
+    cursor = connection.cursor()
+    try:
+        print(f"Loading data for table {table_name}...")
+        # Construct the SQL query to fetch all data from the specified table
+        query = f"SELECT * FROM `{table_name}`;"
+        cursor.execute(query)
+
+        # Get column headers
+        column_headers = [i[0] for i in cursor.description]
+        rows = cursor.fetchall()
+
+        # Convert to numpy array
+        print(f"Converting {len(rows)} rows to numpy array...")
+        data_matrix = np.array(rows, dtype=float)
+        print(f"Data matrix shape: {data_matrix.shape}")
+        
+        # Load the state pattern file
+        print(f"Loading state pattern: {state_pattern}")
+        pattern_files = get_pattern_files()
+        pattern_file_path = pattern_files.get(state_pattern)
+        
+        if not pattern_file_path:
+            raise Exception(f"State pattern '{state_pattern}' not found")
+            
+        try:
+            pattern_file_array = np.load(pattern_file_path)
+            
+            # Special handling for specific patterns that need reshaping
+            if state_pattern == "82944x78_ecc_fuxi":
+                # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+                pattern_file_array = pattern_file_array.reshape(78, 82944).T
+            elif state_pattern == "65536x78_ecc":
+                # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
+                pattern_file_array = pattern_file_array.reshape(78, 65536).T
+                
+        except Exception as e:
+            raise Exception(f"Error loading state pattern file '{pattern_file_path}': {str(e)}")
+
+        # Ensure that pattern_file_array has the same shape as data_matrix
+        if pattern_file_array.shape != data_matrix.shape:
+            raise Exception(f"Pattern file shape {pattern_file_array.shape} does not match data matrix shape {data_matrix.shape}")
+
+        print("Creating coordinate meshgrid...")
+        # Create coordinate arrays using vectorized operations
+        rows, cols = data_matrix.shape
+        bl_coords, wl_coords = np.meshgrid(np.arange(rows), np.arange(cols), indexing='ij')
+        
+        print("Preparing all data points for metadata export...")
+        # For metadata export, include ALL coordinates (including zeros and NaN values)
+        # Users want to see the complete mapping of BL, WL coordinates to their Level values
+        
+        # Flatten all arrays to 1D for CSV output
+        all_bl = bl_coords.flatten()
+        all_wl = wl_coords.flatten()
+        all_values = data_matrix.flatten()
+        all_levels = pattern_file_array.flatten().astype(int)
+        
+        # Replace NaN values with a placeholder for better CSV readability
+        all_values = np.where(np.isnan(all_values), 'NaN', all_values)
+        
+        print(f"Including all {len(all_values)} coordinate points (complete {rows}x{cols} matrix)")
+        
+        # Use StringIO to capture CSV output
+        output = io.StringIO()
+        csv_writer = csv.writer(output)
+
+        # Write header for metadata format with Level column
+        csv_writer.writerow(['BL', 'WL', 'value', 'Level'])
+
+        print("Writing CSV data...")
+        # Convert to list of rows and write all at once (much faster than individual writerow calls)
+        if len(all_values) > 0:
+            # Create the data array
+            csv_data = np.column_stack((all_bl, all_wl, all_values, all_levels))
+            
+            # Write in chunks to avoid memory issues with very large datasets
+            chunk_size = 50000  # Process 50k rows at a time
+            for i in range(0, len(csv_data), chunk_size):
+                chunk = csv_data[i:i + chunk_size]
+                csv_writer.writerows(chunk.tolist())
+                if i % (chunk_size * 10) == 0:  # Progress update every 500k rows
+                    print(f"Processed {min(i + chunk_size, len(csv_data))} / {len(csv_data)} rows...")
+
+        print("CSV generation complete!")
+        # Get CSV string from StringIO
+        csv_string = output.getvalue()
+        output.close()
+
+        return csv_string
+    except Exception as e:
+        print(f"Error fetching metadata with pattern from table {table_name}: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        cursor.close()
+        connection.close()
+
 def get_table_names(connection):
     cursor = connection.cursor()
     # Filter out tables that start with underscore

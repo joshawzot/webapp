@@ -710,6 +710,175 @@ def download_npy():
         print(f"Download error: {e}")
         return str(e), 500
 
+@app.route('/download_metadata_csv')
+def download_metadata_csv():
+    database = request.args.get('database')
+    table_name = request.args.get('table_name')
+
+    try:
+        # Generate the metadata CSV data
+        csv_data = get_metadata_csv_from_table(database, table_name)
+        if csv_data is None:
+            return "Error generating metadata CSV file", 500
+
+        # Create a response with the CSV data as a downloadable file
+        response = make_response(csv_data)
+        response.headers['Content-Disposition'] = f'attachment; filename={table_name}_metadata.csv'
+        response.mimetype = 'text/csv'
+        return response
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/download_metadata_csv_with_pattern')
+def download_metadata_csv_with_pattern():
+    database = request.args.get('database')
+    table_name = request.args.get('table_name')
+    state_pattern = request.args.get('state_pattern')
+
+    try:
+        # Generate the metadata CSV data with state pattern levels
+        csv_data = get_metadata_csv_with_pattern_from_table(database, table_name, state_pattern)
+        if csv_data is None:
+            return "Error generating metadata CSV file with pattern", 500
+
+        # Create a response with the CSV data as a downloadable file
+        response = make_response(csv_data)
+        response.headers['Content-Disposition'] = f'attachment; filename={table_name}_metadata.csv'
+        response.mimetype = 'text/csv'
+        return response
+    except Exception as e:
+        return str(e), 500
+
+@app.route('/download_metadata_zip_with_pattern', methods=['POST'])
+def download_metadata_zip_with_pattern():
+    """
+    Generate ZIP file of metadata CSVs on the backend to avoid frontend memory issues
+    with large datasets like 82944x78.
+    """
+    import zipfile
+    import tempfile
+    import os
+    import numpy as np
+    
+    try:
+        data = request.get_json()
+        database = data.get('database')
+        table_names = data.get('table_names', [])
+        state_pattern = data.get('state_pattern')
+        filename = data.get('filename', 'tables_metadata')
+        
+        print(f"Starting ZIP generation for {len(table_names)} tables with pattern {state_pattern}")
+        
+        # Load the state pattern file to get its dimensions
+        state_pattern_file_path = os.path.join('State_pattern_files', f'{state_pattern}.npy')
+        
+        if not os.path.exists(state_pattern_file_path):
+            error_msg = f"❌ State pattern file not found: {state_pattern}.npy"
+            print(error_msg)
+            return error_msg, 400
+            
+        try:
+            pattern_array = np.load(state_pattern_file_path)
+            pattern_shape = pattern_array.shape
+            print(f"Pattern {state_pattern} dimensions: {pattern_shape}")
+        except Exception as e:
+            error_msg = f"❌ Error loading state pattern file: {str(e)}"
+            print(error_msg)
+            return error_msg, 400
+        
+        # Check dimensions of all selected tables against the pattern
+        dimension_mismatches = []
+        
+        for table_name in table_names:
+            try:
+                # Get table dimensions
+                table_dimensions = get_table_dimensions(database, table_name)
+                print(f"Table {table_name} dimensions: {table_dimensions}")
+                
+                if table_dimensions != pattern_shape:
+                    dimension_mismatches.append({
+                        'table': table_name,
+                        'table_dimensions': table_dimensions,
+                        'pattern_dimensions': pattern_shape
+                    })
+            except Exception as e:
+                error_msg = f"❌ Error checking dimensions for table {table_name}: {str(e)}"
+                print(error_msg)
+                return error_msg, 400
+        
+        # If there are dimension mismatches, return a detailed error
+        if dimension_mismatches:
+            error_details = []
+            for mismatch in dimension_mismatches:
+                error_details.append(
+                    f"• Table '{mismatch['table']}': {mismatch['table_dimensions']} "
+                    f"≠ Pattern '{state_pattern}': {mismatch['pattern_dimensions']}"
+                )
+            
+            error_message = (
+                f"❌ DIMENSION MISMATCH DETECTED!\n\n"
+                f"The selected state pattern '{state_pattern}' has dimensions {pattern_shape}, "
+                f"but the following tables have different dimensions:\n\n" +
+                "\n".join(error_details) + 
+                f"\n\n💡 Please:\n"
+                f"• Select a state pattern that matches your table dimensions, OR\n"
+                f"• Select tables that match the pattern dimensions\n\n"
+                f"Available state patterns with their dimensions can be found in the State_pattern_files folder."
+            )
+            
+            print("Dimension mismatch detected:")
+            for detail in error_details:
+                print(f"  {detail}")
+            
+            return error_message, 400
+        
+        # Create a temporary file for the ZIP
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.zip') as temp_zip:
+            temp_zip_path = temp_zip.name
+            
+        # Create ZIP file on the backend
+        with zipfile.ZipFile(temp_zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for i, table_name in enumerate(table_names):
+                print(f"Processing table {i+1}/{len(table_names)}: {table_name}")
+                
+                # Generate CSV data for this table
+                csv_data = get_metadata_csv_with_pattern_from_table(database, table_name, state_pattern)
+                if csv_data is not None:
+                    # Add to ZIP file
+                    zip_file.writestr(f"{table_name}_metadata.csv", csv_data)
+                    print(f"Added {table_name}_metadata.csv to ZIP")
+                else:
+                    print(f"Failed to generate CSV for {table_name}")
+        
+        print("ZIP file generation complete")
+        
+        # Send the ZIP file as response
+        def remove_file(response):
+            try:
+                os.unlink(temp_zip_path)
+                print(f"Cleaned up temporary file: {temp_zip_path}")
+            except Exception as e:
+                print(f"Error removing temporary file: {e}")
+            return response
+        
+        response = send_file(
+            temp_zip_path,
+            as_attachment=True,
+            download_name=f'{filename}.zip',
+            mimetype='application/zip'
+        )
+        
+        # Clean up temp file after sending (using Flask's after_request won't work here)
+        # We'll let the OS clean it up eventually, or use a cleanup job
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error in download_metadata_zip_with_pattern: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return str(e), 500
+
 @app.route('/view-plot/<database>/<table_name>/<plot_function>', methods=['GET', 'POST'])
 def view_plot(database, table_name, plot_function):
     print("view_plot")

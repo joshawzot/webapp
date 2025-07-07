@@ -56,3 +56,9 @@
 [W 2025-07-04 12:33:48.177 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
 [I 2025-07-04 12:35:48.137 ServerApp] Saving file at /agate_analysis_template.ipynb
 [W 2025-07-04 12:35:48.138 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[I 2025-07-04 12:37:48.358 ServerApp] Saving file at /agate_analysis_template.ipynb
+[W 2025-07-04 12:41:35.376 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.2) 2.34ms referer=http://192.168.68.215:3000/
+[W 2025-07-04 12:41:35.390 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.2) 1.96ms referer=http://192.168.68.215:3000/
+[W 2025-07-04 12:41:35.410 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.2) 1.07ms referer=http://192.168.68.215:3000/
+[W 2025-07-04 12:41:41.191 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250606102719 (192.168.68.2) 1.39ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[W 2025-07-07 11:29:11.334 ServerApp] WebSocket ping timeout after 119993 ms.

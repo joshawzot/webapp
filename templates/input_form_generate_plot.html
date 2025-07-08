@@ -126,6 +126,16 @@
                 <label for="outlier_analysis_flag">Enable last level Outlier Analysis:</label>
                 <input type="checkbox" name="outlier_analysis_flag" id="outlier_analysis_flag" value="True">
             </div>
+
+            <div class="form-group">
+                <label for="location_dots_flag">Enable Dots indicate locations, filtered by value:</label>
+                <input type="checkbox" name="location_dots_flag" id="location_dots_flag" value="True" onchange="toggleLocationDotsInput()">
+                <div id="location_dots_value_section" style="display:none;">
+                    <label for="location_dots_value">Target Value:</label>
+                    <input type="number" class="form-control mt-2" name="location_dots_value" id="location_dots_value" placeholder="Enter integer value" step="1">
+                    <small class="form-text text-muted">Show locations on map that match this specific value.</small>
+                </div>
+            </div>
         </div>
 
         <div class="form-group">
@@ -288,6 +298,11 @@
         document.getElementById('color_map_flag').checked = false;
         document.getElementById('yanCullinan_flag').checked = false;
         document.getElementById('custom_division_type').value = '';
+        
+        // Reset location dots options
+        document.getElementById('location_dots_flag').checked = false;
+        document.getElementById('location_dots_value').value = '';
+        toggleLocationDotsInput();
         
         // Reset the new color grouping keywords field
         document.getElementById('color_group_keywords').value = '';
@@ -506,6 +521,27 @@
                 return;
             }
         }
+
+        // Add validation for location dots feature
+        const locationDotsFlag = document.getElementById('location_dots_flag').checked;
+        const locationDotsValue = document.getElementById('location_dots_value').value.trim();
+        
+        if (locationDotsFlag) {
+            if (!locationDotsValue) {
+                alert('Location Dots Error: Please enter a target value when "Enable Dots indicate locations, filtered by value" is checked.');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('location_dots_value').focus();
+                return;
+            }
+            
+            const targetValue = parseInt(locationDotsValue, 10);
+            if (isNaN(targetValue)) {
+                alert('Location Dots Error: Please enter a valid integer value.');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('location_dots_value').focus();
+                return;
+            }
+        }
     });
 
     function updateCustomInput(select, inputId) {
@@ -705,6 +741,19 @@
             customColumnInput.style.display = 'block';
         } else {
             customColumnInput.style.display = 'none';
+        }
+    }
+
+    // Function to toggle location dots value input visibility
+    function toggleLocationDotsInput() {
+        var checkbox = document.getElementById('location_dots_flag');
+        var valueSection = document.getElementById('location_dots_value_section');
+        
+        if (checkbox.checked) {
+            valueSection.style.display = 'block';
+        } else {
+            valueSection.style.display = 'none';
+            document.getElementById('location_dots_value').value = '';
         }
     }
 </script>

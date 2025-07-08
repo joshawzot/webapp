@@ -35,7 +35,7 @@ app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 100  # 100MB
 # Configuration for state pattern files path type
 # Set to True for absolute paths (/home/admin2/webapp_2/State_pattern_files/), 
 # Set to False for relative paths (State_pattern_files/)
-app.config['USE_ABSOLUTE_STATE_PATTERN_PATHS'] = True  # Change to False for relative paths
+app.config['USE_ABSOLUTE_STATE_PATTERN_PATHS'] = True  # Cshange to False for relative paths
 
 # Configure Jupyter proxy
 from jupyter_proxy import configure_jupyter_proxy

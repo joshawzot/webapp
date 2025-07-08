@@ -1011,6 +1011,23 @@ def generate_plot(table_names, database_name, form_data):
         print("filtered_miao_ber:", filtered_miao_ber)
         encoded_plots.append(plot_miao(filtered_miao_ber))
     
+    # Generate location dots map if enabled
+    location_dots_flag = form_data.get('location_dots_flag', False)
+    location_dots_value = form_data.get('location_dots_value')
+    location_dots_map = None  # Initialize to None
+    
+    if location_dots_flag and location_dots_value is not None:
+        print(f"Generating location dots map for target value: {location_dots_value}")
+        location_dots_map = generate_location_dots_map(
+            filtered_data_matrices, 
+            location_dots_value, 
+            title_prefix="Location Map"
+        )
+        if location_dots_map:
+            print("Location dots map generated successfully")
+        else:
+            print("Failed to generate location dots map")
+    
     # Only perform outlier analysis if the flag is enabled and state_pattern_type is predefined
     if outlier_analysis_flag and form_data['state_pattern_type'] == 'predefined':
         try:
@@ -1181,7 +1198,8 @@ def generate_plot(table_names, database_name, form_data):
                 filtered_avg_values,  # Add real average values
                 filtered_std_values,  # Add real standard deviation values
                 filtered_ber_results,  # Add real BER results from CDF analysis
-                selected_groups)  # Add selected groups for state names
+                selected_groups,  # Add selected groups for state names
+                location_dots_map)  # Add location dots map
     else:
         sorted_table_names = None  # Handle the case where there is only one selected group
 
@@ -1251,7 +1269,8 @@ def generate_plot(table_names, database_name, form_data):
             filtered_avg_values,  # Add real average values
             filtered_std_values,  # Add real standard deviation values
             filtered_ber_results,  # Add real BER results from CDF analysis
-            selected_groups)  # Add selected groups for state names
+            selected_groups,  # Add selected groups for state names
+            location_dots_map)  # Add location dots map
 
 # Add helper functions to work with matrices directly instead of fetching from database
 
@@ -1682,7 +1701,8 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
             None,
             None,
             None,
-            None)
+            None,
+            None)  # location_dots_map (None for column analysis)
 
 def plot_column_data_points_summary(all_column_group_data, all_column_names, selected_groups):
     """
@@ -1919,6 +1939,165 @@ def plot_column_average_values_summary(all_column_avg_values, all_column_names, 
         
     except Exception as e:
         print(f"Error in plot_column_average_values_summary: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        plt.close(fig)
+        if 'buf' in locals():
+            buf.close()
+
+def generate_location_dots_map(data_matrices, target_value, title_prefix="Location Map"):
+    """
+    Generate a location map showing all coordinates that match the target value.
+    
+    Args:
+        data_matrices: List of tuples (table_name, data_matrix)
+        target_value: Integer value to search for
+        title_prefix: Prefix for the plot title
+    
+    Returns:
+        Base64 encoded image string
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as patches
+        import numpy as np
+        from io import BytesIO
+        import base64
+        
+        # Set maximum number of matches to process to prevent hanging
+        MAX_MATCHES = 10000
+        MAX_MATCHES_PER_TABLE = 2000
+        
+        # Collect all matching coordinates across all tables
+        all_matches = []
+        table_colors = get_colors(len(data_matrices))
+        total_matches_found = 0
+        
+        print(f"Searching for target value {target_value} across {len(data_matrices)} tables...")
+        
+        for i, (table_name, data_matrix) in enumerate(data_matrices):
+            # Skip NaN values in the search
+            valid_mask = ~np.isnan(data_matrix)
+            
+            # Find coordinates where value equals target_value
+            # Handle both exact matches and close matches (within 0.1 tolerance for floating point)
+            matches = np.where(valid_mask & (np.abs(data_matrix - target_value) < 0.1))
+            
+            num_matches = len(matches[0])
+            total_matches_found += num_matches
+            
+            print(f"Table {table_name}: Found {num_matches} matches")
+            
+            # If too many matches in this table, sample them
+            if num_matches > MAX_MATCHES_PER_TABLE:
+                print(f"Too many matches in {table_name} ({num_matches}), sampling {MAX_MATCHES_PER_TABLE}")
+                # Randomly sample indices
+                sample_indices = np.random.choice(num_matches, MAX_MATCHES_PER_TABLE, replace=False)
+                sampled_rows = matches[0][sample_indices]
+                sampled_cols = matches[1][sample_indices]
+            else:
+                sampled_rows = matches[0]
+                sampled_cols = matches[1]
+            
+            # Process the matches (sampled or all if not too many)
+            for row_idx, col_idx in zip(sampled_rows, sampled_cols):
+                actual_value = data_matrix[row_idx, col_idx]
+                all_matches.append({
+                    'table': table_name,
+                    'row': int(row_idx),
+                    'col': int(col_idx),
+                    'value': float(actual_value),
+                    'color': table_colors[i % len(table_colors)]
+                })
+                
+                # Stop if we've collected enough matches overall
+                if len(all_matches) >= MAX_MATCHES:
+                    print(f"Reached maximum matches limit ({MAX_MATCHES}), stopping collection")
+                    break
+            
+            # Break out of table loop if we've hit the limit
+            if len(all_matches) >= MAX_MATCHES:
+                break
+        
+        print(f"Total matches found: {total_matches_found}, Processing: {len(all_matches)}")
+        
+        if not all_matches:
+            # Create a simple "No matches found" plot
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.text(0.5, 0.5, f'No locations found matching value {target_value}', 
+                   ha='center', va='center', fontsize=16, transform=ax.transAxes)
+            ax.set_xlim(0, 1)
+            ax.set_ylim(0, 1)
+            ax.set_title(f'{title_prefix} - No Matches Found', fontsize=14, fontweight='bold')
+            ax.axis('off')
+        else:
+            # Determine the maximum dimensions across all tables
+            max_rows = max(dm[1].shape[0] for dm in data_matrices)
+            max_cols = max(dm[1].shape[1] for dm in data_matrices)
+            
+            # Create the plot
+            fig, ax = plt.subplots(figsize=(15, 10))
+            
+            # Plot each match as a colored dot
+            for match in all_matches:
+                ax.scatter(match['col'], match['row'], 
+                          c=[match['color']], s=50, alpha=0.7, 
+                          label=match['table'] if match['table'] not in [m.get_label() for m in ax.get_children() if hasattr(m, 'get_label')] else "")
+            
+            # Set up the plot
+            ax.set_xlim(-0.5, max_cols - 0.5)
+            ax.set_ylim(-0.5, max_rows - 0.5)
+            ax.invert_yaxis()  # Invert y-axis so (0,0) is at top-left like a matrix
+            ax.set_xlabel('Column Index', fontsize=12)
+            ax.set_ylabel('Row Index', fontsize=12)
+            
+            # Create title with sampling information if applicable
+            title_parts = [f'{title_prefix} - Locations with Value {target_value}']
+            if total_matches_found > len(all_matches):
+                title_parts.append(f'(Showing {len(all_matches)} of {total_matches_found} total matches)')
+            else:
+                title_parts.append(f'({len(all_matches)} matches found)')
+            
+            ax.set_title('\n'.join(title_parts), fontsize=14, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            
+            # Add legend if there are multiple tables
+            if len(data_matrices) > 1:
+                handles, labels = ax.get_legend_handles_labels()
+                if handles:
+                    # Remove duplicate labels
+                    by_label = dict(zip(labels, handles))
+                    ax.legend(by_label.values(), by_label.keys(), loc='upper right', 
+                             bbox_to_anchor=(1, 1), fontsize=10)
+            
+            # Add summary text
+            table_counts = {}
+            for match in all_matches:
+                table_counts[match['table']] = table_counts.get(match['table'], 0) + 1
+            
+            summary_text = f"Displaying: {len(all_matches)} matches\n"
+            if total_matches_found > len(all_matches):
+                summary_text += f"Total found: {total_matches_found}\n"
+                summary_text += f"(Sampled due to size)\n"
+            summary_text += "\nPer table:\n"
+            for table, count in sorted(table_counts.items()):
+                summary_text += f"{table}: {count}\n"
+            
+            ax.text(0.02, 0.98, summary_text, transform=ax.transAxes, 
+                   verticalalignment='top', fontsize=10, 
+                   bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgray", alpha=0.8))
+        
+        # Save plot to buffer
+        buf = BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
+        return encoded_image
+        
+    except Exception as e:
+        print(f"Error in generate_location_dots_map: {str(e)}")
         import traceback
         traceback.print_exc()
         return None

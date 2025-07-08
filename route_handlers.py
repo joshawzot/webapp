@@ -414,7 +414,8 @@ def render_plot(database, table_name, plot_function):
                  filtered_avg_values,  # Real average values
                  filtered_std_values,  # Real standard deviation values
                  filtered_ber_results,  # Real BER results from CDF analysis
-                 selected_groups) = plot_function_impl(input_table_names, database, form_data)
+                 selected_groups,
+                 location_dots_map) = plot_function_impl(input_table_names, database, form_data)
                 
                 # Create real statistical data for CSV downloads from actual analysis
                 print(f"Creating real statistical data for tables: {table_names}")
@@ -572,7 +573,8 @@ def render_plot(database, table_name, plot_function):
                                      filter_negative_values=form_data.get('filter_negative_values', False),
                                      avg_values_data=avg_values_data,
                                      std_values_data=std_values_data,
-                                     ber_values_data=ber_values_data)
+                                     ber_values_data=ber_values_data,
+                                     location_dots_map=location_dots_map)
             else:
                 return render_template('plot.html', plot_data=plot_data)
 
@@ -3373,7 +3375,8 @@ def get_form_data_generate_plot(form):
             'filter_negative_values',  # Added negative value filter field
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
             'analysis_type',  # Added analysis type field for column-by-column analysis
-            'column_selection_type', 'custom_column_selection', 'yanCullinan_flag'  # Added column selection fields
+            'column_selection_type', 'custom_column_selection', 'yanCullinan_flag',  # Added column selection fields
+            'location_dots_flag', 'location_dots_value'  # Added location dots fields
         ]
     }
 
@@ -3413,6 +3416,17 @@ def get_form_data_generate_plot(form):
     form_data['outlier_analysis_flag'] = form_data.get('outlier_analysis_flag', 'False') == 'True'
     form_data['filter_negative_values'] = form_data.get('filter_negative_values', 'False') == 'True'
     form_data['generate_bitmap_mask'] = form_data.get('generate_bitmap_mask', 'False') == 'True'
+    form_data['location_dots_flag'] = form_data.get('location_dots_flag', 'False') == 'True'
+    
+    # Process location dots value
+    location_dots_value_str = form_data.get('location_dots_value', '')
+    if location_dots_value_str:
+        try:
+            form_data['location_dots_value'] = int(location_dots_value_str)
+        except ValueError:
+            form_data['location_dots_value'] = None
+    else:
+        form_data['location_dots_value'] = None
     
     # Handle custom division - convert from dropdown selection to boolean and values
     custom_division_type = form_data.get('custom_division_type', '')

@@ -117,6 +117,20 @@
         {% endfor %}
     </div>
 
+    <!-- Location Dots Map (if enabled) -->
+    {% if location_dots_map %}
+    <div class="mb-4">
+        <div class="plot-container mb-3">
+            <div class="alert alert-info mb-3">
+                <strong>Location Dots Map:</strong>
+                Showing locations that match the specified value across all analyzed tables
+            </div>
+            <img src="data:image/png;base64,{{ location_dots_map }}" alt="Location Dots Map" class="img-fluid" id="location-dots-map">
+            <button class="btn btn-primary mt-2" id="download-location-dots-btn">Download Location Dots Map</button>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Link to external JavaScript libraries and your scripts.js file -->
 
     <script>
@@ -404,6 +418,22 @@
                     a.remove();
                 });
             });
+
+            // Add event listener for location dots map download
+            var locationDotsBtn = document.getElementById('download-location-dots-btn');
+            if (locationDotsBtn) {
+                locationDotsBtn.addEventListener('click', function() {
+                    var imgElement = document.getElementById('location-dots-map');
+                    
+                    // Create a link to download the location dots map
+                    var a = document.createElement('a');
+                    a.href = imgElement.src;
+                    a.download = 'location_dots_map.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                });
+            }
         });
     </script>
 

@@ -5731,20 +5731,13 @@ def process_rwb_analysis():
     date = request.form.get('date', '')
     skip_rwb_2 = 'skip_rwb_2' in request.form
     
-    test_name_filter = request.form.get('test_name_filter', 'post-form')
-    macro_filter_str = request.form.get('macro_filter', '0')
-    datetime_filter = request.form.get('datetime_filter', '2025_06_27-15_57_38')
+    # Get filter values - empty means no filter applied
+    test_name_filter = request.form.get('test_name_filter', '').strip()
+    macro_filter_str = request.form.get('macro_filter', '').strip()
+    datetime_filter = request.form.get('datetime_filter', '').strip()
     
-    # Handle empty dropdown values (when user selects "-- All --")
-    if not test_name_filter:
-        test_name_filter = 'post-form'
-    if not macro_filter_str:
-        macro_filter_str = '0'
-    if not datetime_filter:
-        datetime_filter = '2025_06_27-15_57_38'
-    
-    # Parse macro filter - can be single values, ranges, or combinations
-    macro_values = parse_macro_filter(macro_filter_str)
+    # Parse macro filter only if provided - can be single values, ranges, or combinations
+    macro_values = parse_macro_filter(macro_filter_str) if macro_filter_str else None
     
     overlay_col = request.form.get('overlay_col', 'IO')
     legend = 'legend' in request.form
@@ -5760,9 +5753,9 @@ def process_rwb_analysis():
         'regex_pattern': regex,
         'regex_col': regex_col,
         'plot_title': plot_title,
-        'test_name_filter': test_name_filter,
-        'macro_filter': macro_filter_str,
-        'datetime_filter': datetime_filter,
+        'test_name_filter': test_name_filter or 'None (no filter)',
+        'macro_filter': macro_filter_str or 'None (no filter)',
+        'datetime_filter': datetime_filter or 'None (no filter)',
         'groupby_cols': groupby_cols,
         'overlay_col': overlay_col
     }
@@ -5802,16 +5795,19 @@ def process_rwb_analysis():
         # Start with all data
         rwb_plot = rwb_pull.copy()
         
-        # Apply TEST_NAME filter if specified
-        if test_name_filter and test_name_filter.strip() and test_name_filter != '-- All --':
+        # Apply TEST_NAME filter if specified (non-empty)
+        if test_name_filter:
+            print(f"Applying TEST_NAME filter: {test_name_filter}")
             rwb_plot = rwb_plot.loc[rwb_plot.TEST_NAME.str.contains(test_name_filter, na=False)]
         
-        # Apply MACRO filter if specified
+        # Apply MACRO filter if specified (non-empty)
         if macro_values:
+            print(f"Applying MACRO filter: {macro_values}")
             rwb_plot = rwb_plot.loc[rwb_plot.MACRO.isin(macro_values)]
         
-        # Apply DATETIME filter if specified
-        if datetime_filter and datetime_filter.strip() and datetime_filter != '-- All --':
+        # Apply DATETIME filter if specified (non-empty)
+        if datetime_filter:
+            print(f"Applying DATETIME filter: {datetime_filter}")
             rwb_plot = rwb_plot.loc[rwb_plot.TEST_START_DATETIME.str.contains(datetime_filter, na=False)]
         
         analysis_summary['filtered_records'] = len(rwb_plot)
@@ -5971,7 +5967,7 @@ def get_rwb_filtered_values():
         params = []
         
         for filter_col, filter_value in filters.items():
-            if filter_value and filter_col in columns:
+            if filter_value and filter_value.strip() and filter_col in columns:
                 if filter_col == 'MACRO' and (',' in filter_value or '~' in filter_value):
                     # Handle MACRO filter with ranges/multiple values
                     macro_values = parse_macro_filter(filter_value)

@@ -68,7 +68,7 @@
                             <label for="test_name_filter">TEST_NAME Filter:</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="test_name_filter" name="test_name_filter" 
-                                       value="post-form" placeholder="Type to search or select from dropdown">
+                                       placeholder="Type to search or select from dropdown (empty = no filter)">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
                                             id="testNameDropdownButton" data-toggle="dropdown">
@@ -85,7 +85,7 @@
                             <label for="macro_filter">MACRO Filter:</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="macro_filter" name="macro_filter" 
-                                       value="0" placeholder="Type values (e.g., 1,4~5,7,10~11) or select from dropdown">
+                                       placeholder="Type values (e.g., 1,4~5,7,10~11) or select from dropdown (empty = no filter)">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
                                             id="macroDropdownButton" data-toggle="dropdown">
@@ -97,7 +97,7 @@
                                 </div>
                             </div>
                             <small class="form-text text-muted">
-                                Enter single values (1,2,3), ranges (4~6), or combinations (1,4~6,8). Use comma to separate.
+                                Enter single values (1,2,3), ranges (4~6), or combinations (1,4~6,8). Use comma to separate. Leave empty for no filter.
                             </small>
                         </div>
                         
@@ -105,7 +105,7 @@
                             <label for="datetime_filter">TEST_START_DATETIME Filter:</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="datetime_filter" name="datetime_filter" 
-                                       value="2025_06_27-15_57_38" placeholder="Type to search or select from dropdown">
+                                       placeholder="Type to search or select from dropdown (empty = no filter)">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
                                             id="datetimeDropdownButton" data-toggle="dropdown">
@@ -172,9 +172,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Load values for the filter dropdowns
-    loadSearchableDropdown('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter', 'post-form');
-    loadSearchableDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', '0');
-    loadSearchableDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', '2025_06_27-15_57_38');
+    loadSearchableDropdown('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter');
+    loadSearchableDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
+    loadSearchableDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
     
     // Set up regex column change event
     const regexColSelect = document.getElementById('regex_col');
@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global storage for dropdown data
 window.dropdownData = {};
 
-function loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, defaultValue) {
+function loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId) {
     const dropdownMenu = document.getElementById(dropdownMenuId);
     const dropdownText = document.getElementById(dropdownTextId);
     
@@ -360,7 +360,7 @@ function setupSearchableInput(inputId, dropdownMenuId) {
 function setupCascadingFilters() {
     let testNameTimeout, macroTimeout;
     
-    // When TEST_NAME changes, update MACRO filter
+        // When TEST_NAME changes, update MACRO filter
     document.getElementById('test_name_filter').addEventListener('input', function() {
         const testNameValue = this.value.trim();
         
@@ -375,12 +375,16 @@ function setupCascadingFilters() {
                 updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', {
                     'TEST_NAME': testNameValue
                 });
-                         } else if (!testNameValue) {
-                 // Reset MACRO dropdown to show all values
-                 resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', '0');
-                 // Also reset datetime filter
-                 resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', '2025_06_27-15_57_38');
-             }
+            } else {
+                // Reset MACRO dropdown to show all values when TEST_NAME is cleared
+                resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
+                // Also reset datetime filter
+                resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
+                // Clear the macro input field too
+                document.getElementById('macro_filter').value = '';
+                // Clear the datetime input field too
+                document.getElementById('datetime_filter').value = '';
+            }
         }, 300);
     });
     
@@ -402,10 +406,14 @@ function setupCascadingFilters() {
             
             if (Object.keys(filters).length > 0) {
                 updateFilteredDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', filters);
-                         } else if (!macroValue && !testNameValue) {
-                 // Reset datetime filter to show all values
-                 resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', '2025_06_27-15_57_38');
-             }
+            } else {
+                // Reset datetime filter to show all values when macro is cleared
+                resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
+                // Clear the datetime input field if macro was cleared
+                if (!macroValue) {
+                    document.getElementById('datetime_filter').value = '';
+                }
+            }
         }, 300);
     });
 }
@@ -460,14 +468,14 @@ function updateFilteredDropdown(columnName, dropdownMenuId, dropdownTextId, inpu
     });
 }
 
-function resetDropdownToOriginal(columnName, dropdownMenuId, dropdownTextId, inputId, defaultValue) {
+function resetDropdownToOriginal(columnName, dropdownMenuId, dropdownTextId, inputId) {
     const dropdownButton = document.getElementById(dropdownTextId).parentElement;
     
     // Remove filtered styling
     dropdownButton.classList.remove('filtered');
     
     // Load original unfiltered data
-    loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, defaultValue);
+    loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId);
 }
  </script>
  

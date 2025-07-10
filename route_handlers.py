@@ -5771,10 +5771,14 @@ def process_rwb_analysis():
         else:
             ppm_results = None
         
+        # Convert DataFrames to None if empty to avoid Jinja2 boolean evaluation issues
+        mean_results_to_pass = rwb_mean if not rwb_mean.empty else None
+        ppm_results_to_pass = ppm_results if ppm_results is not None and not ppm_results.empty else None
+        
         return render_template('rwb_plots.html', 
                              plot_html=plot_html,
-                             mean_results=rwb_mean,
-                             ppm_results=ppm_results,
+                             mean_results=mean_results_to_pass,
+                             ppm_results=ppm_results_to_pass,
                              analysis_summary=analysis_summary,
                              success_message="Analysis completed successfully!")
                              

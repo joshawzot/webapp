@@ -187,14 +187,24 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('regexDropdownButton').disabled = true;
             document.getElementById('regexDropdownText').textContent = 'Select Column First';
             document.getElementById('regexDropdownMenu').innerHTML = '<div class="dropdown-item-text">Select a column first</div>';
+            // Clear regex data
+            delete window.dropdownData['regexDropdownMenu'];
         }
     });
+    
+    // Initialize regex dropdown if a column is already selected
+    if (regexColSelect.value) {
+        loadRegexDropdown(regexColSelect.value);
+    }
     
     // Set up search functionality for all input fields
     setupSearchableInput('test_name_filter', 'testNameDropdownMenu');
     setupSearchableInput('macro_filter', 'macroDropdownMenu');
     setupSearchableInput('datetime_filter', 'datetimeDropdownMenu');
     setupSearchableInput('regex', 'regexDropdownMenu');
+    
+    // Set up cascading filter updates
+    setupCascadingFilters();
 });
 
 // Global storage for dropdown data
@@ -327,16 +337,138 @@ function selectDropdownValue(inputId, value) {
 
 function setupSearchableInput(inputId, dropdownMenuId) {
     const input = document.getElementById(inputId);
+    let searchTimeout;
     
     input.addEventListener('input', function() {
         const searchTerm = this.value;
         const values = window.dropdownData[dropdownMenuId];
         
-        if (values) {
-            renderDropdownItems(dropdownMenuId, inputId, values, searchTerm);
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
         }
-         });
- }
+        
+        // Debounce search for better performance
+        searchTimeout = setTimeout(() => {
+            if (values) {
+                renderDropdownItems(dropdownMenuId, inputId, values, searchTerm);
+            }
+        }, 150); // 150ms delay
+    });
+}
+
+function setupCascadingFilters() {
+    let testNameTimeout, macroTimeout;
+    
+    // When TEST_NAME changes, update MACRO filter
+    document.getElementById('test_name_filter').addEventListener('input', function() {
+        const testNameValue = this.value.trim();
+        
+        // Clear previous timeout
+        if (testNameTimeout) {
+            clearTimeout(testNameTimeout);
+        }
+        
+        // Debounce to avoid too many requests
+        testNameTimeout = setTimeout(() => {
+            if (testNameValue && testNameValue.length >= 2) {
+                updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', {
+                    'TEST_NAME': testNameValue
+                });
+                         } else if (!testNameValue) {
+                 // Reset MACRO dropdown to show all values
+                 resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', '0');
+                 // Also reset datetime filter
+                 resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', '2025_06_27-15_57_38');
+             }
+        }, 300);
+    });
+    
+    // When MACRO changes, update DATETIME filter
+    document.getElementById('macro_filter').addEventListener('input', function() {
+        const macroValue = this.value.trim();
+        const testNameValue = document.getElementById('test_name_filter').value.trim();
+        
+        // Clear previous timeout
+        if (macroTimeout) {
+            clearTimeout(macroTimeout);
+        }
+        
+        // Debounce to avoid too many requests
+        macroTimeout = setTimeout(() => {
+            const filters = {};
+            if (testNameValue && testNameValue.length >= 2) filters['TEST_NAME'] = testNameValue;
+            if (macroValue) filters['MACRO'] = macroValue;
+            
+            if (Object.keys(filters).length > 0) {
+                updateFilteredDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', filters);
+                         } else if (!macroValue && !testNameValue) {
+                 // Reset datetime filter to show all values
+                 resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', '2025_06_27-15_57_38');
+             }
+        }, 300);
+    });
+}
+
+function updateFilteredDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, filters) {
+    const dropdownMenu = document.getElementById(dropdownMenuId);
+    const dropdownText = document.getElementById(dropdownTextId);
+    const dropdownButton = dropdownText.parentElement;
+    
+    // Add loading state
+    dropdownButton.classList.add('loading');
+    dropdownText.textContent = 'Loading...';
+    dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading filtered values...</div>';
+    
+    fetch('{{ url_for("get_rwb_filtered_values") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            column_name: columnName,
+            filters: filters
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading state
+        dropdownButton.classList.remove('loading');
+        
+        if (data.error) {
+            dropdownText.textContent = 'Error';
+            dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
+            console.error('Error loading filtered values for ' + columnName + ':', data.error);
+        } else {
+            // Store filtered data globally for search functionality
+            window.dropdownData[dropdownMenuId] = data.values;
+            
+            // Add filtered styling
+            dropdownButton.classList.add('filtered');
+            dropdownText.textContent = `${data.values.length} items (filtered)`;
+            renderDropdownItems(dropdownMenuId, inputId, data.values);
+            
+            console.log(`Loaded ${data.values.length} filtered values for ${columnName}`, 'Filters:', data.filters_applied);
+        }
+    })
+    .catch(error => {
+        // Remove loading state
+        dropdownButton.classList.remove('loading');
+        dropdownText.textContent = 'Error';
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
+        console.error('Error fetching filtered values for ' + columnName + ':', error);
+    });
+}
+
+function resetDropdownToOriginal(columnName, dropdownMenuId, dropdownTextId, inputId, defaultValue) {
+    const dropdownButton = document.getElementById(dropdownTextId).parentElement;
+    
+    // Remove filtered styling
+    dropdownButton.classList.remove('filtered');
+    
+    // Load original unfiltered data
+    loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, defaultValue);
+}
  </script>
  
  <style>
@@ -366,6 +498,27 @@ function setupSearchableInput(inputId, dropdownMenuId) {
  
  .dropdown-toggle::after {
      margin-left: 0.5rem;
+ }
+ 
+ .input-group .form-control:focus {
+     border-color: #007bff;
+     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+ }
+ 
+ .dropdown-toggle.loading {
+     opacity: 0.7;
+     cursor: wait;
+ }
+ 
+ .dropdown-toggle.filtered {
+     background-color: #e8f4fd;
+     border-color: #007bff;
+     color: #0056b3;
+ }
+ 
+ .dropdown-item.highlighted {
+     background-color: #fff3cd;
+     border-left: 3px solid #ffc107;
  }
  </style>
  

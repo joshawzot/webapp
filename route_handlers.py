@@ -5937,3 +5937,73 @@ def get_rwb_column_values(column_name):
     except Exception as e:
         return jsonify({'error': f'Error getting column values: {str(e)}'}), 500
 
+@app.route('/get-rwb-filtered-values', methods=['POST'])
+def get_rwb_filtered_values():
+    """Get unique values for a column filtered by other column conditions"""
+    try:
+        data = request.get_json()
+        column_name = data.get('column_name', '').strip()
+        filters = data.get('filters', {})
+        
+        if not column_name:
+            return jsonify({'error': 'Column name is required'}), 400
+        
+        # Create database connection
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='rwb'
+        )
+        cursor = connection.cursor()
+        
+        # First, validate the column exists
+        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        columns = [col[0] for col in cursor.fetchall()]
+        
+        if column_name not in columns:
+            cursor.close()
+            connection.close()
+            return jsonify({'error': f'Column "{column_name}" not found'}), 400
+        
+        # Build WHERE clause based on filters
+        where_conditions = [f"`{column_name}` IS NOT NULL"]
+        params = []
+        
+        for filter_col, filter_value in filters.items():
+            if filter_value and filter_col in columns:
+                if filter_col == 'MACRO' and (',' in filter_value or '~' in filter_value):
+                    # Handle MACRO filter with ranges/multiple values
+                    macro_values = parse_macro_filter(filter_value)
+                    if macro_values:
+                        placeholders = ','.join(['%s'] * len(macro_values))
+                        where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                        params.extend(macro_values)
+                else:
+                    # Handle other filters with string contains
+                    where_conditions.append(f"`{filter_col}` LIKE %s")
+                    params.append(f"%{filter_value}%")
+        
+        # Build and execute query
+        where_clause = " AND ".join(where_conditions)
+        query = f"SELECT DISTINCT `{column_name}` FROM rwb_db_3 WHERE {where_clause} ORDER BY `{column_name}` LIMIT 500"
+        
+        cursor.execute(query, params)
+        values = [row[0] for row in cursor.fetchall()]
+        
+        cursor.close()
+        connection.close()
+        
+        return jsonify({
+            'values': values,
+            'count': len(values),
+            'column_name': column_name,
+            'filters_applied': filters
+        })
+        
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': f'Error getting filtered column values: {str(e)}'}), 500
+

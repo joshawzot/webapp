@@ -5810,3 +5810,155 @@ def process_rwb_analysis():
         return render_template('rwb_plots.html', 
                              analysis_summary=analysis_summary,
                              error_message=error_msg)
+
+@app.route('/view-rwb-data')
+def view_rwb_data():
+    """Display RWB data filtering form"""
+    try:
+        # Get all column names from the RWB database
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='rwb'
+        )
+        cursor = connection.cursor()
+        
+        # Get column names
+        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        columns = [col[0] for col in cursor.fetchall()]
+        
+        cursor.close()
+        connection.close()
+        
+        return render_template('rwb_data_filter.html', available_columns=columns)
+    
+    except Exception as e:
+        flash(f'Error loading column information: {str(e)}', 'error')
+        return render_template('rwb_data_filter.html', available_columns=[])
+
+@app.route('/filter-rwb-data', methods=['POST'])
+def filter_rwb_data():
+    """Filter and display RWB data based on user criteria"""
+    column_name = request.form.get('column_name', '').strip()
+    search_term = request.form.get('search_term', '').strip()
+    limit = request.form.get('limit', '100')
+    
+    # Validate inputs
+    if not column_name or not search_term:
+        flash('Please provide both column name and search term.', 'warning')
+        return redirect(url_for('view_rwb_data'))
+    
+    try:
+        limit = int(limit)
+        if limit < 1 or limit > 1000:
+            limit = 100
+    except ValueError:
+        limit = 100
+    
+    try:
+        # Create database connection
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='rwb'
+        )
+        cursor = connection.cursor()
+        
+        # First, get column names to validate the column exists
+        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        columns = [col[0] for col in cursor.fetchall()]
+        
+        if column_name not in columns:
+            flash(f'Column "{column_name}" not found. Available columns: {", ".join(columns[:10])}...', 'error')
+            cursor.close()
+            connection.close()
+            return redirect(url_for('view_rwb_data'))
+        
+        # Build the filtered query
+        # Use LIKE for partial matching
+        query = f"SELECT * FROM rwb_db_3 WHERE `{column_name}` LIKE %s LIMIT %s"
+        search_pattern = f"%{search_term}%"
+        
+        cursor.execute(query, (search_pattern, limit))
+        
+        # Get results
+        results = cursor.fetchall()
+        
+        # Get column names for the table header
+        column_names = [desc[0] for desc in cursor.description]
+        
+        cursor.close()
+        connection.close()
+        
+        # Create summary info
+        filter_info = {
+            'column_name': column_name,
+            'search_term': search_term,
+            'results_count': len(results),
+            'limit': limit
+        }
+        
+        return render_template('rwb_data_results.html', 
+                             results=results,
+                             column_names=column_names,
+                             filter_info=filter_info,
+                             available_columns=columns)
+        
+    except mysql.connector.Error as e:
+        flash(f'Database error: {str(e)}', 'error')
+        return redirect(url_for('view_rwb_data'))
+    
+    except Exception as e:
+        flash(f'Error filtering RWB data: {str(e)}', 'error')
+        return redirect(url_for('view_rwb_data'))
+
+@app.route('/get-rwb-column-values', methods=['POST'])
+def get_rwb_column_values():
+    """Get unique values for a selected RWB column"""
+    try:
+        column_name = request.json.get('column_name', '').strip()
+        
+        if not column_name:
+            return jsonify({'error': 'Column name is required'}), 400
+        
+        # Create database connection
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='rwb'
+        )
+        cursor = connection.cursor()
+        
+        # First, validate the column exists
+        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        columns = [col[0] for col in cursor.fetchall()]
+        
+        if column_name not in columns:
+            cursor.close()
+            connection.close()
+            return jsonify({'error': f'Column "{column_name}" not found'}), 400
+        
+        # Get unique values for the column (limit to prevent memory issues)
+        # Use DISTINCT and LIMIT to get a reasonable sample of values
+        query = f"SELECT DISTINCT `{column_name}` FROM rwb_db_3 WHERE `{column_name}` IS NOT NULL ORDER BY `{column_name}` LIMIT 1000"
+        cursor.execute(query)
+        
+        values = [row[0] for row in cursor.fetchall()]
+        
+        cursor.close()
+        connection.close()
+        
+        return jsonify({
+            'values': values,
+            'count': len(values),
+            'column_name': column_name
+        })
+        
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': f'Error getting column values: {str(e)}'}), 500

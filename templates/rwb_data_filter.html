@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-filter"></i> Filter RWB Data
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" onclick="window.close()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Note:</strong> The RWB database contains 576,162 rows with 417 columns. 
+                        Use the filter below to find specific data efficiently.
+                    </div>
+                    
+                    <!-- Flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST" action="{{ url_for('filter_rwb_data') }}" id="filterForm">
+                        <div class="form-group">
+                            <label for="column_name">Select Column:</label>
+                            {% if available_columns %}
+                            <select class="form-control" id="column_name" name="column_name" required>
+                                <option value="">-- Choose a column --</option>
+                                {% for col in available_columns %}
+                                <option value="{{ col }}">{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                Total columns available: {{ available_columns|length }}
+                            </small>
+                            {% else %}
+                            <input type="text" class="form-control" id="column_name" name="column_name" 
+                                   placeholder="e.g., DIE_ID, TEST_NAME, MACRO" required>
+                            <small class="form-text text-muted">
+                                Common columns: DIE_ID, TEST_NAME, MACRO, TEST_START_DATETIME, IO, LEVEL_01_XPOINT_PPM, etc.
+                            </small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Unique Values Section -->
+                        <div id="valuesSection" style="display: none;">
+                            <div class="form-group">
+                                <label>Available Values in Selected Column:</label>
+                                <div id="valuesLoading" class="text-center" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading unique values...</p>
+                                </div>
+                                <div id="valuesContainer" class="border rounded p-3" style="max-height: 300px; overflow-y: auto; display: none;">
+                                    <!-- Values will be loaded here -->
+                                </div>
+                                <small class="form-text text-muted">
+                                    Click on any value to use it as your search term, or type your own partial match below.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="search_term">Search Term:</label>
+                            <input type="text" class="form-control" id="search_term" name="search_term" 
+                                   placeholder="Type here or click on a value above" required>
+                            <small class="form-text text-muted">
+                                Partial matches are supported (e.g., "tt007" will match "tt007_something"). You can also click on any value above to auto-fill this field.
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="limit">Maximum Results:</label>
+                            <select class="form-control" id="limit" name="limit">
+                                <option value="50">50 rows</option>
+                                <option value="100" selected>100 rows</option>
+                                <option value="250">250 rows</option>
+                                <option value="500">500 rows</option>
+                                <option value="1000">1000 rows</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                Limit results to improve loading performance.
+                            </small>
+                        </div>
+                        
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-search"></i> Filter Data
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-lg ml-2" onclick="window.close()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Quick Examples -->
+                    <div class="mt-4">
+                        <h5>Quick Examples:</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Find by DIE_ID</h6>
+                                        <p class="card-text">
+                                            <strong>Column:</strong> DIE_ID<br>
+                                            <strong>Search:</strong> tt007
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Find by Test Name</h6>
+                                        <p class="card-text">
+                                            <strong>Column:</strong> TEST_NAME<br>
+                                            <strong>Search:</strong> post-form
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const columnSelect = document.getElementById('column_name');
+    const valuesSection = document.getElementById('valuesSection');
+    const valuesLoading = document.getElementById('valuesLoading');
+    const valuesContainer = document.getElementById('valuesContainer');
+    const searchTermInput = document.getElementById('search_term');
+    
+    if (columnSelect && columnSelect.tagName === 'SELECT') {
+        columnSelect.addEventListener('change', function() {
+            const selectedColumn = this.value;
+            
+            if (selectedColumn) {
+                // Show the values section
+                valuesSection.style.display = 'block';
+                valuesLoading.style.display = 'block';
+                valuesContainer.style.display = 'none';
+                
+                // Fetch unique values for the selected column
+                fetch('{{ url_for("get_rwb_column_values") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        column_name: selectedColumn
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    valuesLoading.style.display = 'none';
+                    
+                    if (data.error) {
+                        valuesContainer.innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
+                    } else {
+                        // Create clickable value elements
+                        let valuesHTML = '<div class="mb-2"><strong>Found ' + data.count + ' unique values:</strong></div>';
+                        
+                        if (data.values.length > 0) {
+                            valuesHTML += '<div class="row">';
+                            data.values.forEach(function(value, index) {
+                                // Handle null values
+                                const displayValue = value === null ? 'NULL' : value;
+                                const safeValue = value === null ? '' : value;
+                                
+                                valuesHTML += '<div class="col-md-6 col-lg-4 mb-2">';
+                                valuesHTML += '<span class="badge badge-secondary value-badge" onclick="selectValue(\'' + 
+                                            safeValue.toString().replace(/'/g, "\\'") + '\')" style="cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block;">';
+                                valuesHTML += displayValue;
+                                valuesHTML += '</span>';
+                                valuesHTML += '</div>';
+                            });
+                            valuesHTML += '</div>';
+                            
+                            if (data.count >= 1000) {
+                                valuesHTML += '<div class="alert alert-info mt-2">Showing first 1000 unique values. There may be more.</div>';
+                            }
+                        } else {
+                            valuesHTML += '<div class="alert alert-warning">No unique values found for this column.</div>';
+                        }
+                        
+                        valuesContainer.innerHTML = valuesHTML;
+                    }
+                    
+                    valuesContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    valuesLoading.style.display = 'none';
+                    valuesContainer.innerHTML = '<div class="alert alert-danger">Error loading values: ' + error.message + '</div>';
+                    valuesContainer.style.display = 'block';
+                });
+            } else {
+                // Hide values section if no column is selected
+                valuesSection.style.display = 'none';
+            }
+        });
+    }
+});
+
+function selectValue(value) {
+    document.getElementById('search_term').value = value;
+    
+    // Scroll to the search term input
+    document.getElementById('search_term').scrollIntoView({ behavior: 'smooth' });
+    
+    // Briefly highlight the search term input
+    const searchInput = document.getElementById('search_term');
+    searchInput.style.backgroundColor = '#fff3cd';
+    setTimeout(function() {
+        searchInput.style.backgroundColor = '';
+    }, 1000);
+}
+</script>
+
+<style>
+.value-badge {
+    font-size: 0.9em;
+    margin: 2px;
+    padding: 6px 10px;
+    max-width: 200px;
+}
+
+.value-badge:hover {
+    background-color: #007bff !important;
+    color: white !important;
+}
+
+#valuesContainer {
+    background-color: #f8f9fa;
+}
+
+.spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
+</style>
+
+{% endblock %} 

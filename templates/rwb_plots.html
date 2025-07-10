@@ -94,7 +94,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for index, row in mean_results.iterrows() %}
+                                        {% for row in mean_results.data %}
                                         <tr>
                                             {% for col in mean_results.columns %}
                                             <td>
@@ -130,12 +130,12 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for index, row in ppm_results.iterrows() %}
+                                        {% for row in ppm_results.data %}
                                         <tr>
-                                            <td>{{ row['TEST_NAME'] }}</td>
-                                            <td>{{ "%.6f"|format(row['LEVEL_01_XPOINT_PPM']) if row['LEVEL_01_XPOINT_PPM'] is not none else 'N/A' }}</td>
-                                            <td>{{ "%.6f"|format(row['LEVEL_12_XPOINT_PPM']) if row['LEVEL_12_XPOINT_PPM'] is not none else 'N/A' }}</td>
-                                            <td>{{ "%.6f"|format(row['LEVEL_23_XPOINT_PPM']) if row['LEVEL_23_XPOINT_PPM'] is not none else 'N/A' }}</td>
+                                            <td>{{ row['TEST_NAME'] if row['TEST_NAME'] is defined else 'N/A' }}</td>
+                                            <td>{{ "%.6f"|format(row['LEVEL_01_XPOINT_PPM']) if row['LEVEL_01_XPOINT_PPM'] is defined and row['LEVEL_01_XPOINT_PPM'] is not none else 'N/A' }}</td>
+                                            <td>{{ "%.6f"|format(row['LEVEL_12_XPOINT_PPM']) if row['LEVEL_12_XPOINT_PPM'] is defined and row['LEVEL_12_XPOINT_PPM'] is not none else 'N/A' }}</td>
+                                            <td>{{ "%.6f"|format(row['LEVEL_23_XPOINT_PPM']) if row['LEVEL_23_XPOINT_PPM'] is defined and row['LEVEL_23_XPOINT_PPM'] is not none else 'N/A' }}</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>

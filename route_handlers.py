@@ -5659,7 +5659,28 @@ def recent_tables():
 @app.route('/gui-rwb-analysis')
 def gui_rwb_analysis():
     """Display the GUI RWB analysis form"""
-    return render_template('rwb_analysis_form.html')
+    try:
+        # Get all column names from the RWB database
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='rwb'
+        )
+        cursor = connection.cursor()
+        
+        # Get column names
+        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        columns = [col[0] for col in cursor.fetchall()]
+        
+        cursor.close()
+        connection.close()
+        
+        return render_template('rwb_analysis_form.html', available_columns=columns)
+    
+    except Exception as e:
+        flash(f'Error loading column information: {str(e)}', 'error')
+        return render_template('rwb_analysis_form.html', available_columns=[])
 
 @app.route('/process-rwb-analysis', methods=['POST'])
 def process_rwb_analysis():
@@ -5671,8 +5692,22 @@ def process_rwb_analysis():
     skip_rwb_2 = 'skip_rwb_2' in request.form
     
     test_name_filter = request.form.get('test_name_filter', 'post-form')
-    macro_filter = int(request.form.get('macro_filter', 0))
+    macro_filter_str = request.form.get('macro_filter', '0')
     datetime_filter = request.form.get('datetime_filter', '2025_06_27-15_57_38')
+    
+    # Handle empty dropdown values (when user selects "-- All --")
+    if not test_name_filter:
+        test_name_filter = 'post-form'
+    if not macro_filter_str:
+        macro_filter_str = '0'
+    if not datetime_filter:
+        datetime_filter = '2025_06_27-15_57_38'
+    
+    # Convert macro filter to int
+    try:
+        macro_filter = int(macro_filter_str)
+    except ValueError:
+        macro_filter = 0
     
     overlay_col = request.form.get('overlay_col', 'IO')
     legend = 'legend' in request.form
@@ -5726,11 +5761,21 @@ def process_rwb_analysis():
         
         # Step 2: Apply filters
         print("Applying filters...")
-        rwb_plot = rwb_pull.loc[
-            rwb_pull.TEST_NAME.str.contains(test_name_filter, na=False) & 
-            (rwb_pull.MACRO == macro_filter) & 
-            rwb_pull.TEST_START_DATETIME.str.contains(datetime_filter, na=False)
-        ]
+        
+        # Start with all data
+        rwb_plot = rwb_pull.copy()
+        
+        # Apply TEST_NAME filter if specified
+        if test_name_filter and test_name_filter != '-- All --':
+            rwb_plot = rwb_plot.loc[rwb_plot.TEST_NAME.str.contains(test_name_filter, na=False)]
+        
+        # Apply MACRO filter if specified
+        if macro_filter_str and macro_filter_str != '-- All --':
+            rwb_plot = rwb_plot.loc[rwb_plot.MACRO == macro_filter]
+        
+        # Apply DATETIME filter if specified
+        if datetime_filter and datetime_filter != '-- All --':
+            rwb_plot = rwb_plot.loc[rwb_plot.TEST_START_DATETIME.str.contains(datetime_filter, na=False)]
         
         analysis_summary['filtered_records'] = len(rwb_plot)
         
@@ -5811,118 +5856,10 @@ def process_rwb_analysis():
                              analysis_summary=analysis_summary,
                              error_message=error_msg)
 
-@app.route('/view-rwb-data')
-def view_rwb_data():
-    """Display RWB data filtering form"""
+@app.route('/get-rwb-column-values/<column_name>')
+def get_rwb_column_values(column_name):
+    """Get unique values for a specific RWB column"""
     try:
-        # Get all column names from the RWB database
-        connection = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='',
-            database='rwb'
-        )
-        cursor = connection.cursor()
-        
-        # Get column names
-        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
-        columns = [col[0] for col in cursor.fetchall()]
-        
-        cursor.close()
-        connection.close()
-        
-        return render_template('rwb_data_filter.html', available_columns=columns)
-    
-    except Exception as e:
-        flash(f'Error loading column information: {str(e)}', 'error')
-        return render_template('rwb_data_filter.html', available_columns=[])
-
-@app.route('/filter-rwb-data', methods=['POST'])
-def filter_rwb_data():
-    """Filter and display RWB data based on user criteria"""
-    column_name = request.form.get('column_name', '').strip()
-    search_term = request.form.get('search_term', '').strip()
-    limit = request.form.get('limit', '100')
-    
-    # Validate inputs
-    if not column_name or not search_term:
-        flash('Please provide both column name and search term.', 'warning')
-        return redirect(url_for('view_rwb_data'))
-    
-    try:
-        limit = int(limit)
-        if limit < 1 or limit > 1000:
-            limit = 100
-    except ValueError:
-        limit = 100
-    
-    try:
-        # Create database connection
-        connection = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='',
-            database='rwb'
-        )
-        cursor = connection.cursor()
-        
-        # First, get column names to validate the column exists
-        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
-        columns = [col[0] for col in cursor.fetchall()]
-        
-        if column_name not in columns:
-            flash(f'Column "{column_name}" not found. Available columns: {", ".join(columns[:10])}...', 'error')
-            cursor.close()
-            connection.close()
-            return redirect(url_for('view_rwb_data'))
-        
-        # Build the filtered query
-        # Use LIKE for partial matching
-        query = f"SELECT * FROM rwb_db_3 WHERE `{column_name}` LIKE %s LIMIT %s"
-        search_pattern = f"%{search_term}%"
-        
-        cursor.execute(query, (search_pattern, limit))
-        
-        # Get results
-        results = cursor.fetchall()
-        
-        # Get column names for the table header
-        column_names = [desc[0] for desc in cursor.description]
-        
-        cursor.close()
-        connection.close()
-        
-        # Create summary info
-        filter_info = {
-            'column_name': column_name,
-            'search_term': search_term,
-            'results_count': len(results),
-            'limit': limit
-        }
-        
-        return render_template('rwb_data_results.html', 
-                             results=results,
-                             column_names=column_names,
-                             filter_info=filter_info,
-                             available_columns=columns)
-        
-    except mysql.connector.Error as e:
-        flash(f'Database error: {str(e)}', 'error')
-        return redirect(url_for('view_rwb_data'))
-    
-    except Exception as e:
-        flash(f'Error filtering RWB data: {str(e)}', 'error')
-        return redirect(url_for('view_rwb_data'))
-
-@app.route('/get-rwb-column-values', methods=['POST'])
-def get_rwb_column_values():
-    """Get unique values for a selected RWB column"""
-    try:
-        column_name = request.json.get('column_name', '').strip()
-        
-        if not column_name:
-            return jsonify({'error': 'Column name is required'}), 400
-        
         # Create database connection
         connection = mysql.connector.connect(
             host='localhost',
@@ -5943,7 +5880,7 @@ def get_rwb_column_values():
         
         # Get unique values for the column (limit to prevent memory issues)
         # Use DISTINCT and LIMIT to get a reasonable sample of values
-        query = f"SELECT DISTINCT `{column_name}` FROM rwb_db_3 WHERE `{column_name}` IS NOT NULL ORDER BY `{column_name}` LIMIT 1000"
+        query = f"SELECT DISTINCT `{column_name}` FROM rwb_db_3 WHERE `{column_name}` IS NOT NULL ORDER BY `{column_name}` LIMIT 500"
         cursor.execute(query)
         
         values = [row[0] for row in cursor.fetchall()]
@@ -5962,3 +5899,4 @@ def get_rwb_column_values():
     
     except Exception as e:
         return jsonify({'error': f'Error getting column values: {str(e)}'}), 500
+

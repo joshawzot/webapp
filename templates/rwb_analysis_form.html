@@ -22,10 +22,17 @@
                         <div class="form-group">
                             <label for="regex_col">Regex Column:</label>
                             <select class="form-control" id="regex_col" name="regex_col">
-                                <option value="DIE_ID" selected>DIE_ID</option>
-                                <option value="TEST_NAME">TEST_NAME</option>
-                                <option value="MACRO">MACRO</option>
-                                <option value="TEST_START_DATETIME">TEST_START_DATETIME</option>
+                                <option value="">-- Select Column --</option>
+                                {% if available_columns %}
+                                    {% for col in available_columns %}
+                                    <option value="{{ col }}" {% if col == 'DIE_ID' %}selected{% endif %}>{{ col }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="DIE_ID" selected>DIE_ID</option>
+                                    <option value="TEST_NAME">TEST_NAME</option>
+                                    <option value="MACRO">MACRO</option>
+                                    <option value="TEST_START_DATETIME">TEST_START_DATETIME</option>
+                                {% endif %}
                             </select>
                         </div>
                         
@@ -48,20 +55,23 @@
                         <h4>Data Filtering Parameters</h4>
                         <div class="form-group">
                             <label for="test_name_filter">TEST_NAME Filter:</label>
-                            <input type="text" class="form-control" id="test_name_filter" name="test_name_filter" 
-                                   value="post-form" placeholder="Enter test name filter">
+                            <select class="form-control" id="test_name_filter" name="test_name_filter">
+                                <option value="">-- Loading... --</option>
+                            </select>
                         </div>
                         
                         <div class="form-group">
                             <label for="macro_filter">MACRO Filter:</label>
-                            <input type="number" class="form-control" id="macro_filter" name="macro_filter" 
-                                   value="0" placeholder="Enter macro number">
+                            <select class="form-control" id="macro_filter" name="macro_filter">
+                                <option value="">-- Loading... --</option>
+                            </select>
                         </div>
                         
                         <div class="form-group">
                             <label for="datetime_filter">TEST_START_DATETIME Filter:</label>
-                            <input type="text" class="form-control" id="datetime_filter" name="datetime_filter" 
-                                   value="2025_06_27-15_57_38" placeholder="Enter datetime filter">
+                            <select class="form-control" id="datetime_filter" name="datetime_filter">
+                                <option value="">-- Loading... --</option>
+                            </select>
                         </div>
                         
                         <!-- Plot Parameters -->
@@ -103,9 +113,7 @@
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-play"></i> Run Analysis
                             </button>
-                            <a href="{{ url_for('view_rwb_data') }}" class="btn btn-info btn-lg ml-2" target="_blank">
-                                <i class="fas fa-table"></i> View RWB Data
-                            </a>
+
                             <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg ml-2">
                                 <i class="fas fa-arrow-left"></i> Back to Home
                             </a>
@@ -116,4 +124,69 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load values for the filter dropdowns
+    loadColumnValues('TEST_NAME', 'test_name_filter', 'post-form');
+    loadColumnValues('MACRO', 'macro_filter', '0');
+    loadColumnValues('TEST_START_DATETIME', 'datetime_filter', '2025_06_27-15_57_38');
+});
+
+function loadColumnValues(columnName, selectId, defaultValue) {
+    const selectElement = document.getElementById(selectId);
+    
+    // Show loading state
+    selectElement.innerHTML = '<option value="">-- Loading... --</option>';
+    
+    fetch(`{{ url_for('get_rwb_column_values', column_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', columnName))
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                selectElement.innerHTML = '<option value="">-- Error loading values --</option>';
+                console.error('Error loading values for ' + columnName + ':', data.error);
+            } else {
+                // Clear the dropdown
+                selectElement.innerHTML = '';
+                
+                // Add "All" option
+                const allOption = document.createElement('option');
+                allOption.value = '';
+                allOption.textContent = '-- All --';
+                selectElement.appendChild(allOption);
+                
+                // Add the values
+                data.values.forEach(function(value) {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    option.textContent = value;
+                    
+                    // Set default selection
+                    if (value == defaultValue) {
+                        option.selected = true;
+                    }
+                    
+                    selectElement.appendChild(option);
+                });
+                
+                // If default value wasn't found in the list, try to find a partial match
+                if (defaultValue && !selectElement.value) {
+                    const partialMatch = data.values.find(v => 
+                        v.toString().toLowerCase().includes(defaultValue.toLowerCase())
+                    );
+                    if (partialMatch) {
+                        selectElement.value = partialMatch;
+                    }
+                }
+                
+                console.log(`Loaded ${data.values.length} values for ${columnName}`);
+            }
+        })
+        .catch(error => {
+            selectElement.innerHTML = '<option value="">-- Error loading values --</option>';
+            console.error('Error fetching values for ' + columnName + ':', error);
+        });
+}
+</script>
+
 {% endblock %} 

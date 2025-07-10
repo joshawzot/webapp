@@ -19,10 +19,9 @@ import time
 cf_file_path = os.path.abspath(__file__)
 postprocess_dir = os.path.dirname(cf_file_path)
 tests_dir = os.path.dirname(postprocess_dir)
-agateuser_dir = os.path.join(tests_dir,'src','depends','agate')
 
-# Import python files from postprocess folder
-sys.path.insert(1, agateuser_dir)
+# Import python files from postprocess folder (agate_user.py is in the same directory)
+sys.path.insert(1, postprocess_dir)
 
 from agate_user import PRNG
 

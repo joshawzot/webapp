@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">RWB Analysis Results</h3>
+                    <div class="card-tools">
+                        <a href="{{ url_for('gui_rwb_analysis') }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit"></i> Run New Analysis
+                        </a>
+                        <a href="{{ url_for('home') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Analysis Summary -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4>Analysis Summary</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <td><strong>Total Records Found:</strong></td>
+                                            <td>{{ analysis_summary.total_records }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Filtered Records:</strong></td>
+                                            <td>{{ analysis_summary.filtered_records }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Analysis Parameters:</strong></td>
+                                            <td>
+                                                Regex: {{ analysis_summary.regex_pattern }}<br>
+                                                Column: {{ analysis_summary.regex_col }}<br>
+                                                Title: {{ analysis_summary.plot_title }}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <td><strong>Filters Applied:</strong></td>
+                                            <td>
+                                                TEST_NAME: {{ analysis_summary.test_name_filter }}<br>
+                                                MACRO: {{ analysis_summary.macro_filter }}<br>
+                                                DATETIME: {{ analysis_summary.datetime_filter }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Group By:</strong></td>
+                                            <td>{{ analysis_summary.groupby_cols }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Overlay Column:</strong></td>
+                                            <td>{{ analysis_summary.overlay_col }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Plot Section -->
+                    {% if plot_html %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4>RWB Group by Level Plot</h4>
+                            <div class="plot-container">
+                                {{ plot_html|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Mean Calculation Results -->
+                    {% if mean_results %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4>Mean Calculation Results</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            {% for col in mean_results.columns %}
+                                            <th>{{ col }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for index, row in mean_results.iterrows() %}
+                                        <tr>
+                                            {% for col in mean_results.columns %}
+                                            <td>
+                                                {% if row[col] is number %}
+                                                    {{ "%.6f"|format(row[col]) }}
+                                                {% else %}
+                                                    {{ row[col] }}
+                                                {% endif %}
+                                            </td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Specific PPM Results -->
+                    {% if ppm_results %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h4>PPM Analysis Results</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead class="thead-dark">
+                                        <tr>
+                                            <th>TEST_NAME</th>
+                                            <th>LEVEL_01_XPOINT_PPM</th>
+                                            <th>LEVEL_12_XPOINT_PPM</th>
+                                            <th>LEVEL_23_XPOINT_PPM</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for index, row in ppm_results.iterrows() %}
+                                        <tr>
+                                            <td>{{ row['TEST_NAME'] }}</td>
+                                            <td>{{ "%.6f"|format(row['LEVEL_01_XPOINT_PPM']) if row['LEVEL_01_XPOINT_PPM'] is not none else 'N/A' }}</td>
+                                            <td>{{ "%.6f"|format(row['LEVEL_12_XPOINT_PPM']) if row['LEVEL_12_XPOINT_PPM'] is not none else 'N/A' }}</td>
+                                            <td>{{ "%.6f"|format(row['LEVEL_23_XPOINT_PPM']) if row['LEVEL_23_XPOINT_PPM'] is not none else 'N/A' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Error Messages -->
+                    {% if error_message %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                <h4>Error</h4>
+                                <p>{{ error_message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Success Messages -->
+                    {% if success_message %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-success">
+                                <h4>Success</h4>
+                                <p>{{ success_message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .plot-container {
+        width: 100%;
+        height: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 20px 0;
+    }
+    
+    .table {
+        font-size: 0.9em;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    
+    .card-tools {
+        margin-left: auto;
+    }
+    
+    .alert {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %} 

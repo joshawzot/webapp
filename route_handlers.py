@@ -5655,3 +5655,138 @@ def recent_tables():
             imageMap[t] = []
 
     return render_template('recent_plot.html', tables= tables, imageMap = imageMap, dic = dic)
+
+@app.route('/gui-rwb-analysis')
+def gui_rwb_analysis():
+    """Display the GUI RWB analysis form"""
+    return render_template('rwb_analysis_form.html')
+
+@app.route('/process-rwb-analysis', methods=['POST'])
+def process_rwb_analysis():
+    """Process the RWB analysis form and generate results"""
+    # Extract form data first so we can use it in error handling
+    regex = request.form.get('regex', 'tt007')
+    regex_col = request.form.get('regex_col', 'DIE_ID')
+    date = request.form.get('date', '')
+    skip_rwb_2 = 'skip_rwb_2' in request.form
+    
+    test_name_filter = request.form.get('test_name_filter', 'post-form')
+    macro_filter = int(request.form.get('macro_filter', 0))
+    datetime_filter = request.form.get('datetime_filter', '2025_06_27-15_57_38')
+    
+    overlay_col = request.form.get('overlay_col', 'IO')
+    legend = 'legend' in request.form
+    plot_title = request.form.get('plot_title', 'DOE21: BLREF_CAL by IO')
+    
+    groupby_cols = request.form.get('groupby_cols', 'TEST_NAME')
+    groupby_cols_list = [col.strip() for col in groupby_cols.split(',')]
+    
+    # Prepare default analysis summary for error cases
+    analysis_summary = {
+        'total_records': 0,
+        'filtered_records': 0,
+        'regex_pattern': regex,
+        'regex_col': regex_col,
+        'plot_title': plot_title,
+        'test_name_filter': test_name_filter,
+        'macro_filter': macro_filter,
+        'datetime_filter': datetime_filter,
+        'groupby_cols': groupby_cols,
+        'overlay_col': overlay_col
+    }
+    
+    try:
+        # Import necessary modules
+        import sys
+        import os
+        import pandas as pd
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import io
+        import base64
+        
+        # Add postprocess directory to path
+        postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+        sys.path.insert(0, postprocess_dir)
+        
+        # Import the core functions
+        from core_post_processing_functions import rwb_fetch_data, rwb_groupby_level_nqplot, rwb_calc_io_mean
+        
+        # Step 1: Fetch data
+        print("Fetching RWB data...")
+        date_param = date if date else None
+        rwb_pull = rwb_fetch_data(regex=regex, regex_col=regex_col, date=date_param, skip_rwb_2=skip_rwb_2)
+        
+        analysis_summary['total_records'] = len(rwb_pull)
+        
+        if rwb_pull.empty:
+            return render_template('rwb_plots.html', 
+                                 analysis_summary=analysis_summary,
+                                 error_message="No data found with the specified parameters.")
+        
+        # Step 2: Apply filters
+        print("Applying filters...")
+        rwb_plot = rwb_pull.loc[
+            rwb_pull.TEST_NAME.str.contains(test_name_filter, na=False) & 
+            (rwb_pull.MACRO == macro_filter) & 
+            rwb_pull.TEST_START_DATETIME.str.contains(datetime_filter, na=False)
+        ]
+        
+        analysis_summary['filtered_records'] = len(rwb_plot)
+        
+        if rwb_plot.empty:
+            return render_template('rwb_plots.html', 
+                                 analysis_summary=analysis_summary,
+                                 error_message="No data found after applying filters.")
+        
+        # Step 3: Generate plot
+        print("Generating plot...")
+        plt.figure(figsize=(10, 6))
+        
+        # Configure matplotlib to not display plots
+        plt.ioff()
+        
+        # Call the plotting function
+        rwb_groupby_level_nqplot(rwb_plot, overlay_col=overlay_col, legend=legend, title=plot_title)
+        
+        # Convert plot to HTML
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+        img_buffer.seek(0)
+        img_string = base64.b64encode(img_buffer.read()).decode()
+        plt.close()
+        
+        plot_html = f'<img src="data:image/png;base64,{img_string}" class="img-fluid" alt="RWB Plot"/>'
+        
+        # Step 4: Calculate mean
+        print("Calculating mean...")
+        rwb_mean = rwb_calc_io_mean(rwb_plot, groupby_cols=groupby_cols_list)
+        
+        # Step 5: Extract specific PPM results
+        ppm_columns = ['TEST_NAME', 'LEVEL_01_XPOINT_PPM', 'LEVEL_12_XPOINT_PPM', 'LEVEL_23_XPOINT_PPM']
+        available_columns = [col for col in ppm_columns if col in rwb_mean.columns]
+        
+        if available_columns:
+            ppm_results = rwb_mean[available_columns]
+        else:
+            ppm_results = None
+        
+        return render_template('rwb_plots.html', 
+                             plot_html=plot_html,
+                             mean_results=rwb_mean,
+                             ppm_results=ppm_results,
+                             analysis_summary=analysis_summary,
+                             success_message="Analysis completed successfully!")
+                             
+    except Exception as e:
+        import traceback
+        error_msg = f"Error during analysis: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        print(error_msg)
+        
+        # Check if it's a missing dependency error
+        if "ModuleNotFoundError" in str(e) and "anyio" in str(e):
+            error_msg = "Missing required dependency 'anyio'. Please install it by running: pip install anyio"
+        
+        return render_template('rwb_plots.html', 
+                             analysis_summary=analysis_summary,
+                             error_message=error_msg)

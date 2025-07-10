@@ -30,9 +30,9 @@ dir4 = os.path.dirname(dir3)
 tests_dir = os.path.dirname(dir4)
 sys.path.insert(1, dir2)
 try:
-    from tests.src.depends.agate.ecc_pattern_1000 import *
+    from ecc_pattern_1000 import *
 except ImportError:
-    print('src library not found')
+    print('ecc_pattern_1000 not found - this is optional')
 
 class SocFlags:
     """SOC operation flags"""

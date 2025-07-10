@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">GUI RWB Analysis</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('process_rwb_analysis') }}">
+                        
+                        <!-- Data Fetching Parameters -->
+                        <h4>Data Fetching Parameters</h4>
+                        <div class="form-group">
+                            <label for="regex">Regex Pattern:</label>
+                            <input type="text" class="form-control" id="regex" name="regex" 
+                                   value="tt007" placeholder="Enter regex pattern (e.g., tt007)">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="regex_col">Regex Column:</label>
+                            <select class="form-control" id="regex_col" name="regex_col">
+                                <option value="DIE_ID" selected>DIE_ID</option>
+                                <option value="TEST_NAME">TEST_NAME</option>
+                                <option value="MACRO">MACRO</option>
+                                <option value="TEST_START_DATETIME">TEST_START_DATETIME</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="date">Date Filter (optional):</label>
+                            <input type="text" class="form-control" id="date" name="date" 
+                                   placeholder="YYYY-MM-DD format (optional)">
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="skip_rwb_2" name="skip_rwb_2" checked>
+                                <label class="form-check-label" for="skip_rwb_2">
+                                    Skip RWB_2 Database
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Filtering Parameters -->
+                        <h4>Data Filtering Parameters</h4>
+                        <div class="form-group">
+                            <label for="test_name_filter">TEST_NAME Filter:</label>
+                            <input type="text" class="form-control" id="test_name_filter" name="test_name_filter" 
+                                   value="post-form" placeholder="Enter test name filter">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="macro_filter">MACRO Filter:</label>
+                            <input type="number" class="form-control" id="macro_filter" name="macro_filter" 
+                                   value="0" placeholder="Enter macro number">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="datetime_filter">TEST_START_DATETIME Filter:</label>
+                            <input type="text" class="form-control" id="datetime_filter" name="datetime_filter" 
+                                   value="2025_06_27-15_57_38" placeholder="Enter datetime filter">
+                        </div>
+                        
+                        <!-- Plot Parameters -->
+                        <h4>Plot Parameters</h4>
+                        <div class="form-group">
+                            <label for="overlay_col">Overlay Column:</label>
+                            <select class="form-control" id="overlay_col" name="overlay_col">
+                                <option value="IO" selected>IO</option>
+                                <option value="DIE_ID">DIE_ID</option>
+                                <option value="MACRO">MACRO</option>
+                                <option value="TEST_NAME">TEST_NAME</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="legend" name="legend">
+                                <label class="form-check-label" for="legend">
+                                    Show Legend
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="plot_title">Plot Title:</label>
+                            <input type="text" class="form-control" id="plot_title" name="plot_title" 
+                                   value="DOE21: BLREF_CAL by IO" placeholder="Enter plot title">
+                        </div>
+                        
+                        <!-- Mean Calculation Parameters -->
+                        <h4>Mean Calculation Parameters</h4>
+                        <div class="form-group">
+                            <label for="groupby_cols">Group By Columns:</label>
+                            <input type="text" class="form-control" id="groupby_cols" name="groupby_cols" 
+                                   value="TEST_NAME" placeholder="Enter column names separated by commas">
+                        </div>
+                        
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-play"></i> Run Analysis
+                            </button>
+                            <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg ml-2">
+                                <i class="fas fa-arrow-left"></i> Back to Home
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

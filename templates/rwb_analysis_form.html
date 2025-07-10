@@ -15,8 +15,19 @@
                         <h4>Data Fetching Parameters</h4>
                         <div class="form-group">
                             <label for="regex">Regex Pattern:</label>
-                            <input type="text" class="form-control" id="regex" name="regex" 
-                                   value="tt007" placeholder="Enter regex pattern (e.g., tt007)">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="regex" name="regex" 
+                                       value="tt007" placeholder="Type to search or select from dropdown">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                            id="regexDropdownButton" data-toggle="dropdown" disabled>
+                                        <span id="regexDropdownText">Select Column First</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="regexDropdownMenu" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="dropdown-item-text">Select a column first</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -55,23 +66,56 @@
                         <h4>Data Filtering Parameters</h4>
                         <div class="form-group">
                             <label for="test_name_filter">TEST_NAME Filter:</label>
-                            <select class="form-control" id="test_name_filter" name="test_name_filter">
-                                <option value="">-- Loading... --</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="test_name_filter" name="test_name_filter" 
+                                       value="post-form" placeholder="Type to search or select from dropdown">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                            id="testNameDropdownButton" data-toggle="dropdown">
+                                        <span id="testNameDropdownText">Loading...</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="testNameDropdownMenu" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="dropdown-item-text">Loading values...</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="form-group">
                             <label for="macro_filter">MACRO Filter:</label>
-                            <select class="form-control" id="macro_filter" name="macro_filter">
-                                <option value="">-- Loading... --</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="macro_filter" name="macro_filter" 
+                                       value="0" placeholder="Type values (e.g., 1,4~5,7,10~11) or select from dropdown">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                            id="macroDropdownButton" data-toggle="dropdown">
+                                        <span id="macroDropdownText">Loading...</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="macroDropdownMenu" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="dropdown-item-text">Loading values...</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                Enter single values (1,2,3), ranges (4~6), or combinations (1,4~6,8). Use comma to separate.
+                            </small>
                         </div>
                         
                         <div class="form-group">
                             <label for="datetime_filter">TEST_START_DATETIME Filter:</label>
-                            <select class="form-control" id="datetime_filter" name="datetime_filter">
-                                <option value="">-- Loading... --</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="datetime_filter" name="datetime_filter" 
+                                       value="2025_06_27-15_57_38" placeholder="Type to search or select from dropdown">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                            id="datetimeDropdownButton" data-toggle="dropdown">
+                                        <span id="datetimeDropdownText">Loading...</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="datetimeDropdownMenu" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="dropdown-item-text">Loading values...</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Plot Parameters -->
@@ -128,65 +172,201 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Load values for the filter dropdowns
-    loadColumnValues('TEST_NAME', 'test_name_filter', 'post-form');
-    loadColumnValues('MACRO', 'macro_filter', '0');
-    loadColumnValues('TEST_START_DATETIME', 'datetime_filter', '2025_06_27-15_57_38');
+    loadSearchableDropdown('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter', 'post-form');
+    loadSearchableDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', '0');
+    loadSearchableDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', '2025_06_27-15_57_38');
+    
+    // Set up regex column change event
+    const regexColSelect = document.getElementById('regex_col');
+    regexColSelect.addEventListener('change', function() {
+        const selectedColumn = this.value;
+        if (selectedColumn) {
+            loadRegexDropdown(selectedColumn);
+        } else {
+            // Reset regex dropdown
+            document.getElementById('regexDropdownButton').disabled = true;
+            document.getElementById('regexDropdownText').textContent = 'Select Column First';
+            document.getElementById('regexDropdownMenu').innerHTML = '<div class="dropdown-item-text">Select a column first</div>';
+        }
+    });
+    
+    // Set up search functionality for all input fields
+    setupSearchableInput('test_name_filter', 'testNameDropdownMenu');
+    setupSearchableInput('macro_filter', 'macroDropdownMenu');
+    setupSearchableInput('datetime_filter', 'datetimeDropdownMenu');
+    setupSearchableInput('regex', 'regexDropdownMenu');
 });
 
-function loadColumnValues(columnName, selectId, defaultValue) {
-    const selectElement = document.getElementById(selectId);
+// Global storage for dropdown data
+window.dropdownData = {};
+
+function loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, defaultValue) {
+    const dropdownMenu = document.getElementById(dropdownMenuId);
+    const dropdownText = document.getElementById(dropdownTextId);
     
-    // Show loading state
-    selectElement.innerHTML = '<option value="">-- Loading... --</option>';
+    dropdownText.textContent = 'Loading...';
+    dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading values...</div>';
     
     fetch(`{{ url_for('get_rwb_column_values', column_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', columnName))
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                selectElement.innerHTML = '<option value="">-- Error loading values --</option>';
+                dropdownText.textContent = 'Error';
+                dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
                 console.error('Error loading values for ' + columnName + ':', data.error);
             } else {
-                // Clear the dropdown
-                selectElement.innerHTML = '';
+                // Store data globally for search functionality
+                window.dropdownData[dropdownMenuId] = data.values;
                 
-                // Add "All" option
-                const allOption = document.createElement('option');
-                allOption.value = '';
-                allOption.textContent = '-- All --';
-                selectElement.appendChild(allOption);
-                
-                // Add the values
-                data.values.forEach(function(value) {
-                    const option = document.createElement('option');
-                    option.value = value;
-                    option.textContent = value;
-                    
-                    // Set default selection
-                    if (value == defaultValue) {
-                        option.selected = true;
-                    }
-                    
-                    selectElement.appendChild(option);
-                });
-                
-                // If default value wasn't found in the list, try to find a partial match
-                if (defaultValue && !selectElement.value) {
-                    const partialMatch = data.values.find(v => 
-                        v.toString().toLowerCase().includes(defaultValue.toLowerCase())
-                    );
-                    if (partialMatch) {
-                        selectElement.value = partialMatch;
-                    }
-                }
+                dropdownText.textContent = `${data.values.length} items`;
+                renderDropdownItems(dropdownMenuId, inputId, data.values);
                 
                 console.log(`Loaded ${data.values.length} values for ${columnName}`);
             }
         })
         .catch(error => {
-            selectElement.innerHTML = '<option value="">-- Error loading values --</option>';
+            dropdownText.textContent = 'Error';
+            dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
             console.error('Error fetching values for ' + columnName + ':', error);
         });
 }
-</script>
 
-{% endblock %} 
+function loadRegexDropdown(columnName) {
+    const dropdownButton = document.getElementById('regexDropdownButton');
+    const dropdownText = document.getElementById('regexDropdownText');
+    const dropdownMenu = document.getElementById('regexDropdownMenu');
+    
+    dropdownButton.disabled = false;
+    dropdownText.textContent = 'Loading...';
+    dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading values...</div>';
+    
+    fetch(`{{ url_for('get_rwb_column_values', column_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', columnName))
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                dropdownText.textContent = 'Error';
+                dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
+                console.error('Error loading regex values for ' + columnName + ':', data.error);
+            } else {
+                // Store data globally for search functionality
+                window.dropdownData['regexDropdownMenu'] = data.values;
+                
+                dropdownText.textContent = `${data.values.length} items`;
+                renderDropdownItems('regexDropdownMenu', 'regex', data.values);
+                
+                console.log(`Loaded ${data.values.length} regex values for ${columnName}`);
+            }
+        })
+        .catch(error => {
+            dropdownText.textContent = 'Error';
+            dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
+            console.error('Error fetching regex values for ' + columnName + ':', error);
+        });
+}
+
+function renderDropdownItems(dropdownMenuId, inputId, values, searchTerm = '') {
+    const dropdownMenu = document.getElementById(dropdownMenuId);
+    
+    // Filter values based on search term
+    let filteredValues = values;
+    if (searchTerm) {
+        filteredValues = values.filter(value => 
+            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+    
+    if (filteredValues.length === 0) {
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text text-muted">No matches found</div>';
+        return;
+    }
+    
+    // Limit to first 100 items for performance
+    const itemsToShow = filteredValues.slice(0, 100);
+    
+    let html = '';
+    
+    // Add "Clear" option for non-regex fields
+    if (inputId !== 'regex') {
+        html += '<a class="dropdown-item" href="#" onclick="selectDropdownValue(\'' + inputId + '\', \'\')">-- Clear --</a>';
+        html += '<div class="dropdown-divider"></div>';
+    }
+    
+    // Add filtered items
+    itemsToShow.forEach(value => {
+        const displayValue = value === null ? 'NULL' : value;
+        const safeValue = value === null ? '' : value.toString().replace(/'/g, "\\'");
+        html += `<a class="dropdown-item" href="#" onclick="selectDropdownValue('${inputId}', '${safeValue}')">${displayValue}</a>`;
+    });
+    
+    if (filteredValues.length > 100) {
+        html += '<div class="dropdown-divider"></div>';
+        html += '<div class="dropdown-item-text text-muted">Showing first 100 of ' + filteredValues.length + ' matches</div>';
+    }
+    
+    dropdownMenu.innerHTML = html;
+}
+
+function selectDropdownValue(inputId, value) {
+    const input = document.getElementById(inputId);
+    
+    if (inputId === 'macro_filter' && input.value && value) {
+        // For MACRO filter, append to existing value
+        const currentValue = input.value.trim();
+        if (currentValue && currentValue !== value) {
+            input.value = currentValue + ',' + value;
+        } else {
+            input.value = value;
+        }
+    } else {
+        input.value = value;
+    }
+    
+    // Trigger input event to update any dependent functionality
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function setupSearchableInput(inputId, dropdownMenuId) {
+    const input = document.getElementById(inputId);
+    
+    input.addEventListener('input', function() {
+        const searchTerm = this.value;
+        const values = window.dropdownData[dropdownMenuId];
+        
+        if (values) {
+            renderDropdownItems(dropdownMenuId, inputId, values, searchTerm);
+        }
+         });
+ }
+ </script>
+ 
+ <style>
+ .dropdown-menu {
+     max-width: 400px;
+ }
+ 
+ .dropdown-item {
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     padding: 0.375rem 0.75rem;
+ }
+ 
+ .dropdown-item:hover {
+     background-color: #007bff;
+     color: white;
+ }
+ 
+ .input-group-append .btn {
+     border-left: 0;
+ }
+ 
+ .form-group {
+     margin-bottom: 1.5rem;
+ }
+ 
+ .dropdown-toggle::after {
+     margin-left: 0.5rem;
+ }
+ </style>
+ 
+ {% endblock %} 

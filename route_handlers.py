@@ -5656,6 +5656,46 @@ def recent_tables():
 
     return render_template('recent_plot.html', tables= tables, imageMap = imageMap, dic = dic)
 
+def parse_macro_filter(macro_str):
+    """
+    Parse macro filter string that supports:
+    - Single values: "1", "2", "3"
+    - Ranges: "4~6" (includes 4, 5, 6)
+    - Combinations: "1,4~6,8,10~11"
+    Returns a list of integer values
+    """
+    if not macro_str or macro_str.strip() == '':
+        return []
+    
+    macro_values = []
+    
+    # Split by comma to get individual parts
+    parts = [part.strip() for part in macro_str.split(',')]
+    
+    for part in parts:
+        if '~' in part:
+            # Handle range (e.g., "4~6")
+            try:
+                start, end = part.split('~')
+                start_val = int(start.strip())
+                end_val = int(end.strip())
+                macro_values.extend(range(start_val, end_val + 1))
+            except (ValueError, IndexError):
+                # If range parsing fails, try as single value
+                try:
+                    macro_values.append(int(part))
+                except ValueError:
+                    pass
+        else:
+            # Handle single value
+            try:
+                macro_values.append(int(part))
+            except ValueError:
+                pass
+    
+    # Remove duplicates and sort
+    return sorted(list(set(macro_values)))
+
 @app.route('/gui-rwb-analysis')
 def gui_rwb_analysis():
     """Display the GUI RWB analysis form"""
@@ -5703,11 +5743,8 @@ def process_rwb_analysis():
     if not datetime_filter:
         datetime_filter = '2025_06_27-15_57_38'
     
-    # Convert macro filter to int
-    try:
-        macro_filter = int(macro_filter_str)
-    except ValueError:
-        macro_filter = 0
+    # Parse macro filter - can be single values, ranges, or combinations
+    macro_values = parse_macro_filter(macro_filter_str)
     
     overlay_col = request.form.get('overlay_col', 'IO')
     legend = 'legend' in request.form
@@ -5724,7 +5761,7 @@ def process_rwb_analysis():
         'regex_col': regex_col,
         'plot_title': plot_title,
         'test_name_filter': test_name_filter,
-        'macro_filter': macro_filter,
+        'macro_filter': macro_filter_str,
         'datetime_filter': datetime_filter,
         'groupby_cols': groupby_cols,
         'overlay_col': overlay_col
@@ -5766,15 +5803,15 @@ def process_rwb_analysis():
         rwb_plot = rwb_pull.copy()
         
         # Apply TEST_NAME filter if specified
-        if test_name_filter and test_name_filter != '-- All --':
+        if test_name_filter and test_name_filter.strip() and test_name_filter != '-- All --':
             rwb_plot = rwb_plot.loc[rwb_plot.TEST_NAME.str.contains(test_name_filter, na=False)]
         
         # Apply MACRO filter if specified
-        if macro_filter_str and macro_filter_str != '-- All --':
-            rwb_plot = rwb_plot.loc[rwb_plot.MACRO == macro_filter]
+        if macro_values:
+            rwb_plot = rwb_plot.loc[rwb_plot.MACRO.isin(macro_values)]
         
         # Apply DATETIME filter if specified
-        if datetime_filter and datetime_filter != '-- All --':
+        if datetime_filter and datetime_filter.strip() and datetime_filter != '-- All --':
             rwb_plot = rwb_plot.loc[rwb_plot.TEST_START_DATETIME.str.contains(datetime_filter, na=False)]
         
         analysis_summary['filtered_records'] = len(rwb_plot)

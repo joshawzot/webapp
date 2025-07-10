@@ -2,7 +2,7 @@
 # Note: File Explorer functionality has been removed from this application
 # The following routes were removed:
 # - /file-explorer
-# - /api/list-directory
+# - /api/list-directorygit 
 # - /api/read-file
 # - /api/save-file
 # - /api/create-file
@@ -5726,8 +5726,12 @@ def gui_rwb_analysis():
 def process_rwb_analysis():
     """Process the RWB analysis form and generate results"""
     # Extract form data first so we can use it in error handling
-    regex = request.form.get('regex', 'tt007')
+    regex = request.form.get('regex', '').strip()
     regex_col = request.form.get('regex_col', 'DIE_ID')
+    
+    # If regex is empty, don't apply regex filtering
+    if not regex:
+        regex = False
     date = request.form.get('date', '')
     skip_rwb_2 = 'skip_rwb_2' in request.form
     
@@ -5743,14 +5747,23 @@ def process_rwb_analysis():
     legend = 'legend' in request.form
     plot_title = request.form.get('plot_title', 'DOE21: BLREF_CAL by IO')
     
-    groupby_cols = request.form.get('groupby_cols', 'TEST_NAME')
-    groupby_cols_list = [col.strip() for col in groupby_cols.split(',')]
+    groupby_cols = request.form.get('groupby_cols', '').strip()
+    # If empty, pass None to the function for no grouping
+    if groupby_cols:
+        groupby_cols_list = [col.strip() for col in groupby_cols.split(',') if col.strip()]
+        # If all columns were empty strings after splitting, treat as no grouping
+        if not groupby_cols_list:
+            groupby_cols_list = None
+            groupby_cols = 'None (no grouping)'
+    else:
+        groupby_cols_list = None
+        groupby_cols = 'None (no grouping)'
     
     # Prepare default analysis summary for error cases
     analysis_summary = {
         'total_records': 0,
         'filtered_records': 0,
-        'regex_pattern': regex,
+        'regex_pattern': regex if regex != False else 'None (no regex)',
         'regex_col': regex_col,
         'plot_title': plot_title,
         'test_name_filter': test_name_filter or 'None (no filter)',
@@ -5994,6 +6007,94 @@ def get_rwb_filtered_values():
             'values': values,
             'count': len(values),
             'column_name': column_name,
+            'filters_applied': filters
+        })
+        
+    except mysql.connector.Error as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': f'Error getting filtered column values: {str(e)}'}), 500
+
+@app.route('/get-rwb-multiple-regex-filtered-values', methods=['POST'])
+def get_rwb_multiple_regex_filtered_values():
+    """Get unique values for a column filtered by multiple regex conditions"""
+    try:
+        data = request.get_json()
+        target_column = data.get('target_column', '').strip()
+        filters = data.get('filters', {})
+        
+        if not target_column:
+            return jsonify({'error': 'Target column is required'}), 400
+        
+        # Create database connection
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='rwb'
+        )
+        cursor = connection.cursor()
+        
+        # First, validate the target column exists
+        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        columns = [col[0] for col in cursor.fetchall()]
+        
+        if target_column not in columns:
+            cursor.close()
+            connection.close()
+            return jsonify({'error': f'Column "{target_column}" not found'}), 400
+        
+        # Build WHERE clause based on multiple regex filters
+        where_conditions = [f"`{target_column}` IS NOT NULL"]
+        params = []
+        
+        # Process cascaded filters (regex_1_column, regex_1_pattern, regex_2_column, etc.)
+        filter_pairs = {}
+        for key, value in filters.items():
+            if key.endswith('_column'):
+                pair_id = key.replace('_column', '')
+                if pair_id not in filter_pairs:
+                    filter_pairs[pair_id] = {}
+                filter_pairs[pair_id]['column'] = value
+            elif key.endswith('_pattern'):
+                pair_id = key.replace('_pattern', '')
+                if pair_id not in filter_pairs:
+                    filter_pairs[pair_id] = {}
+                filter_pairs[pair_id]['pattern'] = value
+        
+        # Apply each filter pair
+        for pair_id, pair_data in filter_pairs.items():
+            filter_col = pair_data.get('column', '').strip()
+            filter_value = pair_data.get('pattern', '').strip()
+            
+            if filter_col and filter_value and filter_col in columns:
+                if filter_col == 'MACRO' and (',' in filter_value or '~' in filter_value):
+                    # Handle MACRO filter with ranges/multiple values
+                    macro_values = parse_macro_filter(filter_value)
+                    if macro_values:
+                        placeholders = ','.join(['%s'] * len(macro_values))
+                        where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                        params.extend(macro_values)
+                else:
+                    # Handle other filters with string contains (regex-like)
+                    where_conditions.append(f"`{filter_col}` LIKE %s")
+                    params.append(f"%{filter_value}%")
+        
+        # Build and execute query
+        where_clause = " AND ".join(where_conditions)
+        query = f"SELECT DISTINCT `{target_column}` FROM rwb_db_3 WHERE {where_clause} ORDER BY `{target_column}` LIMIT 500"
+        
+        cursor.execute(query, params)
+        values = [row[0] for row in cursor.fetchall()]
+        
+        cursor.close()
+        connection.close()
+        
+        return jsonify({
+            'values': values,
+            'count': len(values),
+            'column_name': target_column,
             'filters_applied': filters
         })
         

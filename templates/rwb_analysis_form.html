@@ -17,7 +17,7 @@
                             <label for="regex">Regex Pattern:</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="regex" name="regex" 
-                                       value="tt007" placeholder="Type to search or select from dropdown">
+                                       value="" placeholder="Type to search or select from dropdown">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
                                             id="regexDropdownButton" data-toggle="dropdown" disabled>
@@ -47,11 +47,6 @@
                             </select>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="date">Date Filter (optional):</label>
-                            <input type="text" class="form-control" id="date" name="date" 
-                                   placeholder="YYYY-MM-DD format (optional)">
-                        </div>
                         
                         <div class="form-group">
                             <div class="form-check">
@@ -142,7 +137,7 @@
                         <div class="form-group">
                             <label for="plot_title">Plot Title:</label>
                             <input type="text" class="form-control" id="plot_title" name="plot_title" 
-                                   value="DOE21: BLREF_CAL by IO" placeholder="Enter plot title">
+                                   value="" placeholder="Enter plot title">
                         </div>
                         
                         <!-- Mean Calculation Parameters -->
@@ -150,7 +145,7 @@
                         <div class="form-group">
                             <label for="groupby_cols">Group By Columns:</label>
                             <input type="text" class="form-control" id="groupby_cols" name="groupby_cols" 
-                                   value="TEST_NAME" placeholder="Enter column names separated by commas">
+                                   value="TEST_NAME" placeholder="Enter column names separated by commas (empty = no grouping)">
                         </div>
                         
                         <div class="form-group text-center">
@@ -205,6 +200,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up cascading filter updates
     setupCascadingFilters();
+    
+    // Set up regex-based filter updates
+    setupRegexCascadingFilters();
 });
 
 // Global storage for dropdown data
@@ -372,12 +370,17 @@ function setupCascadingFilters() {
         // Debounce to avoid too many requests
         testNameTimeout = setTimeout(() => {
             if (testNameValue && testNameValue.length >= 2) {
-                updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', {
-                    'TEST_NAME': testNameValue
-                });
+                const filters = buildCompleteFilterSet();
+                filters['TEST_NAME'] = testNameValue;
+                updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', filters);
             } else {
                 // Reset MACRO dropdown to show all values when TEST_NAME is cleared
-                resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
+                const filters = buildCompleteFilterSet();
+                if (Object.keys(filters).length > 0) {
+                    updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', filters);
+                } else {
+                    resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
+                }
                 // Also reset datetime filter
                 resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
                 // Clear the macro input field too
@@ -400,7 +403,7 @@ function setupCascadingFilters() {
         
         // Debounce to avoid too many requests
         macroTimeout = setTimeout(() => {
-            const filters = {};
+            const filters = buildCompleteFilterSet();
             if (testNameValue && testNameValue.length >= 2) filters['TEST_NAME'] = testNameValue;
             if (macroValue) filters['MACRO'] = macroValue;
             
@@ -416,6 +419,71 @@ function setupCascadingFilters() {
             }
         }, 300);
     });
+}
+
+function setupRegexCascadingFilters() {
+    let regexTimeout;
+    
+    // When regex column or regex pattern changes, update all filter dropdowns
+    function handleRegexChange() {
+        const regexCol = document.getElementById('regex_col').value.trim();
+        const regexPattern = document.getElementById('regex').value.trim();
+        
+        // Clear previous timeout
+        if (regexTimeout) {
+            clearTimeout(regexTimeout);
+        }
+        
+        // Debounce to avoid too many requests
+        regexTimeout = setTimeout(() => {
+            if (regexCol && regexPattern && regexPattern.length >= 2) {
+                // When regex is specified, update all other filters
+                updateAllFiltersWithRegex(regexCol, regexPattern);
+            } else {
+                // When regex is cleared, reset all filters to unfiltered state
+                resetAllFiltersToOriginal();
+            }
+        }, 300);
+    }
+    
+    // Set up event listeners
+    document.getElementById('regex_col').addEventListener('change', handleRegexChange);
+    document.getElementById('regex').addEventListener('input', handleRegexChange);
+}
+
+function buildCompleteFilterSet() {
+    const filters = {};
+    const regexCol = document.getElementById('regex_col').value.trim();
+    const regexPattern = document.getElementById('regex').value.trim();
+    
+    // Include regex filter if both column and pattern are specified
+    if (regexCol && regexPattern && regexPattern.length >= 2) {
+        filters[regexCol] = regexPattern;
+    }
+    
+    return filters;
+}
+
+function updateAllFiltersWithRegex(regexCol, regexPattern) {
+    // Build base filter with regex
+    const baseFilters = {};
+    baseFilters[regexCol] = regexPattern;
+    
+    // Update all filter dropdowns
+    updateFilteredDropdown('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter', baseFilters);
+    updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', baseFilters);
+    updateFilteredDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', baseFilters);
+    
+    // Clear existing filter values since they may no longer be valid
+    document.getElementById('test_name_filter').value = '';
+    document.getElementById('macro_filter').value = '';
+    document.getElementById('datetime_filter').value = '';
+}
+
+function resetAllFiltersToOriginal() {
+    resetDropdownToOriginal('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter');
+    resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
+    resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
 }
 
 function updateFilteredDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, filters) {

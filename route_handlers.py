@@ -1453,7 +1453,7 @@ def get_pattern_file(pattern_name):
         Full path to the pattern file
     """
     # Pattern files location
-    pattern_files = {
+    '''pattern_files = {
         "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
@@ -1469,9 +1469,11 @@ def get_pattern_file(pattern_name):
         "248x256_1state": "State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
-    }
+        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+        "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
+    }'''
 
-    '''pattern_files = {
+    pattern_files = {
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
@@ -1487,7 +1489,9 @@ def get_pattern_file(pattern_name):
         "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
-    }'''
+        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+        "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
+    }
     
     # Return the path for the pattern name
     return pattern_files.get(pattern_name, "")

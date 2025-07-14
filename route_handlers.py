@@ -1469,8 +1469,6 @@ def get_pattern_file(pattern_name):
         "248x256_1state": "State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
-        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
-        "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
     }'''
 
     pattern_files = {
@@ -1502,12 +1500,29 @@ def merge_tables_process():
     table_names = request.form.getlist('tableNames')
     state_pattern = request.form.get('state_pattern')
     new_table_name = request.form.get('newTableName')
+    
+    # Get row and column range parameters
+    row_start = request.form.get('row_start')
+    row_end = request.form.get('row_end')
+    col_start = request.form.get('col_start')
+    col_end = request.form.get('col_end')
+    
+    # Parse range parameters (convert to int if provided, otherwise None)
+    try:
+        row_start = int(row_start) if row_start and row_start.strip() else None
+        row_end = int(row_end) if row_end and row_end.strip() else None
+        col_start = int(col_start) if col_start and col_start.strip() else None
+        col_end = int(col_end) if col_end and col_end.strip() else None
+    except ValueError:
+        return 'Invalid range values. Please enter valid integers.', 400
 
     print(f"DEBUG: Starting merge process with parameters:")
     print(f"DEBUG: Database: {database}")
     print(f"DEBUG: Table names: {table_names}")
     print(f"DEBUG: State pattern: {state_pattern}")
     print(f"DEBUG: New table name: {new_table_name}")
+    print(f"DEBUG: Row range: {row_start} to {row_end}")
+    print(f"DEBUG: Column range: {col_start} to {col_end}")
 
     if not database:
         return 'Database not specified', 400
@@ -1586,7 +1601,36 @@ def merge_tables_process():
                 pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
             print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
         
-        print(f"DEBUG: Pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
+        print(f"DEBUG: Original pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
+        
+        # Apply row and column range trimming to the pattern array
+        original_pattern_shape = pattern_array.shape
+        if row_start is not None or row_end is not None or col_start is not None or col_end is not None:
+            print(f"DEBUG: Trimming pattern array...")
+            
+            # Determine the actual slice ranges
+            rows, cols = pattern_array.shape
+            actual_row_start = row_start if row_start is not None else 0
+            actual_row_end = row_end + 1 if row_end is not None else rows  # +1 because slice end is exclusive
+            actual_col_start = col_start if col_start is not None else 0
+            actual_col_end = col_end + 1 if col_end is not None else cols  # +1 because slice end is exclusive
+            
+            # Validate ranges
+            if actual_row_start < 0 or actual_row_start >= rows:
+                return f'Invalid row_start: {row_start}. Must be between 0 and {rows-1}', 400
+            if actual_row_end <= actual_row_start or actual_row_end > rows:
+                return f'Invalid row_end: {row_end}. Must be between {actual_row_start} and {rows-1}', 400
+            if actual_col_start < 0 or actual_col_start >= cols:
+                return f'Invalid col_start: {col_start}. Must be between 0 and {cols-1}', 400
+            if actual_col_end <= actual_col_start or actual_col_end > cols:
+                return f'Invalid col_end: {col_end}. Must be between {actual_col_start} and {cols-1}', 400
+            
+            # Trim the pattern array
+            pattern_array = pattern_array[actual_row_start:actual_row_end, actual_col_start:actual_col_end]
+            print(f"DEBUG: Pattern array trimmed from {original_pattern_shape} to {pattern_array.shape}")
+            print(f"DEBUG: Used ranges - rows: {actual_row_start}:{actual_row_end}, cols: {actual_col_start}:{actual_col_end}")
+        
+        print(f"DEBUG: Final pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
         
         a, b = pattern_array.shape
         print(f"DEBUG: Pattern dimensions: a={a}, b={b}")
@@ -1648,7 +1692,33 @@ def merge_tables_process():
                 
                 # Convert DataFrame to numpy array
                 arr = df.to_numpy()
-                print(f"DEBUG: Array shape: {arr.shape}, dtype: {arr.dtype}")
+                print(f"DEBUG: Original array shape: {arr.shape}, dtype: {arr.dtype}")
+                
+                # Apply row and column range trimming to the table data (same as pattern)
+                original_arr_shape = arr.shape
+                if row_start is not None or row_end is not None or col_start is not None or col_end is not None:
+                    print(f"DEBUG: Trimming table data for {table_name}...")
+                    
+                    # Use the same ranges as calculated for the pattern
+                    rows, cols = arr.shape
+                    actual_row_start = row_start if row_start is not None else 0
+                    actual_row_end = row_end + 1 if row_end is not None else rows  # +1 because slice end is exclusive
+                    actual_col_start = col_start if col_start is not None else 0
+                    actual_col_end = col_end + 1 if col_end is not None else cols  # +1 because slice end is exclusive
+                    
+                    # Validate ranges for this table
+                    if actual_row_start >= rows or actual_row_end > rows:
+                        print(f"DEBUG: Warning - Row range {actual_row_start}:{actual_row_end} exceeds table {table_name} dimensions {arr.shape}")
+                        continue
+                    if actual_col_start >= cols or actual_col_end > cols:
+                        print(f"DEBUG: Warning - Column range {actual_col_start}:{actual_col_end} exceeds table {table_name} dimensions {arr.shape}")
+                        continue
+                    
+                    # Trim the table array
+                    arr = arr[actual_row_start:actual_row_end, actual_col_start:actual_col_end]
+                    print(f"DEBUG: Table {table_name} data trimmed from {original_arr_shape} to {arr.shape}")
+                
+                print(f"DEBUG: Final array shape: {arr.shape}, dtype: {arr.dtype}")
                 
                 # Check if the array is compatible with the pattern
                 if arr.shape[0] % a != 0 or arr.shape[1] % b != 0:
@@ -3436,12 +3506,30 @@ def get_form_data_generate_plot(form):
     custom_division_type = form_data.get('custom_division_type', '')
     if custom_division_type:
         form_data['custom_division'] = True
-        # Parse the custom division values from the selected option
-        try:
-            form_data['custom_division_values'] = [int(x.strip()) for x in custom_division_type.split(',')]
-        except ValueError:
-            form_data['custom_division'] = False
-            form_data['custom_division_values'] = []
+        if custom_division_type == 'custom':
+            # User selected "custom" - get values from the custom input field
+            custom_values_str = form.get('custom_division_values', '')
+            if custom_values_str.strip():
+                try:
+                    form_data['custom_division_values'] = [int(x.strip()) for x in custom_values_str.split(',')]
+                    print(f"Using custom division values from input: {form_data['custom_division_values']}")
+                except ValueError:
+                    print("Error parsing custom division values, falling back to equal division")
+                    form_data['custom_division'] = False
+                    form_data['custom_division_values'] = []
+            else:
+                print("Custom division selected but no values provided, falling back to equal division")
+                form_data['custom_division'] = False
+                form_data['custom_division_values'] = []
+        else:
+            # User selected a predefined option - parse the dropdown value
+            try:
+                form_data['custom_division_values'] = [int(x.strip()) for x in custom_division_type.split(',')]
+                print(f"Using predefined division values: {form_data['custom_division_values']}")
+            except ValueError:
+                print("Error parsing predefined division values, falling back to equal division")
+                form_data['custom_division'] = False
+                form_data['custom_division_values'] = []
     else:
         form_data['custom_division'] = False
         form_data['custom_division_values'] = []
@@ -6019,6 +6107,91 @@ def get_rwb_filtered_values():
     
     except Exception as e:
         return jsonify({'error': f'Error getting filtered column values: {str(e)}'}), 500
+
+@app.route('/analyze-pattern', methods=['POST'])
+def analyze_pattern():
+    """Analyze a state pattern file and return information about unique values in trimmed version"""
+    try:
+        data = request.get_json()
+        state_pattern = data.get('state_pattern')
+        row_start = data.get('row_start')
+        row_end = data.get('row_end') 
+        col_start = data.get('col_start')
+        col_end = data.get('col_end')
+        
+        if not state_pattern:
+            return jsonify({'success': False, 'error': 'State pattern is required'})
+        
+        # Load the pattern file
+        pattern_file = get_pattern_file(state_pattern)
+        if not pattern_file or not os.path.exists(pattern_file):
+            return jsonify({'success': False, 'error': f'Pattern file not found: {state_pattern}'})
+        
+        # Load the pattern array
+        import numpy as np
+        try:
+            pattern_array = np.load(pattern_file, allow_pickle=True)
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Error loading pattern file: {str(e)}'})
+        
+        # Apply special handling for specific patterns
+        if state_pattern == "82944x78_ecc_fuxi":
+            if len(pattern_array.shape) == 3:
+                pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+        elif state_pattern == "65536x78_ecc":
+            if len(pattern_array.shape) == 3:
+                pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+        
+        # Store original shape
+        original_shape = pattern_array.shape
+        
+        # Apply trimming if ranges are specified
+        if row_start is not None or row_end is not None or col_start is not None or col_end is not None:
+            rows, cols = pattern_array.shape
+            actual_row_start = row_start if row_start is not None else 0
+            actual_row_end = row_end + 1 if row_end is not None else rows  # +1 because slice end is exclusive
+            actual_col_start = col_start if col_start is not None else 0
+            actual_col_end = col_end + 1 if col_end is not None else cols  # +1 because slice end is exclusive
+            
+            # Validate ranges
+            if actual_row_start < 0 or actual_row_start >= rows:
+                return jsonify({'success': False, 'error': f'Invalid row_start: {row_start}. Must be between 0 and {rows-1}'})
+            if actual_row_end <= actual_row_start or actual_row_end > rows:
+                return jsonify({'success': False, 'error': f'Invalid row_end: {row_end}. Must be between {actual_row_start} and {rows-1}'})
+            if actual_col_start < 0 or actual_col_start >= cols:
+                return jsonify({'success': False, 'error': f'Invalid col_start: {col_start}. Must be between 0 and {cols-1}'})
+            if actual_col_end <= actual_col_start or actual_col_end > cols:
+                return jsonify({'success': False, 'error': f'Invalid col_end: {col_end}. Must be between {actual_col_start} and {cols-1}'})
+            
+            # Trim the pattern array
+            pattern_array = pattern_array[actual_row_start:actual_row_end, actual_col_start:actual_col_end]
+        
+        # Get trimmed shape
+        trimmed_shape = pattern_array.shape
+        
+        # Analyze unique values
+        unique_values, counts = np.unique(pattern_array, return_counts=True)
+        
+        # Create value counts text
+        value_counts_pairs = []
+        for val, count in zip(unique_values, counts):
+            value_counts_pairs.append(f"{val}: {count}")
+        value_counts_text = ", ".join(value_counts_pairs)
+        
+        return jsonify({
+            'success': True,
+            'original_shape': original_shape,
+            'trimmed_shape': trimmed_shape,
+            'unique_values': len(unique_values),
+            'value_counts': dict(zip(unique_values.tolist(), counts.tolist())),
+            'value_counts_text': value_counts_text
+        })
+        
+    except Exception as e:
+        print(f"Error in analyze_pattern: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Internal error: {str(e)}'})
 
 @app.route('/get-rwb-multiple-regex-filtered-values', methods=['POST'])
 def get_rwb_multiple_regex_filtered_values():

@@ -30,8 +30,16 @@
                     <option value="21080,19880,21072,20912">Custom Division 1 [21080, 19880, 21072, 20912]</option>
                     <option value="1625010,1612862,1640536,1591224">Custom Division 2 [1625010, 1612862, 1640536, 1591224]</option>
                     <option value="15920,16056,17048,16512">Custom Division 3 [15920,16056,17048,16512]</option>
+                    <option value="custom">Custom (Enter your own values)</option>
                 </select>
                 <small class="form-text text-muted d-block">Only applicable when number of states is 4</small>
+                
+                <!-- Custom division input field -->
+                <div id="custom_division_input_section" style="display:none;">
+                    <label for="custom_division_values" class="mt-2">Enter Custom Division Values:</label>
+                    <input type="text" class="form-control" name="custom_division_values" id="custom_division_values" placeholder="e.g., 20000,21000,22000,23000">
+                    <small class="form-text text-muted">Enter exactly 4 comma-separated values for the division thresholds.</small>
+                </div>
             </div>
             <div class="form-group">
                 <label for="selected_groups_1D">Selected States:</label>
@@ -301,6 +309,10 @@
         document.getElementById('yanCullinan_flag').checked = false;
         document.getElementById('custom_division_type').value = '';
         
+        // Reset custom division input
+        document.getElementById('custom_division_values').value = '';
+        document.getElementById('custom_division_input_section').style.display = 'none';
+        
         // Reset location dots options
         document.getElementById('location_dots_flag').checked = false;
         document.getElementById('location_dots_value').value = '';
@@ -395,6 +407,45 @@
     };
 
     document.getElementById('plotForm').addEventListener('submit', function(event) {
+        // Validate custom division values
+        const customDivisionType = document.getElementById('custom_division_type').value;
+        const customDivisionValues = document.getElementById('custom_division_values').value.trim();
+        
+        if (customDivisionType === 'custom') {
+            if (!customDivisionValues) {
+                alert('Custom Division Error: Please enter custom division values when "Custom (Enter your own values)" is selected.');
+                event.preventDefault();
+                document.getElementById('custom_division_values').focus();
+                return;
+            }
+            
+            // Validate format: should be exactly 4 comma-separated numbers
+            const values = customDivisionValues.split(',').map(v => v.trim()).filter(v => v);
+            if (values.length !== 4) {
+                alert('Custom Division Error: Please enter exactly 4 comma-separated values.');
+                event.preventDefault();
+                document.getElementById('custom_division_values').focus();
+                return;
+            }
+            
+            // Validate that all values are numbers
+            const numericValues = values.map(v => parseFloat(v));
+            if (numericValues.some(v => isNaN(v))) {
+                alert('Custom Division Error: All values must be valid numbers.');
+                event.preventDefault();
+                document.getElementById('custom_division_values').focus();
+                return;
+            }
+            
+            // Validate that all values are positive
+            if (numericValues.some(v => v <= 0)) {
+                alert('Custom Division Error: All values must be positive numbers.');
+                event.preventDefault();
+                document.getElementById('custom_division_values').focus();
+                return;
+            }
+        }
+
         const keywordsInput = document.getElementById('color_group_keywords');
         const keywordsValue = keywordsInput.value.trim();
 
@@ -593,7 +644,17 @@
     // Function to handle custom division dropdown toggle
     function toggleCustomDivision() {
         var dropdown = document.getElementById('custom_division_type');
+        var customInputSection = document.getElementById('custom_division_input_section');
+        
         console.log("Custom Division Dropdown state changed to: " + dropdown.value);
+        
+        if (dropdown.value === 'custom') {
+            customInputSection.style.display = 'block';
+        } else {
+            customInputSection.style.display = 'none';
+            document.getElementById('custom_division_values').value = '';
+        }
+        
         // Force the dropdown to visibly update
         dropdown.blur();
         dropdown.focus();

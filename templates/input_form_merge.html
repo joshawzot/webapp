@@ -3,8 +3,8 @@
 
 <div class="container">
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
-    <h3>Input Form</h3>
-    <p></p>
+    <h3>Input Form - Reshape and Combine Tables</h3>
+    <p>Select the portion of your tables and state pattern to process</p>
     <form action="/mergeTablesProcess" method="POST">
         <input type="hidden" name="database" value="{{ database }}">
         {% for table_name in table_names %}
@@ -38,10 +38,158 @@
                 <option value="256x32_pr0">256x32_pr0</option>
                 <option value="256x32_pr1">256x32_pr1</option>
             </select>
+            
+            <!-- Dynamic pattern analysis display -->
+            <div id="pattern-analysis" class="mt-2" style="display: none;">
+                <div class="alert alert-success">
+                    <strong>Pattern Analysis:</strong>
+                    <div id="pattern-info"></div>
+                </div>
+            </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <!-- Row and Column Range Selection -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>Row and Column Range Selection</h5>
+                <small class="text-muted">Specify which portion of your tables and state pattern to process. Both table data and state pattern will be trimmed to these ranges.</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Row Range</h6>
+                        <div class="form-row">
+                            <div class="col">
+                                <label for="row_start">Start Row (0-based):</label>
+                                <input type="number" class="form-control" id="row_start" name="row_start" min="0" placeholder="0">
+                                <small class="form-text text-muted">Leave empty to start from beginning</small>
+                            </div>
+                            <div class="col">
+                                <label for="row_end">End Row (inclusive):</label>
+                                <input type="number" class="form-control" id="row_end" name="row_end" min="0" placeholder="All">
+                                <small class="form-text text-muted">Leave empty to include all rows</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Column Range</h6>
+                        <div class="form-row">
+                            <div class="col">
+                                <label for="col_start">Start Column (0-based):</label>
+                                <input type="number" class="form-control" id="col_start" name="col_start" min="0" placeholder="0">
+                                <small class="form-text text-muted">Leave empty to start from beginning</small>
+                            </div>
+                            <div class="col">
+                                <label for="col_end">End Column (inclusive):</label>
+                                <input type="number" class="form-control" id="col_end" name="col_end" min="0" placeholder="All">
+                                <small class="form-text text-muted">Leave empty to include all columns</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- <div class="alert alert-info mt-3">
+                    <strong>Important Notes:</strong>
+                    <ul class="mb-0">
+                        <li>Both your table data and the state pattern will be trimmed to the specified ranges</li>
+                        <li>The trimmed dimensions must still be compatible with the state pattern structure</li>
+                        <li>Row and column indices are 0-based (first row/column is 0)</li>
+                        <li>End values are inclusive (e.g., row_end=10 includes row 10)</li>
+                        <li>Leave fields empty to use the full range for that dimension</li>
+                    </ul>
+                </div> -->
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Submit</button>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get references to form elements
+    const statePatternSelect = document.getElementById('state_pattern');
+    const rowStartInput = document.getElementById('row_start');
+    const rowEndInput = document.getElementById('row_end');
+    const colStartInput = document.getElementById('col_start');
+    const colEndInput = document.getElementById('col_end');
+    const patternAnalysisDiv = document.getElementById('pattern-analysis');
+    const patternInfoDiv = document.getElementById('pattern-info');
+    
+    // Function to analyze pattern
+    function analyzePattern() {
+        const statePattern = statePatternSelect.value;
+        
+        if (!statePattern) {
+            patternAnalysisDiv.style.display = 'none';
+            return;
+        }
+        
+        // Get range values
+        const rowStart = rowStartInput.value ? parseInt(rowStartInput.value) : null;
+        const rowEnd = rowEndInput.value ? parseInt(rowEndInput.value) : null;
+        const colStart = colStartInput.value ? parseInt(colStartInput.value) : null;
+        const colEnd = colEndInput.value ? parseInt(colEndInput.value) : null;
+        
+        // Show loading
+        patternInfoDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing pattern...';
+        patternAnalysisDiv.style.display = 'block';
+        
+        // Make AJAX request
+        fetch('/analyze-pattern', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                state_pattern: statePattern,
+                row_start: rowStart,
+                row_end: rowEnd,
+                col_start: colStart,
+                col_end: colEnd
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                patternInfoDiv.innerHTML = `
+                    <ul class="mb-0">
+                        <li><strong>Original dimensions:</strong> ${data.original_shape[0]} × ${data.original_shape[1]}</li>
+                        <li><strong>Trimmed dimensions:</strong> ${data.trimmed_shape[0]} × ${data.trimmed_shape[1]}</li>
+                        <li><strong>Number of unique values:</strong> ${data.unique_values}</li>
+                        <li><strong>Value counts:</strong> ${data.value_counts_text}</li>
+                    </ul>
+                `;
+            } else {
+                patternInfoDiv.innerHTML = `<div class="text-danger">${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            patternInfoDiv.innerHTML = '<div class="text-danger">Error analyzing pattern</div>';
+        });
+    }
+    
+    // Add event listeners
+    statePatternSelect.addEventListener('change', analyzePattern);
+    rowStartInput.addEventListener('input', debounce(analyzePattern, 500));
+    rowEndInput.addEventListener('input', debounce(analyzePattern, 500));
+    colStartInput.addEventListener('input', debounce(analyzePattern, 500));
+    colEndInput.addEventListener('input', debounce(analyzePattern, 500));
+    
+    // Debounce function to limit API calls
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+});
+</script>
 
 {% endblock %}

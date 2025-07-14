@@ -757,20 +757,32 @@ def generate_plot(table_names, database_name, form_data):
         # Use the already processed data matrix
         data_matrix = data_matrices[i][1]
         
+        # Get table-specific division settings for 1D patterns
+        if form_data['state_pattern_type'] == '1D' and 'table_division_settings' in form_data:
+            table_settings = form_data['table_division_settings'].get(table_name, {})
+            table_custom_division = table_settings.get('custom_division', False)
+            table_custom_division_values = table_settings.get('custom_division_values', [])
+            print(f"Using table-specific division for {table_name}: custom_division={table_custom_division}, values={table_custom_division_values}")
+        else:
+            # Fallback to global settings for backward compatibility
+            table_custom_division = custom_division
+            table_custom_division_values = form_data.get('custom_division_values', [])
+            print(f"Using global division for {table_name}: custom_division={table_custom_division}, values={table_custom_division_values}")
+        
         if target_range_flag == 0:
             if form_data['state_pattern_type'] == '1D':
-                # Modify to use the data matrix directly
+                # Modify to use the data matrix directly with table-specific settings
                 groups, stats, selected_groups = get_group_data_new_from_matrix(
-                    data_matrix, selected_groups, number_of_states, custom_division, form_data.get('custom_division_values', []))
+                    data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups = get_group_data_from_matrix(
                     data_matrix, selected_groups, pattern_file_array)
         elif target_range_flag == 1:
             if form_data['state_pattern_type'] == '1D':
-                # Modify to use the data matrix directly
+                # Modify to use the data matrix directly with table-specific settings
                 groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
-                    target_ranges, data_matrix, selected_groups, number_of_states, custom_division, form_data.get('custom_division_values', []))
+                    target_ranges, data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(

@@ -1,6 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+.suggestions-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.suggestions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.suggestions-buttons .btn {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestions-buttons .btn:hover {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+
 <div class="container">
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
     <h3>Advanced Combine</h3>
@@ -72,8 +102,16 @@
                             <input type="text" class="form-control" name="table_values_${index}" 
                                    id="table_values_${index}" 
                                    placeholder="Enter ${numStateValues} comma-separated values (e.g., 1,2,3,4)"
+                                   onfocus="showSuggestionsOnFocus(${index})"
+                                   onblur="hideSuggestionsOnBlur(${index})"
                                    required>
-                            <small class="form-text text-muted">Enter exactly ${numStateValues} values for this table.</small>
+                            <div id="suggestions_${index}" class="suggestions-container mt-2" style="display:none;">
+                                <small class="form-text text-muted mb-1">Previously used values:</small>
+                                <div id="suggestions_buttons_${index}" class="suggestions-buttons">
+                                    <!-- Suggestion buttons will be added here -->
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Enter exactly ${numStateValues} values for this table. <i class="fa fa-lightbulb-o" aria-hidden="true"></i> <strong>Tip:</strong> Values you enter will be remembered for future use.</small>
                         </div>
                     </div>
                 </div>
@@ -82,6 +120,117 @@
         
         html += '</div>';
         container.innerHTML = html;
+        
+        // Load suggestions after generating inputs
+        loadSuggestionsForAllTables();
+    }
+    
+    function showSuggestionsOnFocus(index) {
+        const suggestionsContainer = document.getElementById('suggestions_' + index);
+        if (suggestionsContainer) {
+            const buttonsContainer = document.getElementById('suggestions_buttons_' + index);
+            if (buttonsContainer && buttonsContainer.children.length > 0) {
+                suggestionsContainer.style.display = 'block';
+            }
+        }
+    }
+
+    function hideSuggestionsOnBlur(index) {
+        // Use a timeout to allow clicking on suggestion buttons before hiding
+        setTimeout(function() {
+            const suggestionsContainer = document.getElementById('suggestions_' + index);
+            const valueInput = document.getElementById('table_values_' + index);
+            
+            // Only hide if the input is not focused and no button is being clicked
+            if (suggestionsContainer && document.activeElement !== valueInput) {
+                const isClickingButton = document.activeElement && 
+                                       document.activeElement.parentElement && 
+                                       document.activeElement.parentElement.id === 'suggestions_buttons_' + index;
+                
+                if (!isClickingButton) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            }
+        }, 150);
+    }
+    
+    function loadSuggestionsForAllTables() {
+        const savedValues = getSavedAdvancedCombineValues();
+        if (savedValues.length > 0) {
+            tableInfo.forEach(function(table, index) {
+                addSuggestionsForTable(index, savedValues);
+            });
+        }
+    }
+    
+    function addSuggestionsForTable(index, savedValues) {
+        const suggestionsContainer = document.getElementById(`suggestions_${index}`);
+        const suggestionsButtons = document.getElementById(`suggestions_buttons_${index}`);
+        
+        if (!suggestionsContainer || !suggestionsButtons) return;
+        
+        // Clear existing suggestions
+        suggestionsButtons.innerHTML = '';
+        
+        // Add a button for each saved value
+        savedValues.forEach(function(savedValue, valueIndex) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-sm btn-outline-secondary mr-1 mb-1';
+            button.textContent = savedValue;
+            button.title = `Click to use: ${savedValue}`;
+            button.onclick = function() {
+                const valueInput = document.getElementById(`table_values_${index}`);
+                valueInput.value = savedValue;
+                valueInput.focus();
+            };
+            suggestionsButtons.appendChild(button);
+        });
+        
+        // Add a clear suggestions button if there are saved values
+        if (savedValues.length > 0) {
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'btn btn-sm btn-outline-danger ml-2 mb-1';
+            clearButton.textContent = 'Clear History';
+            clearButton.title = 'Clear all saved advanced combine values';
+            clearButton.onclick = function() {
+                if (confirm('Clear all saved advanced combine values?')) {
+                    clearSavedAdvancedCombineValues();
+                    // Hide suggestions for all tables after clearing
+                    const allSuggestionsContainers = document.querySelectorAll('[id^="suggestions_"]');
+                    allSuggestionsContainers.forEach(container => {
+                        container.style.display = 'none';
+                    });
+                }
+            };
+            suggestionsButtons.appendChild(clearButton);
+        }
+    }
+    
+    function getSavedAdvancedCombineValues() {
+        let savedValues = JSON.parse(localStorage.getItem('advancedCombineValues') || '[]');
+        return savedValues;
+    }
+    
+    function saveAdvancedCombineValue(valueString) {
+        if (!valueString) return;
+        
+        let savedValues = JSON.parse(localStorage.getItem('advancedCombineValues') || '[]');
+        
+        // Add new value if it doesn't already exist
+        if (!savedValues.includes(valueString)) {
+            savedValues.unshift(valueString); // Add to beginning
+            savedValues = savedValues.slice(0, 10); // Keep only last 10 values
+        }
+        
+        localStorage.setItem('advancedCombineValues', JSON.stringify(savedValues));
+        console.log(`Saved advanced combine value: ${valueString}`);
+    }
+    
+    function clearSavedAdvancedCombineValues() {
+        localStorage.removeItem('advancedCombineValues');
+        console.log('Cleared all saved advanced combine values');
     }
     
     // Initialize form validation
@@ -95,13 +244,14 @@
             return;
         }
         
-        // Validate table values
+        // Validate table values and save them to localStorage
         let isValid = true;
         tableInfo.forEach(function(table, index) {
             const valuesInput = document.getElementById(`table_values_${index}`);
             if (!valuesInput) return;
             
-            const values = valuesInput.value.trim().split(',').map(v => v.trim()).filter(v => v);
+            const valuesString = valuesInput.value.trim();
+            const values = valuesString.split(',').map(v => v.trim()).filter(v => v);
             
             if (values.length !== numStateValues) {
                 alert(`Table "${table.name}" requires exactly ${numStateValues} values, but ${values.length} were provided.`);
@@ -117,6 +267,11 @@
                 isValid = false;
                 valuesInput.focus();
                 return;
+            }
+            
+            // Save the valid values to localStorage
+            if (isValid) {
+                saveAdvancedCombineValue(valuesString);
             }
         });
         

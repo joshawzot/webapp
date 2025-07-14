@@ -94,11 +94,12 @@
         <!-- Fifth row with combine buttons -->
         <div class="row custom-row mb-3">
             <div class="col">
-                <!-- Fifth group: "Concatenate Selected (...)", "Reshape and Combine Selected", "Simple Combine", "Simple Combine Columns" -->
+                <!-- Fifth group: "Concatenate Selected (...)", "Reshape and Combine Selected", "Simple Combine", "Simple Combine Columns", "Advanced Combine" -->
                 <button class="btn btn-warning" id="concatenateSelected">Concatenate Selected (...)</button>
                 <button class="btn btn-success" id="mergeSelected">Reshape and Combine Selected</button>
                 <button class="btn btn-secondary" id="simpleCombine">Simple Combine</button>
                 <button class="btn btn-info" id="combineSingleColumns">Simple Combine Columns</button>
+                <button class="btn btn-primary" id="advancedCombine">Advanced Combine</button>
             </div>
         </div>
 
@@ -1252,6 +1253,39 @@
                 }
             } else {
                 alert('Please select at least one table to combine.');
+            }
+        });
+
+        // Add the event listener for the "Advanced Combine" button
+        document.getElementById('advancedCombine').addEventListener('click', function() {
+            const tableNames = getSelectedVisibleTableNames();
+            const database = '{{ database }}';
+
+            if (tableNames.length >= 2) {
+                // Create a form to send data to the advanced combine page
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/advanced-combine';
+                
+                // Add database
+                const dbInput = document.createElement('input');
+                dbInput.type = 'hidden';
+                dbInput.name = 'database';
+                dbInput.value = database;
+                form.appendChild(dbInput);
+                
+                // Add table names
+                const tableNamesInput = document.createElement('input');
+                tableNamesInput.type = 'hidden';
+                tableNamesInput.name = 'table_names';
+                tableNamesInput.value = tableNames.join(',');
+                form.appendChild(tableNamesInput);
+                
+                // Submit the form
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                alert('Please select at least two tables for advanced combine.');
             }
         });
 

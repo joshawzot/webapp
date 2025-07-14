@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container">
+    <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+    <h3>Advanced Combine</h3>
+    <p>Configure advanced row-wise combining for selected tables</p>
+    
+    <div class="alert alert-info" role="alert">
+        <strong>How it works:</strong> Each table will contribute rows based on the values you specify. 
+        If you have 2 tables with values "1,2,3,4" and "5,6,7,8", the combined table will have:
+        <ul>
+            <li>First 1 row from table1, then first 5 rows from table2</li>
+            <li>Next 2 rows from table1, then next 6 rows from table2</li>
+            <li>Next 3 rows from table1, then next 7 rows from table2</li>
+            <li>Next 4 rows from table1, then next 8 rows from table2</li>
+        </ul>
+        Total rows: 1+5+2+6+3+7+4+8 = 36 rows
+    </div>
+
+    <form action="/process-advanced-combine" method="POST" autocomplete="off" id="advancedCombineForm">
+        <input type="hidden" name="database" value="{{ database }}">
+        <input type="hidden" name="table_names" value="{{ table_names }}">
+        
+        <div class="form-group">
+            <label for="num_state_values">Number of State Values:</label>
+            <input type="number" class="form-control" name="num_state_values" id="num_state_values" 
+                   min="1" max="20" value="4" placeholder="Enter number of state values" 
+                   onchange="generateValueInputs()">
+            <small class="form-text text-muted">This determines how many values you'll assign to each table.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="new_table_name">New Combined Table Name:</label>
+            <input type="text" class="form-control" name="new_table_name" id="new_table_name" 
+                   placeholder="Enter name for the new combined table" required>
+        </div>
+
+        <div id="table_value_inputs">
+            <!-- Table-specific value inputs will be generated here by JavaScript -->
+        </div>
+
+        <button type="submit" class="btn btn-primary">Combine Tables</button>
+        <a href="javascript:history.back()" class="btn btn-secondary ml-2">Cancel</a>
+    </form>
+</div>
+
+<script>
+    // Table information from the backend
+    const tableInfo = {{ table_info | safe }};
+    
+    function generateValueInputs() {
+        const numStateValues = document.getElementById('num_state_values').value;
+        const container = document.getElementById('table_value_inputs');
+        
+        if (!numStateValues || numStateValues < 1) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        let html = '<div class="mt-4"><h4>Assign Values to Each Table:</h4>';
+        
+        tableInfo.forEach(function(table, index) {
+            html += `
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>${table.name}</strong> (${table.dimensions})
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="table_values_${index}">Values (comma-separated):</label>
+                            <input type="text" class="form-control" name="table_values_${index}" 
+                                   id="table_values_${index}" 
+                                   placeholder="Enter ${numStateValues} comma-separated values (e.g., 1,2,3,4)"
+                                   required>
+                            <small class="form-text text-muted">Enter exactly ${numStateValues} values for this table.</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
+    // Initialize form validation
+    document.getElementById('advancedCombineForm').addEventListener('submit', function(event) {
+        const numStateValues = parseInt(document.getElementById('num_state_values').value);
+        const newTableName = document.getElementById('new_table_name').value.trim();
+        
+        if (!newTableName) {
+            alert('Please enter a name for the new combined table.');
+            event.preventDefault();
+            return;
+        }
+        
+        // Validate table values
+        let isValid = true;
+        tableInfo.forEach(function(table, index) {
+            const valuesInput = document.getElementById(`table_values_${index}`);
+            if (!valuesInput) return;
+            
+            const values = valuesInput.value.trim().split(',').map(v => v.trim()).filter(v => v);
+            
+            if (values.length !== numStateValues) {
+                alert(`Table "${table.name}" requires exactly ${numStateValues} values, but ${values.length} were provided.`);
+                isValid = false;
+                valuesInput.focus();
+                return;
+            }
+            
+            // Check if all values are positive integers
+            const numericValues = values.map(v => parseInt(v));
+            if (numericValues.some(v => isNaN(v) || v <= 0)) {
+                alert(`Table "${table.name}" contains invalid values. All values must be positive integers.`);
+                isValid = false;
+                valuesInput.focus();
+                return;
+            }
+        });
+        
+        if (!isValid) {
+            event.preventDefault();
+        }
+    });
+    
+    // Generate inputs on page load
+    window.onload = function() {
+        generateValueInputs();
+    };
+</script>
+
+{% endblock %} 

@@ -59,7 +59,7 @@
                 <label><strong>Division Options for Each Table:</strong></label>
                 <small class="form-text text-muted d-block mb-3">
                     Configure division method separately for each selected table. Only applicable when number of states is 4.<br>
-                    <i class="fa fa-lightbulb-o" aria-hidden="true"></i> <strong>Tip:</strong> Custom values you enter will be remembered for each table and suggested next time you use them.
+                    <i class="fa fa-lightbulb-o" aria-hidden="true"></i> <strong>Tip:</strong> Custom values you enter will be remembered globally and suggested for all tables next time you use them.
                 </small>
                 <div id="table_division_fields">
                     <!-- Table-specific division fields will be generated here by JavaScript -->
@@ -735,7 +735,7 @@
                                    onfocus="showSuggestionsOnFocus(${index})"
                                    onblur="hideSuggestionsOnBlur(${index})">
                             <div id="suggestions_${index}" class="suggestions-container mt-2" style="display:none;">
-                                <small class="form-text text-muted mb-1">Previously used values for this table:</small>
+                                <small class="form-text text-muted mb-1">Previously used values (from all tables):</small>
                                 <div id="suggestions_buttons_${index}" class="suggestions-buttons">
                                     <!-- Suggestion buttons will be added here -->
                                 </div>
@@ -749,13 +749,13 @@
             container.innerHTML += fieldsetHTML;
         });
         
-        // Add suggestions for tables that have saved custom values
-        tableNames.forEach(function(tableName, index) {
-            const savedValues = getSavedCustomDivisionValues(tableName);
-            if (savedValues.length > 0) {
+        // Add suggestions for all tables using globally saved values
+        const savedValues = getSavedCustomDivisionValues();
+        if (savedValues.length > 0) {
+            tableNames.forEach(function(tableName, index) {
                 addSuggestionsForTable(tableName, index, savedValues);
-            }
-        });
+            });
+        }
     }
 
     function addSuggestionsForTable(tableName, index, savedValues) {
@@ -787,16 +787,16 @@
             const clearButton = document.createElement('button');
             clearButton.type = 'button';
             clearButton.className = 'btn btn-sm btn-outline-danger ml-2 mb-1';
-            clearButton.textContent = 'Clear History';
-            clearButton.title = `Clear saved values for ${tableName}`;
+            clearButton.textContent = 'Clear All History';
+            clearButton.title = 'Clear all saved custom division values';
             clearButton.onclick = function() {
-                if (confirm(`Clear all saved custom division values for "${tableName}"?`)) {
+                if (confirm('Clear all saved custom division values? This will affect all tables.')) {
                     clearSavedValuesForTable(tableName);
-                    // Hide suggestions after clearing
-                    const suggestionsContainer = document.getElementById(`suggestions_${index}`);
-                    if (suggestionsContainer) {
-                        suggestionsContainer.style.display = 'none';
-                    }
+                    // Hide suggestions for all tables after clearing
+                    const allSuggestionsContainers = document.querySelectorAll('[id^="suggestions_"]');
+                    allSuggestionsContainers.forEach(container => {
+                        container.style.display = 'none';
+                    });
                 }
             };
             suggestionsButtons.appendChild(clearButton);
@@ -887,43 +887,32 @@
 
 
 
-    // Function to save custom division values to localStorage
+    // Function to save custom division values to localStorage (globally)
     function saveCustomDivisionValue(tableName, customValues) {
-        if (!tableName || !customValues) return;
+        if (!customValues) return;
         
-        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '{}');
-        
-        // Keep only the last 5 values per table to avoid excessive storage
-        if (!savedValues[tableName]) {
-            savedValues[tableName] = [];
-        }
+        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '[]');
         
         // Add new value if it doesn't already exist
-        if (!savedValues[tableName].includes(customValues)) {
-            savedValues[tableName].unshift(customValues); // Add to beginning
-            savedValues[tableName] = savedValues[tableName].slice(0, 5); // Keep only last 5
+        if (!savedValues.includes(customValues)) {
+            savedValues.unshift(customValues); // Add to beginning
+            savedValues = savedValues.slice(0, 10); // Keep only last 10 values to avoid excessive storage
         }
         
         localStorage.setItem('customDivisionValues', JSON.stringify(savedValues));
-        console.log(`Saved custom division value for ${tableName}: ${customValues}`);
+        console.log(`Saved custom division value globally: ${customValues}`);
     }
 
-    // Function to load saved custom division values from localStorage
+    // Function to load saved custom division values from localStorage (globally)
     function getSavedCustomDivisionValues(tableName) {
-        if (!tableName) return [];
-        
-        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '{}');
-        return savedValues[tableName] || [];
+        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '[]');
+        return savedValues;
     }
 
-    // Function to clear saved values for a specific table
+    // Function to clear all saved values
     function clearSavedValuesForTable(tableName) {
-        if (!tableName) return;
-        
-        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '{}');
-        delete savedValues[tableName];
-        localStorage.setItem('customDivisionValues', JSON.stringify(savedValues));
-        console.log(`Cleared saved custom division values for ${tableName}`);
+        localStorage.removeItem('customDivisionValues');
+        console.log('Cleared all saved custom division values');
     }
 
     // Function to toggle bitmap mask name input visibility

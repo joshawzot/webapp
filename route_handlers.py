@@ -24,7 +24,7 @@ from io import BytesIO
 # External libraries
 import pandas as pd
 import mysql.connector
-from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash, send_from_directory
+from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash, send_from_directory, current_app
 from pptx import Presentation
 import zipfile
 import numpy as np
@@ -1445,6 +1445,7 @@ Reshaped to (a*b, 1):
 def get_pattern_file(pattern_name):
     """
     Return the full path to a pattern file based on the pattern name.
+    Uses either absolute or relative paths based on app configuration.
     
     Args:
         pattern_name: Name of the pattern
@@ -1452,8 +1453,8 @@ def get_pattern_file(pattern_name):
     Returns:
         Full path to the pattern file
     """
-    # Pattern files location
-    '''pattern_files = {
+    # Define relative paths
+    relative_pattern_files = {
         "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
@@ -1469,13 +1470,15 @@ def get_pattern_file(pattern_name):
         "248x256_1state": "State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
-    }'''
-
-    pattern_files = {
+        "2048x32_random": "State_pattern_files/2048x32_random.npy",
+    }
+    
+    # Define absolute paths
+    absolute_pattern_files = {
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
-        "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
+        "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
         "248x248_1state": "/home/admin2/webapp_2/State_pattern_files/248x248_1state.npy",
         "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
@@ -1489,6 +1492,10 @@ def get_pattern_file(pattern_name):
         "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
         "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
     }
+    
+    # Choose the appropriate pattern files based on configuration
+    use_absolute_paths = current_app.config.get('USE_ABSOLUTE_STATE_PATTERN_PATHS', True)
+    pattern_files = absolute_pattern_files if use_absolute_paths else relative_pattern_files
     
     # Return the path for the pattern name
     return pattern_files.get(pattern_name, "")

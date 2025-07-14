@@ -1,6 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+.suggestions-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.suggestions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.suggestions-buttons .btn {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestions-buttons .btn:hover {
+    background-color: #007bff;
+    color: white;
+}
+</style>
+
 <div class="container">
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
     <h3>Input Form</h3>
@@ -23,22 +53,16 @@
                 <label for="number_of_states">Number of States:</label>
                 <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states" onchange="checkCustomDivision()">
             </div>
-            <div class="form-group" id="custom_division_container" style="display:block;">
-                <label for="custom_division_type">Custom Division Options:</label>
-                <select class="form-control" name="custom_division_type" id="custom_division_type" onchange="toggleCustomDivision()">
-                    <option value="">None (Equal Division)</option>
-                    <option value="21080,19880,21072,20912">Custom Division 1 [21080, 19880, 21072, 20912]</option>
-                    <option value="1625010,1612862,1640536,1591224">Custom Division 2 [1625010, 1612862, 1640536, 1591224]</option>
-                    <option value="15920,16056,17048,16512">Custom Division 3 [15920,16056,17048,16512]</option>
-                    <option value="custom">Custom (Enter your own values)</option>
-                </select>
-                <small class="form-text text-muted d-block">Only applicable when number of states is 4</small>
-                
-                <!-- Custom division input field -->
-                <div id="custom_division_input_section" style="display:none;">
-                    <label for="custom_division_values" class="mt-2">Enter Custom Division Values:</label>
-                    <input type="text" class="form-control" name="custom_division_values" id="custom_division_values" placeholder="e.g., 20000,21000,22000,23000">
-                    <small class="form-text text-muted">Enter exactly 4 comma-separated values for the division thresholds.</small>
+            
+            <!-- Per-table division options container -->
+            <div id="per_table_division_container" style="display:block;">
+                <label><strong>Division Options for Each Table:</strong></label>
+                <small class="form-text text-muted d-block mb-3">
+                    Configure division method separately for each selected table. Only applicable when number of states is 4.<br>
+                    <i class="fa fa-lightbulb-o" aria-hidden="true"></i> <strong>Tip:</strong> Custom values you enter will be remembered for each table and suggested next time you use them.
+                </small>
+                <div id="table_division_fields">
+                    <!-- Table-specific division fields will be generated here by JavaScript -->
                 </div>
             </div>
             <div class="form-group">
@@ -307,11 +331,9 @@
         outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
         document.getElementById('yanCullinan_flag').checked = false;
-        document.getElementById('custom_division_type').value = '';
         
-        // Reset custom division input
-        document.getElementById('custom_division_values').value = '';
-        document.getElementById('custom_division_input_section').style.display = 'none';
+        // Clear any existing table division fields
+        clearTableDivisionFields();
         
         // Reset location dots options
         document.getElementById('location_dots_flag').checked = false;
@@ -393,6 +415,14 @@
         initializeForm();
         // Load available bitmap masks after form initialization (preserve selection for back/forward navigation)
         setTimeout(() => loadBitmapMasks(true), 100);
+        // Generate table division fields if needed after a short delay
+        setTimeout(() => {
+            const statePatternType = document.getElementById('state_pattern_type').value;
+            const numberOfStates = document.getElementById('number_of_states').value;
+            if (statePatternType === '1D' && numberOfStates === '4') {
+                generateTableDivisionFields();
+            }
+        }, 200);
     });
 
     // Prevent form data persistence
@@ -404,45 +434,82 @@
         initializeForm();
         // Load available bitmap masks after form initialization (preserve selection for fresh page load)
         setTimeout(() => loadBitmapMasks(true), 100);
+        // Generate table division fields if needed after a short delay to ensure table names are loaded
+        setTimeout(() => {
+            const statePatternType = document.getElementById('state_pattern_type').value;
+            const numberOfStates = document.getElementById('number_of_states').value;
+            if (statePatternType === '1D' && numberOfStates === '4') {
+                generateTableDivisionFields();
+            }
+        }, 200);
     };
 
     document.getElementById('plotForm').addEventListener('submit', function(event) {
-        // Validate custom division values
-        const customDivisionType = document.getElementById('custom_division_type').value;
-        const customDivisionValues = document.getElementById('custom_division_values').value.trim();
+        // Validate per-table custom division values (only for 1D pattern type)
+        const statePatternType = document.getElementById('state_pattern_type').value;
+        const numberOfStates = document.getElementById('number_of_states').value;
         
-        if (customDivisionType === 'custom') {
-            if (!customDivisionValues) {
-                alert('Custom Division Error: Please enter custom division values when "Custom (Enter your own values)" is selected.');
-                event.preventDefault();
-                document.getElementById('custom_division_values').focus();
-                return;
-            }
+        if (statePatternType === '1D' && numberOfStates === '4') {
+            const tableCustomDivisionInputs = document.querySelectorAll('.table-custom-division-input');
+            const tableCustomDivisionDropdowns = document.querySelectorAll('.table-division-dropdown');
             
-            // Validate format: should be exactly 4 comma-separated numbers
-            const values = customDivisionValues.split(',').map(v => v.trim()).filter(v => v);
-            if (values.length !== 4) {
-                alert('Custom Division Error: Please enter exactly 4 comma-separated values.');
-                event.preventDefault();
-                document.getElementById('custom_division_values').focus();
-                return;
+            for (let i = 0; i < tableCustomDivisionDropdowns.length; i++) {
+                const dropdown = tableCustomDivisionDropdowns[i];
+                const customInput = tableCustomDivisionInputs[i];
+                const tableName = dropdown.dataset.tableName;
+                
+                if (dropdown.value === 'custom') {
+                    const customDivisionValues = customInput.value.trim();
+                    
+                    if (!customDivisionValues) {
+                        alert(`Custom Division Error for table "${tableName}": Please enter custom division values when "Custom (Enter your own values)" is selected.`);
+                        event.preventDefault();
+                        customInput.focus();
+                        return;
+                    }
+                    
+                    // Validate format: should be exactly 4 comma-separated numbers
+                    const values = customDivisionValues.split(',').map(v => v.trim()).filter(v => v);
+                    if (values.length !== 4) {
+                        alert(`Custom Division Error for table "${tableName}": Please enter exactly 4 comma-separated values.`);
+                        event.preventDefault();
+                        customInput.focus();
+                        return;
+                    }
+                    
+                    // Validate that all values are numbers
+                    const numericValues = values.map(v => parseFloat(v));
+                    if (numericValues.some(v => isNaN(v))) {
+                        alert(`Custom Division Error for table "${tableName}": All values must be valid numbers.`);
+                        event.preventDefault();
+                        customInput.focus();
+                        return;
+                    }
+                    
+                    // Validate that all values are positive
+                    if (numericValues.some(v => v <= 0)) {
+                        alert(`Custom Division Error for table "${tableName}": All values must be positive numbers.`);
+                        event.preventDefault();
+                        customInput.focus();
+                        return;
+                    }
+                }
             }
+        }
+
+        // Save custom division values to localStorage for future suggestions
+        if (statePatternType === '1D' && numberOfStates === '4') {
+            const tableCustomDivisionInputs = document.querySelectorAll('.table-custom-division-input');
+            const tableCustomDivisionDropdowns = document.querySelectorAll('.table-division-dropdown');
             
-            // Validate that all values are numbers
-            const numericValues = values.map(v => parseFloat(v));
-            if (numericValues.some(v => isNaN(v))) {
-                alert('Custom Division Error: All values must be valid numbers.');
-                event.preventDefault();
-                document.getElementById('custom_division_values').focus();
-                return;
-            }
-            
-            // Validate that all values are positive
-            if (numericValues.some(v => v <= 0)) {
-                alert('Custom Division Error: All values must be positive numbers.');
-                event.preventDefault();
-                document.getElementById('custom_division_values').focus();
-                return;
+            for (let i = 0; i < tableCustomDivisionDropdowns.length; i++) {
+                const dropdown = tableCustomDivisionDropdowns[i];
+                const customInput = tableCustomDivisionInputs[i];
+                const tableName = dropdown.dataset.tableName;
+                
+                if (dropdown.value === 'custom' && customInput.value.trim()) {
+                    saveCustomDivisionValue(tableName, customInput.value.trim());
+                }
             }
         }
 
@@ -608,17 +675,193 @@
     
     function checkCustomDivision() {
         var numberOfStates = document.getElementById('number_of_states').value;
-        var customDivisionContainer = document.getElementById('custom_division_container');
-        var customDivisionType = document.getElementById('custom_division_type');
+        var perTableDivisionContainer = document.getElementById('per_table_division_container');
         
         if (numberOfStates === '4') {
-            customDivisionContainer.style.display = 'block';
-            // Ensure the dropdown is responsive to changes
-            customDivisionType.disabled = false;
+            perTableDivisionContainer.style.display = 'block';
+            generateTableDivisionFields();
         } else {
-            customDivisionContainer.style.display = 'none';
-            customDivisionType.value = '';
-            customDivisionType.disabled = true;
+            perTableDivisionContainer.style.display = 'none';
+            clearTableDivisionFields();
+        }
+    }
+
+    function generateTableDivisionFields() {
+        var container = document.getElementById('table_division_fields');
+        var formElement = document.getElementById('plotForm');
+        var rawTableNames = formElement.dataset.tableNames;
+        
+        if (!rawTableNames) {
+            console.log('No table names found');
+            return;
+        }
+        
+        var tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
+        console.log('Generating division fields for tables:', tableNames);
+        
+        // Clear existing fields
+        container.innerHTML = '';
+        
+        tableNames.forEach(function(tableName, index) {
+            var fieldsetId = 'table_division_' + index;
+            var dropdownId = 'custom_division_type_' + index;
+            var customInputId = 'custom_division_values_' + index;
+            var customSectionId = 'custom_division_input_section_' + index;
+            
+            var fieldsetHTML = `
+                <div class="card mb-3" id="${fieldsetId}">
+                    <div class="card-header">
+                        <strong>${tableName}</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="${dropdownId}">Division Method:</label>
+                            <select class="form-control table-division-dropdown" name="custom_division_type_${index}" id="${dropdownId}" 
+                                    data-table-name="${tableName}" data-index="${index}" onchange="toggleTableCustomDivision(${index})">
+                                <option value="">None (Equal Division)</option>
+                                <option value="21080,19880,21072,20912">Custom Division 1 [21080, 19880, 21072, 20912]</option>
+                                <option value="1625010,1612862,1640536,1591224">Custom Division 2 [1625010, 1612862, 1640536, 1591224]</option>
+                                <option value="15920,16056,17048,16512">Custom Division 3 [15920,16056,17048,16512]</option>
+                                <option value="custom">Custom (Enter your own values)</option>
+                            </select>
+                        </div>
+                        
+                        <div id="${customSectionId}" style="display:none;">
+                            <label for="${customInputId}" class="mt-2">Enter Custom Division Values:</label>
+                            <input type="text" class="form-control table-custom-division-input" 
+                                   name="custom_division_values_${index}" id="${customInputId}" 
+                                   data-table-name="${tableName}" data-index="${index}"
+                                   placeholder="e.g., 20000,21000,22000,23000"
+                                   onfocus="showSuggestionsOnFocus(${index})"
+                                   onblur="hideSuggestionsOnBlur(${index})"
+                            <div id="suggestions_${index}" class="suggestions-container mt-2" style="display:none;">
+                                <small class="form-text text-muted mb-1">Previously used values for this table:</small>
+                                <div id="suggestions_buttons_${index}" class="suggestions-buttons">
+                                    <!-- Suggestion buttons will be added here -->
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Enter exactly 4 comma-separated values for the division thresholds.</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML += fieldsetHTML;
+        });
+        
+        // Add suggestions for tables that have saved custom values
+        tableNames.forEach(function(tableName, index) {
+            const savedValues = getSavedCustomDivisionValues(tableName);
+            if (savedValues.length > 0) {
+                addSuggestionsForTable(tableName, index, savedValues);
+            }
+        });
+    }
+
+    function addSuggestionsForTable(tableName, index, savedValues) {
+        const suggestionsContainer = document.getElementById(`suggestions_${index}`);
+        const suggestionsButtons = document.getElementById(`suggestions_buttons_${index}`);
+        
+        if (!suggestionsContainer || !suggestionsButtons) return;
+        
+        // Clear existing suggestions
+        suggestionsButtons.innerHTML = '';
+        
+        // Add a button for each saved value
+        savedValues.forEach(function(savedValue, valueIndex) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-sm btn-outline-secondary mr-1 mb-1';
+            button.textContent = savedValue;
+            button.title = `Click to use: ${savedValue}`;
+            button.onclick = function() {
+                const customInput = document.getElementById(`custom_division_values_${index}`);
+                customInput.value = savedValue;
+                customInput.focus();
+            };
+            suggestionsButtons.appendChild(button);
+        });
+        
+        // Add a clear suggestions button if there are saved values
+        if (savedValues.length > 0) {
+            const clearButton = document.createElement('button');
+            clearButton.type = 'button';
+            clearButton.className = 'btn btn-sm btn-outline-danger ml-2 mb-1';
+            clearButton.textContent = 'Clear History';
+            clearButton.title = `Clear saved values for ${tableName}`;
+            clearButton.onclick = function() {
+                if (confirm(`Clear all saved custom division values for "${tableName}"?`)) {
+                    clearSavedValuesForTable(tableName);
+                    // Hide suggestions after clearing
+                    const suggestionsContainer = document.getElementById(`suggestions_${index}`);
+                    if (suggestionsContainer) {
+                        suggestionsContainer.style.display = 'none';
+                    }
+                }
+            };
+            suggestionsButtons.appendChild(clearButton);
+        }
+        
+        // Show the suggestions container
+        suggestionsContainer.style.display = 'block';
+    }
+
+    function showSuggestionsOnFocus(index) {
+        const suggestionsContainer = document.getElementById('suggestions_' + index);
+        if (suggestionsContainer) {
+            const buttonsContainer = document.getElementById('suggestions_buttons_' + index);
+            if (buttonsContainer && buttonsContainer.children.length > 0) {
+                suggestionsContainer.style.display = 'block';
+            }
+        }
+    }
+
+    function hideSuggestionsOnBlur(index) {
+        // Use a timeout to allow clicking on suggestion buttons before hiding
+        setTimeout(function() {
+            const suggestionsContainer = document.getElementById('suggestions_' + index);
+            const customInput = document.getElementById('custom_division_values_' + index);
+            
+            // Only hide if the input is not focused and no button is being clicked
+            if (suggestionsContainer && document.activeElement !== customInput) {
+                const isClickingButton = document.activeElement && 
+                                       document.activeElement.parentElement && 
+                                       document.activeElement.parentElement.id === 'suggestions_buttons_' + index;
+                
+                if (!isClickingButton) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            }
+        }, 150);
+    }
+
+    function clearTableDivisionFields() {
+        var container = document.getElementById('table_division_fields');
+        container.innerHTML = '';
+    }
+
+    function toggleTableCustomDivision(index) {
+        var dropdown = document.getElementById('custom_division_type_' + index);
+        var customSection = document.getElementById('custom_division_input_section_' + index);
+        var customInput = document.getElementById('custom_division_values_' + index);
+        var suggestionsContainer = document.getElementById('suggestions_' + index);
+        
+        if (dropdown.value === 'custom') {
+            customSection.style.display = 'block';
+            // Show suggestions if they exist and are currently hidden
+            if (suggestionsContainer && suggestionsContainer.innerHTML.trim() !== '') {
+                var buttonsContainer = document.getElementById('suggestions_buttons_' + index);
+                if (buttonsContainer && buttonsContainer.children.length > 0) {
+                    suggestionsContainer.style.display = 'block';
+                }
+            }
+        } else {
+            customSection.style.display = 'none';
+            customInput.value = '';
+            // Hide suggestions when not using custom
+            if (suggestionsContainer) {
+                suggestionsContainer.style.display = 'none';
+            }
         }
     }
 
@@ -638,26 +881,49 @@
         } else {
             fields1D.style.display = 'none';
             fieldsPredefined.style.display = 'block';
+            clearTableDivisionFields();  // Clear table division fields when switching away from 1D
         }
     }
 
-    // Function to handle custom division dropdown toggle
-    function toggleCustomDivision() {
-        var dropdown = document.getElementById('custom_division_type');
-        var customInputSection = document.getElementById('custom_division_input_section');
+
+
+    // Function to save custom division values to localStorage
+    function saveCustomDivisionValue(tableName, customValues) {
+        if (!tableName || !customValues) return;
         
-        console.log("Custom Division Dropdown state changed to: " + dropdown.value);
+        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '{}');
         
-        if (dropdown.value === 'custom') {
-            customInputSection.style.display = 'block';
-        } else {
-            customInputSection.style.display = 'none';
-            document.getElementById('custom_division_values').value = '';
+        // Keep only the last 5 values per table to avoid excessive storage
+        if (!savedValues[tableName]) {
+            savedValues[tableName] = [];
         }
         
-        // Force the dropdown to visibly update
-        dropdown.blur();
-        dropdown.focus();
+        // Add new value if it doesn't already exist
+        if (!savedValues[tableName].includes(customValues)) {
+            savedValues[tableName].unshift(customValues); // Add to beginning
+            savedValues[tableName] = savedValues[tableName].slice(0, 5); // Keep only last 5
+        }
+        
+        localStorage.setItem('customDivisionValues', JSON.stringify(savedValues));
+        console.log(`Saved custom division value for ${tableName}: ${customValues}`);
+    }
+
+    // Function to load saved custom division values from localStorage
+    function getSavedCustomDivisionValues(tableName) {
+        if (!tableName) return [];
+        
+        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '{}');
+        return savedValues[tableName] || [];
+    }
+
+    // Function to clear saved values for a specific table
+    function clearSavedValuesForTable(tableName) {
+        if (!tableName) return;
+        
+        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '{}');
+        delete savedValues[tableName];
+        localStorage.setItem('customDivisionValues', JSON.stringify(savedValues));
+        console.log(`Cleared saved custom division values for ${tableName}`);
     }
 
     // Function to toggle bitmap mask name input visibility

@@ -1487,7 +1487,6 @@ def get_pattern_file(pattern_name):
         "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
-        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
         "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
     }
     
@@ -3502,37 +3501,102 @@ def get_form_data_generate_plot(form):
     else:
         form_data['location_dots_value'] = None
     
-    # Handle custom division - convert from dropdown selection to boolean and values
-    custom_division_type = form_data.get('custom_division_type', '')
-    if custom_division_type:
-        form_data['custom_division'] = True
-        if custom_division_type == 'custom':
-            # User selected "custom" - get values from the custom input field
-            custom_values_str = form.get('custom_division_values', '')
-            if custom_values_str.strip():
-                try:
-                    form_data['custom_division_values'] = [int(x.strip()) for x in custom_values_str.split(',')]
-                    print(f"Using custom division values from input: {form_data['custom_division_values']}")
-                except ValueError:
-                    print("Error parsing custom division values, falling back to equal division")
+    # Handle per-table custom division for 1D pattern type
+    if form_data['state_pattern_type'] == '1D':
+        form_data['table_division_settings'] = {}
+        form_data['custom_division'] = False  # Keep for backward compatibility
+        form_data['custom_division_values'] = []  # Keep for backward compatibility
+        
+        # Get table names from the form data
+        table_name = form.get('table_name', '')
+        if table_name:
+            table_names = [tn.strip() for tn in table_name.split(',') if tn.strip()]
+            
+            for i, table_name in enumerate(table_names):
+                division_type_key = f'custom_division_type_{i}'
+                division_values_key = f'custom_division_values_{i}'
+                
+                division_type = form.get(division_type_key, '')
+                print(f"Processing division for table {i} ({table_name}): type='{division_type}'")
+                
+                if division_type:
+                    if division_type == 'custom':
+                        # User selected "custom" - get values from the custom input field
+                        custom_values_str = form.get(division_values_key, '')
+                        if custom_values_str.strip():
+                            try:
+                                division_values = [int(x.strip()) for x in custom_values_str.split(',')]
+                                form_data['table_division_settings'][table_name] = {
+                                    'custom_division': True,
+                                    'custom_division_values': division_values
+                                }
+                                print(f"Using custom division values for {table_name}: {division_values}")
+                            except ValueError:
+                                print(f"Error parsing custom division values for {table_name}, using equal division")
+                                form_data['table_division_settings'][table_name] = {
+                                    'custom_division': False,
+                                    'custom_division_values': []
+                                }
+                        else:
+                            print(f"Custom division selected for {table_name} but no values provided, using equal division")
+                            form_data['table_division_settings'][table_name] = {
+                                'custom_division': False,
+                                'custom_division_values': []
+                            }
+                    else:
+                        # User selected a predefined option - parse the dropdown value
+                        try:
+                            division_values = [int(x.strip()) for x in division_type.split(',')]
+                            form_data['table_division_settings'][table_name] = {
+                                'custom_division': True,
+                                'custom_division_values': division_values
+                            }
+                            print(f"Using predefined division values for {table_name}: {division_values}")
+                        except ValueError:
+                            print(f"Error parsing predefined division values for {table_name}, using equal division")
+                            form_data['table_division_settings'][table_name] = {
+                                'custom_division': False,
+                                'custom_division_values': []
+                            }
+                else:
+                    # No division type selected - use equal division
+                    form_data['table_division_settings'][table_name] = {
+                        'custom_division': False,
+                        'custom_division_values': []
+                    }
+                    print(f"No division type selected for {table_name}, using equal division")
+    else:
+        # For predefined patterns, keep backward compatibility with single division setting
+        custom_division_type = form_data.get('custom_division_type', '')
+        if custom_division_type:
+            form_data['custom_division'] = True
+            if custom_division_type == 'custom':
+                # User selected "custom" - get values from the custom input field
+                custom_values_str = form.get('custom_division_values', '')
+                if custom_values_str.strip():
+                    try:
+                        form_data['custom_division_values'] = [int(x.strip()) for x in custom_values_str.split(',')]
+                        print(f"Using custom division values from input: {form_data['custom_division_values']}")
+                    except ValueError:
+                        print("Error parsing custom division values, falling back to equal division")
+                        form_data['custom_division'] = False
+                        form_data['custom_division_values'] = []
+                else:
+                    print("Custom division selected but no values provided, falling back to equal division")
                     form_data['custom_division'] = False
                     form_data['custom_division_values'] = []
             else:
-                print("Custom division selected but no values provided, falling back to equal division")
-                form_data['custom_division'] = False
-                form_data['custom_division_values'] = []
+                # User selected a predefined option - parse the dropdown value
+                try:
+                    form_data['custom_division_values'] = [int(x.strip()) for x in custom_division_type.split(',')]
+                    print(f"Using predefined division values: {form_data['custom_division_values']}")
+                except ValueError:
+                    print("Error parsing predefined division values, falling back to equal division")
+                    form_data['custom_division'] = False
+                    form_data['custom_division_values'] = []
         else:
-            # User selected a predefined option - parse the dropdown value
-            try:
-                form_data['custom_division_values'] = [int(x.strip()) for x in custom_division_type.split(',')]
-                print(f"Using predefined division values: {form_data['custom_division_values']}")
-            except ValueError:
-                print("Error parsing predefined division values, falling back to equal division")
-                form_data['custom_division'] = False
-                form_data['custom_division_values'] = []
-    else:
-        form_data['custom_division'] = False
-        form_data['custom_division_values'] = []
+            form_data['custom_division'] = False
+            form_data['custom_division_values'] = []
 
     # Process target values
     target_values_str = form_data.get('target_values', '')

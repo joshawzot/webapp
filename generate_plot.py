@@ -985,11 +985,10 @@ def generate_plot(table_names, database_name, form_data):
     # Generate plots for filtered tables
     encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
     
-    # Add data points table right after boxplot
-    encoded_plots.append(plot_data_points_table(filtered_group_data, filtered_table_names, selected_groups))
-    
-    encoded_plots.append(plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups))
-    encoded_plots.append(plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups))
+    # Generate individual table plots but don't add them yet - we'll combine them later
+    data_points_plot = plot_data_points_table(filtered_group_data, filtered_table_names, selected_groups)
+    averages_plot = plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups)
+    std_plot = plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups)
 
     # Get num_interp_points from form_data or use default
     num_interp_points = form_data.get('num_interp_points', 500)
@@ -1145,8 +1144,38 @@ def generate_plot(table_names, database_name, form_data):
          additional_image,
          sorted_table_names) = plot_ber_tables(filtered_ber_results, target_x_diff, num_interp_points)
 
-        # Since we now have a combined image, append it to the plots
-        encoded_plots.append(ppm_image)
+        # Combine the 4 key table plots into one vertical stack
+        from tools_for_plots import combine_images_vertically
+        combined_tables_plot = combine_images_vertically(
+            [data_points_plot, averages_plot, std_plot, ppm_image],
+            titles=["Total Data Points in Each State", "Averages", "Standard Deviations", "BER PPM"],
+            spacing=10
+        )
+        
+        # Add the combined image to the plots
+        if combined_tables_plot:
+            encoded_plots.append(combined_tables_plot)
+        else:
+            # Fallback: add individual plots if combination fails
+            encoded_plots.extend([data_points_plot, averages_plot, std_plot, ppm_image])
+    else:
+        # When there's only one selected group, combine just the first 3 plots (no BER PPM)
+        from tools_for_plots import combine_images_vertically
+        combined_tables_plot = combine_images_vertically(
+            [data_points_plot, averages_plot, std_plot],
+            titles=["Total Data Points in Each State", "Averages", "Standard Deviations"],
+            spacing=10
+        )
+        
+        # Add the combined image to the plots
+        if combined_tables_plot:
+            encoded_plots.append(combined_tables_plot)
+        else:
+            # Fallback: add individual plots if combination fails
+            encoded_plots.extend([data_points_plot, averages_plot, std_plot])
+        
+        # Initialize variables for single group case
+        sorted_table_names = filtered_table_names
 
         # Store original table names for the top IOs display
         original_sorted_table_names = sorted_table_names
@@ -1212,8 +1241,6 @@ def generate_plot(table_names, database_name, form_data):
                 filtered_ber_results,  # Add real BER results from CDF analysis
                 selected_groups,  # Add selected groups for state names
                 location_dots_map)  # Add location dots map
-    else:
-        sorted_table_names = None  # Handle the case where there is only one selected group
 
     # Handle the case where there is only one selected group
     if sorted_table_names is None:

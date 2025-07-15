@@ -1122,29 +1122,42 @@ def plot_average_values_table(avg_values, table_names, selected_groups, base_fig
         table_data.append(footer_avg)
         table_data.append(footer_std)
 
-        # Adjust figure size based on the number of rows and columns
-        num_columns = len(table_data[0])
-        num_rows = len(table_data)
-
-        fig_width = max(num_columns * 1.5, 15)
-        fig_height = max(num_rows * 0.5, 10)
-        
-        # Create a new figure instance for this plot
-        fig = plt.figure(figsize=(fig_width, fig_height))
+        # Use consistent figure size to match data points table
+        fig = plt.figure(figsize=(20, 15))
         ax = fig.add_subplot(111)
         ax.axis('off')
 
+        # Calculate column widths based on content (matching data points table style)
+        num_columns = len(table_data[0])
+        col_widths = []
+        for col_idx in range(num_columns):
+            if col_idx == 0:  # Table name column
+                col_widths.append(0.3)
+            else:  # Data columns
+                col_widths.append(0.7 / (num_columns - 1))
+
         # Create the table
-        table = ax.table(cellText=table_data, loc='center', cellLoc='center')
+        table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
         table.auto_set_font_size(False)
         table.set_fontsize(12)
-        table.scale(1, 1.5)
+        table.scale(1, 2)  # Match data points table scaling
 
-        ax.set_title('Averages')
+        # Style the header row (matching data points table)
+        for i in range(num_columns):
+            table[(0, i)].set_facecolor('#40466e')
+            table[(0, i)].set_text_props(weight='bold', color='white')
+        
+        # Style data rows with alternating colors (matching data points table)
+        for i in range(1, len(table_data)):
+            for j in range(num_columns):
+                if i % 2 == 0:
+                    table[(i, j)].set_facecolor('#f0f0f0')
+                else:
+                    table[(i, j)].set_facecolor('#ffffff')
 
-        # Save plot to buffer
+        # Save plot to buffer with consistent DPI
         buf = BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight')
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
         buf.seek(0)
         encoded_image = base64.b64encode(buf.read()).decode('utf-8')
         return encoded_image
@@ -1197,29 +1210,42 @@ def plot_std_values_table(std_values, table_names, selected_groups, base_figsize
         table_data.append(footer_avg)
         table_data.append(footer_std)
 
-        # Adjust figure size based on the number of rows and columns
-        num_columns = len(table_data[0])
-        num_rows = len(table_data)
-
-        fig_width = max(num_columns * 1.5, 15)
-        fig_height = max(num_rows * 0.5, 10)
-
-        # Create a new figure instance for this plot
-        fig = plt.figure(figsize=(fig_width, fig_height))
+        # Use consistent figure size to match data points table
+        fig = plt.figure(figsize=(20, 15))
         ax = fig.add_subplot(111)
         ax.axis('off')
 
+        # Calculate column widths based on content (matching data points table style)
+        num_columns = len(table_data[0])
+        col_widths = []
+        for col_idx in range(num_columns):
+            if col_idx == 0:  # Table name column
+                col_widths.append(0.3)
+            else:  # Data columns
+                col_widths.append(0.7 / (num_columns - 1))
+
         # Create the table
-        table = ax.table(cellText=table_data, loc='center', cellLoc='center')
+        table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
         table.auto_set_font_size(False)
         table.set_fontsize(12)
-        table.scale(1, 1.5)
+        table.scale(1, 2)  # Match data points table scaling
 
-        ax.set_title('Standard Deviations')
+        # Style the header row (matching data points table)
+        for i in range(num_columns):
+            table[(0, i)].set_facecolor('#40466e')
+            table[(0, i)].set_text_props(weight='bold', color='white')
+        
+        # Style data rows with alternating colors (matching data points table)
+        for i in range(1, len(table_data)):
+            for j in range(num_columns):
+                if i % 2 == 0:
+                    table[(i, j)].set_facecolor('#f0f0f0')
+                else:
+                    table[(i, j)].set_facecolor('#ffffff')
 
-        # Save plot to buffer
+        # Save plot to buffer with consistent DPI
         buf = BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight')
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
         buf.seek(0)
         encoded_image = base64.b64encode(buf.read()).decode('utf-8')
         return encoded_image
@@ -1472,33 +1498,46 @@ def plot_table(data, title, transpose=False):
         # Transpose the data
         data = [list(x) for x in zip(*data)]
 
-    num_columns = len(data[0])
-    num_rows = len(data)
-
-    # Dynamically adjust the figure size to match other tables
-    fig_width = max(num_columns * 1.5, 15)  # Changed from 12 to 15 to match other tables
-    fig_height = max(num_rows * 0.5, 10)    # Changed from 6 to 10 to match other tables
-    
-    # Create a new figure instance for this plot
-    fig = plt.figure(figsize=(fig_width, fig_height))
+    # Use consistent figure size to match data points table
+    fig = plt.figure(figsize=(20, 15))
     ax = fig.add_subplot(111)
     
     try:
         ax.axis('off')
 
-        # Create the table
-        table = ax.table(cellText=data, loc='center', cellLoc='center')
+        # Calculate column widths based on content (matching data points table style)
+        num_columns = len(data[0])
+        col_widths = []
+        for col_idx in range(num_columns):
+            if col_idx == 0:  # First column (State/Transition)
+                col_widths.append(0.3)
+            else:  # Data columns
+                col_widths.append(0.7 / (num_columns - 1))
 
-        # Set font size and scaling to match other tables
+        # Create the table
+        table = ax.table(cellText=data, loc='center', colWidths=col_widths, cellLoc='center')
+
+        # Set font size and scaling to match data points table
         table.auto_set_font_size(False)
         table.set_fontsize(12)
-        table.scale(1, 1.5)  # Changed from 1.5 to match other tables
+        table.scale(1, 2)  # Match data points table scaling
 
-        ax.set_title(title, fontsize=12)
+        # Style the header row (matching data points table)
+        for i in range(num_columns):
+            table[(0, i)].set_facecolor('#40466e')
+            table[(0, i)].set_text_props(weight='bold', color='white')
+        
+        # Style data rows with alternating colors (matching data points table)
+        for i in range(1, len(data)):
+            for j in range(num_columns):
+                if i % 2 == 0:
+                    table[(i, j)].set_facecolor('#f0f0f0')
+                else:
+                    table[(i, j)].set_facecolor('#ffffff')
 
-        # Save the figure to a buffer
+        # Save the figure to a buffer with consistent DPI
         buf = BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight')
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
         buf.seek(0)
         encoded_image = base64.b64encode(buf.read()).decode('utf-8')
         return encoded_image
@@ -1760,8 +1799,6 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
                 else:
                     table[(i, j)].set_facecolor('#ffffff')
         
-        ax.set_title('Total Data Points in Each State', fontsize=16, fontweight='bold', pad=20)
-
         # Save plot to buffer
         buf = BytesIO()
         fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
@@ -1777,3 +1814,88 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
         plt.close(fig)
         if 'buf' in locals():
             buf.close()
+
+def combine_images_vertically(base64_images, titles=None, spacing=50):
+    """
+    Combine multiple base64 encoded images vertically into a single image.
+    
+    Args:
+        base64_images: List of base64 encoded image strings
+        titles: Optional list of titles for each image
+        spacing: Vertical spacing between images in pixels
+    
+    Returns:
+        Base64 encoded string of the combined image
+    """
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import base64
+        from io import BytesIO
+        
+        # Decode base64 images to PIL Image objects
+        images = []
+        for img_b64 in base64_images:
+            if img_b64:  # Skip None or empty images
+                img_data = base64.b64decode(img_b64)
+                img = Image.open(BytesIO(img_data))
+                images.append(img)
+        
+        if not images:
+            return None
+            
+        # Calculate total dimensions
+        max_width = max(img.width for img in images)
+        total_height = sum(img.height for img in images) + spacing * (len(images) - 1)
+        
+        # Add space for titles if provided
+        title_height = 40 if titles else 0
+        total_height += title_height * len(images)
+        
+        # Create combined image
+        combined = Image.new('RGB', (max_width, total_height), 'white')
+        
+        # Try to load a font, fallback to default if not available
+        try:
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        except:
+            try:
+                font = ImageFont.load_default()
+            except:
+                font = None
+        
+        draw = ImageDraw.Draw(combined) if titles and font else None
+        
+        # Paste images vertically
+        y_offset = 0
+        for i, img in enumerate(images):
+            # Add title if provided
+            if titles and i < len(titles) and titles[i] and draw and font:
+                title_text = titles[i]
+                # Get text bounding box
+                bbox = draw.textbbox((0, 0), title_text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                
+                # Center the title
+                text_x = (max_width - text_width) // 2
+                draw.text((text_x, y_offset), title_text, fill='black', font=font)
+                y_offset += title_height
+            
+            # Center the image horizontally
+            x_offset = (max_width - img.width) // 2
+            combined.paste(img, (x_offset, y_offset))
+            y_offset += img.height + spacing
+        
+        # Convert back to base64
+        buf = BytesIO()
+        combined.save(buf, format='PNG', bbox_inches='tight')
+        buf.seek(0)
+        combined_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        
+        return combined_b64
+        
+    except Exception as e:
+        print(f"Error combining images vertically: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None

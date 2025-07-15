@@ -985,10 +985,8 @@ def generate_plot(table_names, database_name, form_data):
     # Generate plots for filtered tables
     encoded_plots.append(plot_boxplot(filtered_group_data, filtered_table_names))
     
-    # Generate individual table plots but don't add them yet - we'll combine them later
-    data_points_plot = plot_data_points_table(filtered_group_data, filtered_table_names, selected_groups)
-    averages_plot = plot_average_values_table(filtered_avg_values, filtered_table_names, selected_groups)
-    std_plot = plot_std_values_table(filtered_std_values, filtered_table_names, selected_groups)
+    # Generate comprehensive metrics table combining all data
+    from tools_for_plots import plot_comprehensive_metrics_table
 
     # Get num_interp_points from form_data or use default
     num_interp_points = form_data.get('num_interp_points', 500)
@@ -1144,35 +1142,37 @@ def generate_plot(table_names, database_name, form_data):
          additional_image,
          sorted_table_names) = plot_ber_tables(filtered_ber_results, target_x_diff, num_interp_points)
 
-        # Combine the 4 key table plots into one vertical stack
-        from tools_for_plots import combine_images_vertically
-        combined_tables_plot = combine_images_vertically(
-            [data_points_plot, averages_plot, std_plot, ppm_image],
-            titles=["Total Data Points in Each State", "Averages", "Standard Deviations", "BER PPM"],
-            spacing=10
+        # Generate comprehensive metrics table with BER data
+        comprehensive_table = plot_comprehensive_metrics_table(
+            filtered_group_data, 
+            filtered_avg_values, 
+            filtered_std_values, 
+            filtered_table_names, 
+            selected_groups, 
+            filtered_ber_results
         )
         
-        # Add the combined image to the plots
-        if combined_tables_plot:
-            encoded_plots.append(combined_tables_plot)
+        # Add the comprehensive table to the plots
+        if comprehensive_table:
+            encoded_plots.append(comprehensive_table)
         else:
-            # Fallback: add individual plots if combination fails
-            encoded_plots.extend([data_points_plot, averages_plot, std_plot, ppm_image])
+            print("Failed to generate comprehensive table, using fallback")
     else:
-        # When there's only one selected group, combine just the first 3 plots (no BER PPM)
-        from tools_for_plots import combine_images_vertically
-        combined_tables_plot = combine_images_vertically(
-            [data_points_plot, averages_plot, std_plot],
-            titles=["Total Data Points in Each State", "Averages", "Standard Deviations"],
-            spacing=10
+        # When there's only one selected group, generate comprehensive table without BER data
+        comprehensive_table = plot_comprehensive_metrics_table(
+            filtered_group_data, 
+            filtered_avg_values, 
+            filtered_std_values, 
+            filtered_table_names, 
+            selected_groups, 
+            None  # No BER results for single group
         )
         
-        # Add the combined image to the plots
-        if combined_tables_plot:
-            encoded_plots.append(combined_tables_plot)
+        # Add the comprehensive table to the plots
+        if comprehensive_table:
+            encoded_plots.append(comprehensive_table)
         else:
-            # Fallback: add individual plots if combination fails
-            encoded_plots.extend([data_points_plot, averages_plot, std_plot])
+            print("Failed to generate comprehensive table, using fallback")
         
         # Initialize variables for single group case
         sorted_table_names = filtered_table_names
@@ -1659,13 +1659,8 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
     # Generate plots for all columns
     encoded_plots.append(plot_boxplot(all_column_group_data, all_column_names))
     
-    # For column analysis, create a custom data points summary instead of the standard table
-    # since we have too many columns (78) for the standard table format
-    encoded_plots.append(plot_column_data_points_summary(all_column_group_data, all_column_names, selected_groups))
-    
-    # Create custom column-friendly versions of the average and std tables
-    encoded_plots.append(plot_column_average_values_summary(all_column_avg_values, all_column_names, selected_groups))
-    encoded_plots.append(plot_column_std_values_summary(all_column_std_values, all_column_names, selected_groups))
+    # Generate comprehensive metrics table for column analysis
+    from tools_for_plots import plot_comprehensive_metrics_table
     
     # Get num_interp_points from form_data or use default
     num_interp_points = form_data.get('num_interp_points', 500)
@@ -1696,12 +1691,40 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
          additional_image,
          sorted_column_names) = plot_ber_tables(column_ber_results, target_x_diff, num_interp_points)
         
-        encoded_plots.append(ppm_image)
+        # Generate comprehensive metrics table for columns with BER data
+        comprehensive_column_table = plot_comprehensive_metrics_table(
+            all_column_group_data, 
+            all_column_avg_values, 
+            all_column_std_values, 
+            all_column_names, 
+            selected_groups, 
+            column_ber_results
+        )
+        
+        if comprehensive_column_table:
+            encoded_plots.append(comprehensive_column_table)
+        else:
+            print("Failed to generate comprehensive column table")
         
         # Create best column lists
         best_top_n = sorted_column_names[:10] if len(sorted_column_names) >= 10 else sorted_column_names
         best_top_n_with_io = [f"Col{col_name.split('_Col')[1]}" if '_Col' in col_name else col_name for col_name in best_top_n]
     else:
+        # Generate comprehensive metrics table for columns without BER data
+        comprehensive_column_table = plot_comprehensive_metrics_table(
+            all_column_group_data, 
+            all_column_avg_values, 
+            all_column_std_values, 
+            all_column_names, 
+            selected_groups, 
+            None  # No BER results for single group
+        )
+        
+        if comprehensive_column_table:
+            encoded_plots.append(comprehensive_column_table)
+        else:
+            print("Failed to generate comprehensive column table")
+            
         sorted_column_names = []
         best_top_n = []
         best_top_n_with_io = []

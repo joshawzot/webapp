@@ -1899,3 +1899,185 @@ def combine_images_vertically(base64_images, titles=None, spacing=50):
         import traceback
         traceback.print_exc()
         return None
+
+def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_names, selected_groups, ber_results=None):
+    """
+    Create a comprehensive table combining data points, averages, standard deviations, and BER PPM.
+    
+    Args:
+        group_data: The group data for data points counting
+        avg_values: Average values for each table and state
+        std_values: Standard deviation values for each table and state  
+        table_names: List of table names
+        selected_groups: List of selected group indices
+        ber_results: Optional BER results for PPM values
+    
+    Returns:
+        Base64 encoded image of the comprehensive table
+    """
+    try:
+        # Create a new figure instance for this plot
+        fig = plt.figure(figsize=(25, 20))  # Larger size for comprehensive table
+        ax = fig.add_subplot(111)
+        ax.axis('off')
+
+        # Build comprehensive table data
+        table_data = []
+        
+        # Create header row with compact format - group similar metrics together
+        header = ["Table Name"]
+        
+        # Add all Points columns first (S0 Points, S1 Points, etc.)
+        for group_idx in selected_groups:
+            header.append(f"S{group_idx} Points")
+        
+        # Add all Average columns second (S0 Avg, S1 Avg, etc.)
+        for group_idx in selected_groups:
+            header.append(f"S{group_idx} Avg")
+            
+        # Add all Std Dev columns third (S0 Std, S1 Std, etc.)
+        for group_idx in selected_groups:
+            header.append(f"S{group_idx} Std")
+            
+        # Add BER columns if BER data is available (S0→S1 BER, S1→S2 BER, etc.)
+        if ber_results and len(selected_groups) > 1:
+            # Extract state transitions from BER results and format them compactly
+            state_transitions = sorted(set(entry[1] for entry in ber_results))
+            for transition in state_transitions:
+                # Convert "state0 to state1" to "S0→S1 BER"
+                if "to" in transition:
+                    parts = transition.replace("state", "S").replace(" to ", "→")
+                    header.append(f"{parts} BER")
+                else:
+                    header.append(f"{transition} BER")
+        
+        table_data.append(header)
+        
+        # Process BER data if available
+        ber_data_by_table = {}
+        if ber_results:
+            for entry in ber_results:
+                table_name = entry[0]
+                state_transition = entry[1] 
+                ppm_ber = entry[4] if len(entry) > 4 else None
+                
+                if table_name not in ber_data_by_table:
+                    ber_data_by_table[table_name] = {}
+                ber_data_by_table[table_name][state_transition] = ppm_ber
+        
+        # Process each table's data
+        for i, (table_name, group, avg_vals, std_vals) in enumerate(zip(table_names, group_data, avg_values, std_values)):
+            row = [f"{table_name}"]
+            
+            # Add all data points counts first
+            for j, group_idx in enumerate(selected_groups):
+                if j < len(group):
+                    points = np.array(group[j]).flatten()
+                    row.append(f"{len(points)}")
+                else:
+                    row.append("N/A")
+            
+            # Add all average values second
+            for j, group_idx in enumerate(selected_groups):
+                if j < len(avg_vals):
+                    row.append(f"{avg_vals[j]:.2f}")
+                else:
+                    row.append("N/A")
+            
+            # Add all standard deviations third
+            for j, group_idx in enumerate(selected_groups):
+                if j < len(std_vals):
+                    row.append(f"{std_vals[j]:.2f}")
+                else:
+                    row.append("N/A")
+            
+            # Add BER data if available
+            if ber_results and len(selected_groups) > 1:
+                table_ber_data = ber_data_by_table.get(table_name, {})
+                for transition in state_transitions:
+                    ber_value = table_ber_data.get(transition)
+                    if ber_value is not None:
+                        row.append(f"{ber_value:.0f}")
+                    else:
+                        row.append("N/A")
+            
+            table_data.append(row)
+        
+        # Calculate column widths dynamically
+        num_columns = len(table_data[0])
+        col_widths = []
+        
+        # Table name column gets more space
+        col_widths.append(0.15)
+        
+        # Distribute remaining space among data columns
+        remaining_width = 0.85
+        data_cols = num_columns - 1
+        col_width_each = remaining_width / data_cols
+        
+        for _ in range(data_cols):
+            col_widths.append(col_width_each)
+
+        # Create the table
+        table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)  # Smaller font for comprehensive table
+        table.scale(1, 1.8)
+
+        # Style the header row
+        for i in range(num_columns):
+            table[(0, i)].set_facecolor('#40466e')
+            table[(0, i)].set_text_props(weight='bold', color='white')
+        
+        # Style data rows with alternating colors
+        for i in range(1, len(table_data)):
+            for j in range(num_columns):
+                if i % 2 == 0:
+                    table[(i, j)].set_facecolor('#f0f0f0')
+                else:
+                    table[(i, j)].set_facecolor('#ffffff')
+        
+        # Add section dividers in header for better readability
+        # Color-code different metric sections grouped together
+        col_idx = 1
+        
+        # All Points columns first
+        for group_idx in selected_groups:
+            table[(0, col_idx)].set_facecolor('#2E8B57')  # Sea Green for points
+            col_idx += 1
+            
+        # All Average columns second
+        for group_idx in selected_groups:
+            table[(0, col_idx)].set_facecolor('#4682B4')  # Steel Blue for averages
+            col_idx += 1
+            
+        # All Std Dev columns third
+        for group_idx in selected_groups:
+            table[(0, col_idx)].set_facecolor('#8B4513')  # Saddle Brown for std dev
+            col_idx += 1
+        
+        # BER columns last
+        if ber_results and len(selected_groups) > 1:
+            for _ in state_transitions:
+                table[(0, col_idx)].set_facecolor('#B22222')  # Fire Brick for BER
+                col_idx += 1
+
+        # Set title
+        ax.set_title('Comprehensive Metrics Table (Grouped by Metric Type)', fontsize=18, fontweight='bold', pad=30)
+
+        # Save plot to buffer with high DPI for detailed table
+        buf = BytesIO()
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=200)
+        buf.seek(0)
+        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
+        return encoded_image
+        
+    except Exception as e:
+        print(f"Error in plot_comprehensive_metrics_table: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        plt.close(fig)
+        if 'buf' in locals():
+            buf.close()

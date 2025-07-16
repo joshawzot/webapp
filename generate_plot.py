@@ -456,40 +456,55 @@ def analyze_coordinate_correlations(outlier_coordinates):
             }
         }
 
-def calculate_sigma_distances(data, target_values, table_names):
+def calculate_sigma_distances(data, target_values, table_names, selected_groups=None):
     print("Entering calculate_sigma_distances")
     print("data length:", len(data))
     print("target_values:", target_values)
     print("table_names:", table_names)
+    print("selected_groups:", selected_groups)
     
     sigma_distances = {}
     sigma_points = [-4, -3, -2, -1, 0, 1, 2, 3, 4]  # Sigma points to analyze
+    
+    # If selected_groups is not provided, assume sequential mapping
+    if selected_groups is None:
+        selected_groups = list(range(len(target_values)))
     
     for table_idx, (table_name, table_data) in enumerate(zip(table_names, data)):
         print(f"Processing table {table_name}")
         sigma_distances[table_name] = []
         
         for state_idx, state_data in enumerate(table_data):
-            print(f"Processing state {state_idx}")
-            if state_idx < len(target_values):  # Only process if we have a target value
-                target = target_values[state_idx]
-                mean = np.mean(state_data)
-                std = np.std(state_data)
+            print(f"Processing state index {state_idx}")
+            # Map the state_idx to the actual state number using selected_groups
+            if state_idx < len(selected_groups):
+                actual_state_number = selected_groups[state_idx]
+                print(f"  Actual state number: {actual_state_number}")
                 
-                print(f"State {state_idx} stats:")
-                print(f"  Target: {target}")
-                print(f"  Mean: {mean}")
-                print(f"  Std: {std}")
-                
-                # Calculate distances at each sigma point
-                distances = []
-                for sigma in sigma_points:
-                    point = mean + (sigma * std)
-                    distance = point - target
-                    distances.append(distance)
-                
-                sigma_distances[table_name].append(distances)
-                print(f"  Distances calculated: {distances}")
+                # Only process if we have a target value for this actual state number
+                if actual_state_number < len(target_values):
+                    target = target_values[actual_state_number]
+                    mean = np.mean(state_data)
+                    std = np.std(state_data)
+                    
+                    print(f"State {actual_state_number} stats:")
+                    print(f"  Target: {target}")
+                    print(f"  Mean: {mean}")
+                    print(f"  Std: {std}")
+                    
+                    # Calculate distances at each sigma point
+                    distances = []
+                    for sigma in sigma_points:
+                        point = mean + (sigma * std)
+                        distance = point - target
+                        distances.append(distance)
+                    
+                    sigma_distances[table_name].append(distances)
+                    print(f"  Distances calculated: {distances}")
+                else:
+                    print(f"  No target value for state {actual_state_number}, skipping")
+            else:
+                print(f"  State index {state_idx} exceeds selected_groups length, skipping")
     
     print("Final sigma_distances:", sigma_distances)
     return sigma_distances
@@ -858,7 +873,7 @@ def generate_plot(table_names, database_name, form_data):
     if target_values:
         print("Inside target_values condition")
         print("group_data length:", len(group_data))
-        sigma_distances = calculate_sigma_distances(group_data, target_values, table_names)
+        sigma_distances = calculate_sigma_distances(group_data, target_values, table_names, selected_groups)
         num_states = len(target_values)
         print("Calculated sigma distances:", sigma_distances)
     else:
@@ -1491,7 +1506,20 @@ def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_state
     else:
         selected_groups = list(range(int(number_of_states)))
     
-    return groups, groups_stats, selected_groups
+    # Filter groups and stats to only include selected states
+    filtered_groups = []
+    filtered_stats = []
+    
+    for group_idx in selected_groups:
+        if 0 <= group_idx < len(groups):
+            filtered_groups.append(groups[group_idx])
+            filtered_stats.append(groups_stats[group_idx])
+        else:
+            print(f"Warning: Selected group {group_idx} is out of range (0-{len(groups)-1})")
+    
+    print(f"Original groups: {len(groups)}, Selected groups: {selected_groups}, Filtered groups: {len(filtered_groups)}")
+    
+    return filtered_groups, filtered_stats, selected_groups
 
 def calculate_ber_with_target_ranges(groups, target_ranges):
     """Calculate BER values for different levels and transitions using target ranges."""
@@ -1650,7 +1678,7 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
     num_states = 0
     if form_data.get('target_values'):
         target_values = form_data.get('target_values', [])
-        sigma_distances = calculate_sigma_distances(all_column_group_data, target_values, all_column_names)
+        sigma_distances = calculate_sigma_distances(all_column_group_data, target_values, all_column_names, selected_groups)
         num_states = len(target_values)
     
     # Initialize encoded plots list

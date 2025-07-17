@@ -3976,7 +3976,7 @@ def notebook_selector():
     """
     Display a page with a list of available notebooks and an option to create a new one.
     """
-    postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+    postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
     
     # Check if the directory exists
     if not os.path.exists(postprocess_dir):
@@ -4007,7 +4007,7 @@ def open_notebook(notebook_name):
         return redirect(url_for('notebook_selector'))
     
     # Ensure the notebook exists
-    postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+    postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
     notebook_path = os.path.join(postprocess_dir, notebook_name)
     
     if not os.path.exists(notebook_path) or not notebook_name.endswith('.ipynb'):
@@ -4063,7 +4063,7 @@ def create_notebook():
     if not notebook_name.endswith('.ipynb'):
         notebook_name = f"{notebook_name}.ipynb"
     
-    postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+    postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
     notebook_path = os.path.join(postprocess_dir, notebook_name)
     
     # Check if file already exists
@@ -4170,14 +4170,13 @@ def check_jupyter():
                     # On Unix, this will raise an error if the process doesn't exist
                     os.kill(pid, 0)
                     
-                    # Process exists, return the notebook page
-                    token = status.get('token', '')
-                    # Calculate the relative path from notebook_dir to the target notebook
-                    notebook_rel_path = os.path.relpath(notebook_path, postprocess_dir)
-                    return render_template('jupyter_notebook.html', 
-                                           token=token, 
-                                           notebook_path=notebook_rel_path,
-                                           notebook_name=notebook_name)
+                    # Process exists, return success JSON
+                    return jsonify({
+                        "status": "running",
+                        "message": "Jupyter server is running",
+                        "token": status.get('token', ''),
+                        "url": status.get('url', 'http://localhost:8888')
+                    })
                 except:
                     # Process doesn't exist anymore
                     pass
@@ -4185,8 +4184,11 @@ def check_jupyter():
             # Error reading status file
             pass
     
-    # If we get here, we need to tell the user to start the Jupyter server first
-    return render_template('jupyter_start_instructions.html')
+    # If we get here, Jupyter server is not running
+    return jsonify({
+        "status": "not_running",
+        "message": "Jupyter server is not running. Please ask an administrator to start it."
+    })
 
 @app.route('/test-machines')
 def test_machines():
@@ -5918,7 +5920,7 @@ def process_rwb_analysis():
         import base64
         
         # Add postprocess directory to path
-        postprocess_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'postprocess')
+        postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
         sys.path.insert(0, postprocess_dir)
         
         # Import the core functions

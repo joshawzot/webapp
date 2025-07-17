@@ -33,7 +33,7 @@ def generate_token():
 def main():
     # Set up paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    notebook_dir = os.path.join(base_dir, 'postprocess')
+    notebook_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
     log_dir = os.path.join(base_dir, 'logs')
     
     # Make sure directories exist
@@ -42,12 +42,6 @@ def main():
     # Verify notebook directory exists
     if not os.path.exists(notebook_dir):
         print(f"ERROR: Notebook directory not found: {notebook_dir}")
-        return 1
-    
-    # Check for rwb.ipynb
-    notebook_file = os.path.join(notebook_dir, 'rwb.ipynb')
-    if not os.path.exists(notebook_file):
-        print(f"ERROR: Notebook file not found: {notebook_file}")
         return 1
     
     # Check if port 8888 is available
@@ -172,7 +166,7 @@ def main():
             "pid": process.pid,
             "token": token,
             "url": f"http://localhost:8888",
-            "notebook_path": notebook_file
+            "notebook_dir": notebook_dir
         }
         
         with open(os.path.join(base_dir, '.jupyter_status.json'), 'w') as f:

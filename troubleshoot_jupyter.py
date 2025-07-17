@@ -50,8 +50,9 @@ def test_jupyter_start():
     print("Testing Jupyter server startup...")
     
     # Create a temporary directory for the notebook
-    temp_dir = Path(os.getcwd()) / "jupyter_test"
-    temp_dir.mkdir(exist_ok=True)
+    temp_dir = Path("/home/admin2/agate_mpw5_testing/tests/postprocess")
+    if not temp_dir.exists():
+        temp_dir.mkdir(parents=True, exist_ok=True)
     
     try:
         # Launch Jupyter server
@@ -103,37 +104,28 @@ def test_jupyter_start():
     except Exception as e:
         print(f"Error testing Jupyter: {e}")
         return False
-    finally:
-        # Cleanup the temporary directory
-        try:
-            import shutil
-            shutil.rmtree(temp_dir)
-        except:
-            pass
 
-def check_notebook_file():
-    """Check if the rwb.ipynb file exists and is accessible"""
-    print("Checking for rwb.ipynb file...")
-    notebook_path = Path(os.getcwd()) / "postprocess" / "rwb.ipynb"
+def check_notebook_directory():
+    """Check if the notebook directory exists and has any notebook files"""
+    print("Checking notebook directory...")
+    notebook_dir = Path("/home/admin2/agate_mpw5_testing/tests/postprocess")
     
-    if notebook_path.exists():
-        print(f"Found rwb.ipynb at: {notebook_path}")
+    if notebook_dir.exists():
+        print(f"Found notebook directory at: {notebook_dir}")
         
-        # Check file permissions
-        try:
-            with open(notebook_path, 'r') as f:
-                # Just try to read the first line
-                f.readline()
-            print("File is readable.")
+        # Check for any .ipynb files
+        notebook_files = list(notebook_dir.glob("*.ipynb"))
+        if notebook_files:
+            print(f"Found {len(notebook_files)} notebook file(s):")
+            for notebook in notebook_files:
+                print(f"  - {notebook.name}")
             return True
-        except PermissionError:
-            print(f"Permission error accessing {notebook_path}")
-            return False
-        except Exception as e:
-            print(f"Error accessing notebook file: {e}")
-            return False
+        else:
+            print("No notebook files (.ipynb) found in the directory")
+            print("Jupyter will still work - you can create notebooks from the web interface")
+            return True
     else:
-        print(f"Could not find rwb.ipynb at expected location: {notebook_path}")
+        print(f"Notebook directory not found: {notebook_dir}")
         return False
 
 def main():
@@ -146,7 +138,7 @@ def main():
         ("Jupyter Installation", check_jupyter_installed),
         ("Port Availability", check_port_available),
         ("Jupyter Startup", test_jupyter_start),
-        ("Notebook File", check_notebook_file)
+        ("Notebook Directory", check_notebook_directory)
     ]
     
     results = []
@@ -177,10 +169,10 @@ def main():
         print("1. Make sure all required packages are installed:")
         print("   pip install -r requirements.txt")
         print("2. Check if port 8888 is already in use by another application")
-        print("3. Verify that the rwb.ipynb file exists in the postprocess directory")
+        print("3. Verify that the postprocess directory exists and is accessible")
         print("4. Check the logs directory for error messages")
         print("5. Try running Jupyter notebook manually to see if it works")
-        print("   jupyter notebook --no-browser --notebook-dir=postprocess")
+        print("   jupyter notebook --no-browser --notebook-dir=/home/admin2/agate_mpw5_testing/tests/postprocess")
     
     return 0 if all_pass else 1
 

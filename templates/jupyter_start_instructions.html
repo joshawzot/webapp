@@ -38,9 +38,17 @@
                     <h4 class="mb-0">Admin Information</h4>
                 </div>
                 <div class="card-body">
-                    <p>If you are an administrator, you can restart the Jupyter server using the following command:</p>
-                    <pre><code>sudo systemctl restart jupyter_notebook.service</code></pre>
-                    <p>The service is managed by systemd and will automatically restart if it fails.</p>
+                    <p>If you are an administrator, you can start the Jupyter server using the following commands:</p>
+                    <div class="mb-3">
+                        <strong>Option 1: Using systemd service (if configured):</strong>
+                        <pre><code>sudo systemctl restart jupyter_notebook.service</code></pre>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Option 2: Run directly:</strong>
+                        <pre><code>cd /home/admin2/webapp_2
+python3 launch_jupyter.py</code></pre>
+                    </div>
+                    <p><strong>Note:</strong> The server now uses the postprocess directory at <code>/home/admin2/agate_mpw5_testing/tests/postprocess</code></p>
                 </div>
             </div>
         </div>

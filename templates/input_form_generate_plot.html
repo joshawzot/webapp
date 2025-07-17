@@ -170,11 +170,11 @@
                     <small class="form-text text-muted">Show locations on map that match this specific value.</small>
                 </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="color_map_flag">Enable Color Map:</label>
-            <input type="checkbox" name="color_map_flag" id="color_map_flag" value="True">
+            <div class="form-group">
+                <label for="color_map_flag">Enable Color Map:</label>
+                <input type="checkbox" name="color_map_flag" id="color_map_flag" value="True">
+            </div>
         </div>
 
         <div class="form-group">
@@ -879,6 +879,7 @@
             fieldsPredefined.style.display = 'none';
             numberOfStates.value = '4';  // Set default value when 1D is selected
             outlierAnalysis.checked = false;  // Uncheck the outlier analysis checkbox
+            document.getElementById('color_map_flag').checked = false;  // Uncheck color map when switching to 1D
             checkCustomDivision();  // Check the custom division visibility
         } else {
             fields1D.style.display = 'none';

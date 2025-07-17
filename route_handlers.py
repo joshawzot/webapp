@@ -2939,35 +2939,6 @@ def rename_table():
         print(f'Error in rename_table route: {e}')
         return str(e), 500
 
-@app.route('/run-forming-progress')
-def run_forming_progress():
-    try:
-        # Run the script and capture the output
-        script_path = '/home/admin2/webapp_2/postprocess/forming_progress.py'
-        process = subprocess.Popen(
-            [sys.executable, script_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            cwd='/home/admin2/webapp_2/postprocess'  # Optional: set working directory
-        )
-        stdout, stderr = process.communicate()
-
-        if process.returncode != 0:
-            output = f"Script exited with return code {process.returncode}\n"
-            output += f"Standard Output:\n{stdout}\n"
-            output += f"Standard Error:\n{stderr}\n"
-        else:
-            output = stdout
-
-        # Render the output in a template
-        return render_template('forming_progress_output.html', output=output)
-
-    except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        return f"An error occurred while running the script: {e}\n{error_details}", 500
-
 @app.route('/simple_combine', methods=['POST'])
 def simple_combine():
     data = request.get_json()

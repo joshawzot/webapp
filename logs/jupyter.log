@@ -1,46 +1,29 @@
-[I 2025-07-17 14:44:52.819 ServerApp] jupyter_server_proxy | extension was successfully linked.
-[I 2025-07-17 14:44:52.822 ServerApp] jupyterlab | extension was successfully linked.
-[I 2025-07-17 14:44:52.825 ServerApp] nbclassic | extension was successfully linked.
-[I 2025-07-17 14:44:52.975 ServerApp] notebook_shim | extension was successfully linked.
-[I 2025-07-17 14:44:52.987 ServerApp] notebook_shim | extension was successfully loaded.
-[I 2025-07-17 14:44:52.995 ServerApp] jupyter_server_proxy | extension was successfully loaded.
-[I 2025-07-17 14:44:52.996 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
-[I 2025-07-17 14:44:52.996 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
-[I 2025-07-17 14:44:52.998 ServerApp] jupyterlab | extension was successfully loaded.
-[I 2025-07-17 14:44:53.000 ServerApp] nbclassic | extension was successfully loaded.
-[I 2025-07-17 14:44:53.000 ServerApp] Serving notebooks from local directory: /home/admin2/agate_mpw5_testing/tests/postprocess
-[I 2025-07-17 14:44:53.000 ServerApp] Jupyter Server 1.24.0 is running at:
-[I 2025-07-17 14:44:53.000 ServerApp] http://hawaii:8888/lab?token=...
-[I 2025-07-17 14:44:53.000 ServerApp]  or http://127.0.0.1:8888/lab?token=...
-[I 2025-07-17 14:44:53.000 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-[W 2025-07-17 14:45:00.363 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 18.87ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:00.510 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.03ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:00.658 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.29ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:01.674 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.21ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:01.818 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.03ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:01.961 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.10ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:03.496 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.26ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:03.642 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.00ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:03.789 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.21ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:45:10.268 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-07-17 14:45:10.446 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250717144452 (192.168.68.251) 11.37ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-07-17 14:45:11.051 ServerApp] Kernel started: a810d7c7-1a68-4733-b6eb-bd1cd6c1447a
-[I 2025-07-17 14:47:11.772 ServerApp] Saving file at /agate_analysis_template.ipynb
-[W 2025-07-17 14:47:11.772 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[I 2025-07-17 14:47:32.207 ServerApp] Saving file at /agate_analysis_template.ipynb
-[W 2025-07-17 14:47:32.208 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[I 2025-07-17 14:47:33.548 ServerApp] Starting buffering for a810d7c7-1a68-4733-b6eb-bd1cd6c1447a:a4ae112d314045598d8cc41001dd918e
-[W 2025-07-17 14:47:34.000 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-07-17 14:47:34.152 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250717144452 (192.168.68.251) 0.75ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-07-17 14:47:35.990 ServerApp] Starting buffering for a810d7c7-1a68-4733-b6eb-bd1cd6c1447a:3495b946362947048323b6b16a821c9f
-[W 2025-07-17 14:47:36.364 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-07-17 14:47:36.579 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250717144452 (192.168.68.251) 1.88ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-07-17 14:49:31.661 ServerApp] Saving file at /agate_analysis_template.ipynb
-[I 2025-07-17 14:49:36.324 ServerApp] Starting buffering for a810d7c7-1a68-4733-b6eb-bd1cd6c1447a:7584d737ce624c8786d87266c02a2ff5
-[W 2025-07-17 14:49:47.975 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 1.18ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:49:48.121 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 2.04ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:49:48.264 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 1.07ms referer=http://192.168.68.215:3000/
-[W 2025-07-17 14:49:50.667 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
-[W 2025-07-17 14:49:50.878 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250717144452 (192.168.68.251) 1.86ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
-[I 2025-07-17 14:49:51.439 ServerApp] Kernel started: 7b9d41e5-fc49-47f8-9cc0-0a16ea10e388
-[I 2025-07-17 14:50:03.770 ServerApp] Starting buffering for 7b9d41e5-fc49-47f8-9cc0-0a16ea10e388:95a7cdbd59754cb785faf7c87c8ea5df
+[I 2025-07-18 09:35:26.568 ServerApp] jupyter_server_proxy | extension was successfully linked.
+[I 2025-07-18 09:35:26.572 ServerApp] jupyterlab | extension was successfully linked.
+[I 2025-07-18 09:35:26.575 ServerApp] nbclassic | extension was successfully linked.
+[I 2025-07-18 09:35:26.722 ServerApp] notebook_shim | extension was successfully linked.
+[I 2025-07-18 09:35:26.733 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2025-07-18 09:35:26.741 ServerApp] jupyter_server_proxy | extension was successfully loaded.
+[I 2025-07-18 09:35:26.742 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
+[I 2025-07-18 09:35:26.742 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
+[I 2025-07-18 09:35:26.744 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2025-07-18 09:35:26.746 ServerApp] nbclassic | extension was successfully loaded.
+[I 2025-07-18 09:35:26.746 ServerApp] Serving notebooks from local directory: /home/admin2/agate_mpw5_testing/tests/postprocess
+[I 2025-07-18 09:35:26.746 ServerApp] Jupyter Server 1.24.0 is running at:
+[I 2025-07-18 09:35:26.746 ServerApp] http://hawaii:8888/lab?token=...
+[I 2025-07-18 09:35:26.746 ServerApp]  or http://127.0.0.1:8888/lab?token=...
+[I 2025-07-18 09:35:26.746 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[W 2025-07-18 09:35:33.507 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 15.97ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 09:35:33.650 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.03ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 09:35:33.790 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.06ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 09:35:35.689 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-07-18 09:35:35.841 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 9.10ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-07-18 09:35:36.439 ServerApp] Kernel started: bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd
+[I 2025-07-18 09:36:10.329 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:c25f1b80fcde4041b3bc30972ad5b7b3
+[W 2025-07-18 09:36:18.215 NotebookApp] 405 HEAD /notebooks/test.ipynb?token=[secret] (192.168.68.251) 2.20ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 09:36:18.362 NotebookApp] 405 HEAD /notebooks/test.ipynb (192.168.68.251) 0.99ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 09:36:18.507 NotebookApp] 405 HEAD /tree/test.ipynb?token=[secret] (192.168.68.251) 2.14ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 09:36:20.395 ServerApp] Notebook test.ipynb is not trusted
+[W 2025-07-18 09:36:20.541 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.48ms referer=http://192.168.68.215:8888/notebooks/test.ipynb
+[I 2025-07-18 09:36:20.630 ServerApp] Kernel started: 90acb8ad-7a8c-4c93-93f9-63585e3bef47
+[I 2025-07-18 09:36:24.281 ServerApp] Starting buffering for 90acb8ad-7a8c-4c93-93f9-63585e3bef47:3390f56ae3bf4920850eced5df900f93

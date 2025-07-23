@@ -6501,3 +6501,144 @@ def process_advanced_combine():
         flash(f'Error processing advanced combine: {str(e)}', 'error')
         return redirect(url_for('home'))
 
+
+@app.route('/analyze-row-averages', methods=['POST'])
+def analyze_row_averages():
+    """Analyze selected tables to find rows with averages outside the specified range."""
+    connection = None
+    cursor = None
+    
+    try:
+        data = request.get_json()
+        database = data.get('database')
+        table_names = data.get('tableNames', [])
+        min_value = float(data.get('minValue'))
+        max_value = float(data.get('maxValue'))
+        
+        print(f"Analyzing row averages for database: {database}, tables: {table_names}, range: {min_value}-{max_value}")
+        
+        if not database or not table_names:
+            return jsonify({'success': False, 'message': 'Database and table names are required'})
+        
+        if min_value >= max_value:
+            return jsonify({'success': False, 'message': 'Minimum value must be less than maximum value'})
+        
+        # Create database connection
+        connection = create_connection(database)
+        cursor = connection.cursor()
+        
+        report = []
+        
+        for table_name in table_names:
+            print(f"Processing table: {table_name}")
+            try:
+                # Get table data
+                query = f"SELECT * FROM `{table_name}`"
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                
+                if not rows:
+                    print(f"Table {table_name} is empty")
+                    report.append({
+                        'table_name': table_name,
+                        'dimensions': '0x0',
+                        'total_rows': 0,
+                        'total_columns': 0,
+                        'bad_rows_count': 0,
+                        'bad_rows': [],
+                        'error': 'Table is empty'
+                    })
+                    continue
+                
+                # Get column names
+                column_names = [desc[0] for desc in cursor.description]
+                total_columns = len(column_names)
+                total_rows = len(rows)
+                
+                print(f"Table {table_name}: {total_rows} rows, {total_columns} columns")
+                
+                # Convert rows to numpy array, handling potential None values
+                data_matrix = []
+                for row in rows:
+                    # Convert row to list and handle None values
+                    row_data = []
+                    for value in row:
+                        if value is None:
+                            row_data.append(0.0)
+                        else:
+                            try:
+                                row_data.append(float(value))
+                            except (ValueError, TypeError):
+                                row_data.append(0.0)  # Handle non-numeric values
+                    data_matrix.append(row_data)
+                
+                # Convert to numpy array
+                data_array = np.array(data_matrix)
+                
+                # Calculate row averages
+                row_averages = np.mean(data_array, axis=1)
+                
+                # Find rows with averages outside the specified range
+                bad_rows = []
+                for i, avg in enumerate(row_averages):
+                    if avg < min_value or avg > max_value:
+                        bad_rows.append({
+                            'row_index': i + 1,  # 1-based indexing for user display
+                            'average': float(avg)
+                        })
+                
+                print(f"Table {table_name}: Found {len(bad_rows)} rows outside range")
+                
+                report.append({
+                    'table_name': table_name,
+                    'dimensions': f'{total_rows}x{total_columns}',
+                    'total_rows': total_rows,
+                    'total_columns': total_columns,
+                    'bad_rows_count': len(bad_rows),
+                    'bad_rows': bad_rows
+                })
+                
+            except Exception as table_error:
+                print(f"Error processing table {table_name}: {table_error}")
+                import traceback
+                traceback.print_exc()
+                report.append({
+                    'table_name': table_name,
+                    'dimensions': 'Unknown',
+                    'total_rows': 0,
+                    'total_columns': 0,
+                    'bad_rows_count': 0,
+                    'bad_rows': [],
+                    'error': str(table_error)
+                })
+        
+        # Close database connection
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+        
+        print(f"Analysis complete. Processed {len(report)} tables")
+        
+        return jsonify({
+            'success': True,
+            'report': report,
+            'total_tables': len(table_names),
+            'range': {'min': min_value, 'max': max_value}
+        })
+        
+    except Exception as e:
+        print(f"Error in analyze_row_averages: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Ensure database connection is closed
+        try:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+        except:
+            pass
+            
+        return jsonify({'success': False, 'message': str(e)})

@@ -103,6 +103,14 @@
             </div>
         </div>
 
+        <!-- Sixth row with analysis buttons -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <!-- Sixth group: "Analyze Row Averages" -->
+                <button class="btn btn-dark" id="analyzeRowAverages">Analyze Row Averages</button>
+            </div>
+        </div>
+
         <!-- Filter fields -->
         <div class="row custom-row">
             <div class="col">
@@ -1499,6 +1507,159 @@
 
         } else {
             alert('Please select at least one table to reshape and combine.');
+        }
+    });
+
+    // Add the event listener for the "Analyze Row Averages" button
+    document.getElementById('analyzeRowAverages').addEventListener('click', function() {
+        const tableNames = getSelectedVisibleTableNames();
+        const database = '{{ database }}';
+
+        if (tableNames.length > 0) {
+            // Prompt user for the range
+            const rangeInput = prompt('Enter the range for row averages (e.g., 30~40 or 25-35):');
+            
+            if (!rangeInput) {
+                return; // User cancelled
+            }
+            
+            // Parse the range
+            const rangeSeparators = /[~\-]/;
+            const rangeParts = rangeInput.split(rangeSeparators);
+            
+            if (rangeParts.length !== 2) {
+                alert('Please enter a valid range (e.g., 30~40 or 25-35)');
+                return;
+            }
+            
+            const minValue = parseFloat(rangeParts[0].trim());
+            const maxValue = parseFloat(rangeParts[1].trim());
+            
+            if (isNaN(minValue) || isNaN(maxValue)) {
+                alert('Please enter valid numbers for the range');
+                return;
+            }
+            
+            if (minValue >= maxValue) {
+                alert('Minimum value should be less than maximum value');
+                return;
+            }
+
+            // Show the loading overlay
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            // Send a POST request to analyze row averages
+            fetch('/analyze-row-averages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    database: database,
+                    tableNames: tableNames,
+                    minValue: minValue,
+                    maxValue: maxValue,
+                }),
+            })
+            .then(response => response.json())
+            .then(result => {
+                // Hide the loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+
+                if (result.success) {
+                    // Create a new window/tab to display the report
+                    const reportWindow = window.open('', '_blank');
+                    reportWindow.document.write(`
+                        <html>
+                        <head>
+                            <title>Row Average Analysis Report</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                                .summary-section { background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2196f3; }
+                                .summary-stats { background-color: #fff; padding: 10px; border-radius: 3px; margin-bottom: 15px; }
+                                .summary-details { background-color: #fff; padding: 10px; border-radius: 3px; }
+                                .summary-table { margin-bottom: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 3px; }
+                                .summary-table h4 { margin: 0 0 5px 0; color: #d32f2f; }
+                                .row-summary { margin: 5px 0; font-family: monospace; word-wrap: break-word; }
+                                .table-report { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+                                .table-title { background-color: #007bff; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 5px 5px 0 0; }
+                                .stats { background-color: #e9ecef; padding: 10px; margin-bottom: 15px; border-radius: 3px; }
+                                .bad-rows { max-height: 300px; overflow-y: auto; }
+                                .row-info { margin: 5px 0; padding: 5px; background-color: #fff3cd; border-left: 4px solid #ffc107; }
+                                .no-bad-rows { color: #28a745; font-weight: bold; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>Row Average Analysis Report</h1>
+                                <p><strong>Database:</strong> ${database}</p>
+                                <p><strong>Range:</strong> ${minValue} ~ ${maxValue}</p>
+                                <p><strong>Total Tables Analyzed:</strong> ${result.report.length}</p>
+                            </div>
+                            <div class="summary-section">
+                                <h2>Summary of Out-of-Range Rows</h2>
+                                ${(() => {
+                                    const summaryData = result.report.filter(table => table.bad_rows_count > 0);
+                                    if (summaryData.length === 0) {
+                                        return '<p class="no-bad-rows">✓ All tables have rows within the specified range!</p>';
+                                    }
+                                    
+                                    return `
+                                        <div class="summary-details">
+                                            <h3>Quick Overview:</h3>
+                                            ${summaryData.map(table => `
+                                                <div class="summary-table">
+                                                    <h4>${table.table_name} (${table.bad_rows_count} rows out of range)</h4>
+                                                    <p class="row-summary">
+                                                        <strong>Rows:</strong> ${table.bad_rows.map(row => row.row_index).join(', ')}
+                                                    </p>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `;
+                                })()}
+                            </div>
+                            ${result.report.map(tableReport => `
+                                <div class="table-report">
+                                    <div class="table-title">
+                                        <h3>${tableReport.table_name} (${tableReport.dimensions})</h3>
+                                    </div>
+                                    <div class="stats">
+                                        <p><strong>Total Rows:</strong> ${tableReport.total_rows}</p>
+                                        <p><strong>Total Columns:</strong> ${tableReport.total_columns}</p>
+                                        <p><strong>Rows Outside Range:</strong> ${tableReport.bad_rows_count}</p>
+                                        <p><strong>Percentage:</strong> ${((tableReport.bad_rows_count / tableReport.total_rows) * 100).toFixed(2)}%</p>
+                                    </div>
+                                    <div class="bad-rows">
+                                        ${tableReport.bad_rows_count === 0 ? 
+                                            '<p class="no-bad-rows">✓ All rows have averages within the specified range!</p>' : 
+                                            `<h4>Rows with averages outside range (${minValue} ~ ${maxValue}):</h4>
+                                             ${tableReport.bad_rows.map(row => `
+                                                <div class="row-info">
+                                                    <strong>Row ${row.row_index}:</strong> Average = ${row.average.toFixed(4)}
+                                                </div>
+                                             `).join('')}`
+                                        }
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </body>
+                        </html>
+                    `);
+                    reportWindow.document.close();
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Hide the loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert('An error occurred while analyzing row averages.');
+            });
+        } else {
+            alert('Please select at least one table to analyze.');
         }
     });
 </script>

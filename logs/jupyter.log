@@ -27,3 +27,10 @@
 [W 2025-07-18 09:36:20.541 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.48ms referer=http://192.168.68.215:8888/notebooks/test.ipynb
 [I 2025-07-18 09:36:20.630 ServerApp] Kernel started: 90acb8ad-7a8c-4c93-93f9-63585e3bef47
 [I 2025-07-18 09:36:24.281 ServerApp] Starting buffering for 90acb8ad-7a8c-4c93-93f9-63585e3bef47:3390f56ae3bf4920850eced5df900f93
+[W 2025-07-18 10:09:30.279 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 1.16ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 10:09:30.420 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 1.73ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 10:09:30.562 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 2.09ms referer=http://192.168.68.215:3000/
+[W 2025-07-18 10:09:32.521 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
+[W 2025-07-18 10:09:32.671 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.51ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
+[I 2025-07-18 10:09:33.147 ServerApp] Kernel started: 8ed283db-43bb-4787-bcc0-b7ee4d612651
+[I 2025-07-18 10:09:48.795 ServerApp] Starting buffering for 8ed283db-43bb-4787-bcc0-b7ee4d612651:d9710cbacf704c9d814d3c7014e6046c

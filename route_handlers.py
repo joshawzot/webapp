@@ -6438,6 +6438,12 @@ def process_advanced_combine():
         cursor = connection.cursor()
         
         try:
+            # Configure MySQL session for handling wide tables
+            cursor.execute("SET SESSION innodb_strict_mode=OFF")
+            cursor.execute("SET SESSION sql_mode=''")
+            cursor.execute("SET SESSION optimizer_switch='mrr=on,mrr_cost_based=off'")
+            connection.commit()
+            
             # Get column structure from the first table
             cursor.execute(f"SHOW COLUMNS FROM `{database}`.`{table_names[0]}`")
             columns = cursor.fetchall()
@@ -6445,14 +6451,15 @@ def process_advanced_combine():
             
             for column in columns:
                 column_name = column[0]
-                column_type = column[1]
-                column_definitions.append(f"`{column_name}` {column_type}")
+                # Use TEXT instead of original column type to avoid row size limits
+                # TEXT data types are stored separately and only pointers are kept in the row
+                column_definitions.append(f"`{column_name}` TEXT")
             
-            # Create the new table
+            # Create the new table with DYNAMIC row format to handle large rows
             create_table_sql = f"""
             CREATE TABLE `{database}`.`{new_table_name}` (
                 {', '.join(column_definitions)}
-            )
+            ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC
             """
             cursor.execute(create_table_sql)
             

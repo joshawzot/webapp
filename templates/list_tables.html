@@ -111,18 +111,20 @@
             </div>
         </div>
 
-        <!-- Filter fields -->
+        <!-- Filter fields with autocomplete suggestions -->
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="tableFilter" class="form-control" placeholder="Filter table names on the fly">
+                <input type="text" id="tableFilter" class="form-control" list="tableFilterSuggestions" placeholder="Filter table names on the fly">
+                <datalist id="tableFilterSuggestions"></datalist>
             </div>
         </div>
         <!-- First set of filter fields with "AND" logic -->
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="andFilters" class="form-control" placeholder="Enter comma-separated substrings for AND filtering">
+                <input type="text" id="andFilters" class="form-control" list="andFiltersSuggestions" placeholder="Enter comma-separated substrings for AND filtering">
+                <datalist id="andFiltersSuggestions"></datalist>
             </div>
         </div>
 
@@ -130,7 +132,8 @@
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="orFilters" class="form-control" placeholder="Enter comma-separated substrings for OR filtering">
+                <input type="text" id="orFilters" class="form-control" list="orFiltersSuggestions" placeholder="Enter comma-separated substrings for OR filtering">
+                <datalist id="orFiltersSuggestions"></datalist>
             </div>
         </div>
 
@@ -138,7 +141,8 @@
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="andNotFilters" class="form-control" placeholder="Enter comma-separated substrings for AND NOT filtering">
+                <input type="text" id="andNotFilters" class="form-control" list="andNotFiltersSuggestions" placeholder="Enter comma-separated substrings for AND NOT filtering">
+                <datalist id="andNotFiltersSuggestions"></datalist>
             </div>
         </div>
 
@@ -146,7 +150,8 @@
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="orNotFilters" class="form-control" placeholder="Enter comma-separated substrings for OR NOT filtering">
+                <input type="text" id="orNotFilters" class="form-control" list="orNotFiltersSuggestions" placeholder="Enter comma-separated substrings for OR NOT filtering">
+                <datalist id="orNotFiltersSuggestions"></datalist>
             </div>
         </div>
 
@@ -154,7 +159,8 @@
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="ioOrFilters" class="form-control" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
+                <input type="text" id="ioOrFilters" class="form-control" list="ioOrFiltersSuggestions" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
+                <datalist id="ioOrFiltersSuggestions"></datalist>
             </div>
         </div>
 
@@ -162,7 +168,8 @@
         <div class="row custom-row">
             <div class="col">
                 <p></p>
-                <input type="text" id="exactTableNames" class="form-control" placeholder="Enter comma-separated exact table names to match">
+                <input type="text" id="exactTableNames" class="form-control" list="exactTableNamesSuggestions" placeholder="Enter comma-separated exact table names to match">
+                <datalist id="exactTableNamesSuggestions"></datalist>
             </div>
         </div>
     </div>
@@ -191,6 +198,113 @@
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
+    }
+
+    // Filter history management
+    const FILTER_HISTORY_KEY = 'tableFilterHistory';
+    const MAX_HISTORY_ITEMS = 20; // Keep last 20 entries for each filter
+
+    // Filter field configurations
+    const filterFields = [
+        { id: 'tableFilter', datalistId: 'tableFilterSuggestions' },
+        { id: 'andFilters', datalistId: 'andFiltersSuggestions' },
+        { id: 'orFilters', datalistId: 'orFiltersSuggestions' },
+        { id: 'andNotFilters', datalistId: 'andNotFiltersSuggestions' },
+        { id: 'orNotFilters', datalistId: 'orNotFiltersSuggestions' },
+        { id: 'ioOrFilters', datalistId: 'ioOrFiltersSuggestions' },
+        { id: 'exactTableNames', datalistId: 'exactTableNamesSuggestions' }
+    ];
+
+    // Load filter history from localStorage
+    function loadFilterHistory() {
+        try {
+            const historyData = localStorage.getItem(FILTER_HISTORY_KEY);
+            return historyData ? JSON.parse(historyData) : {};
+        } catch (error) {
+            console.warn('Error loading filter history:', error);
+            return {};
+        }
+    }
+
+    // Save filter history to localStorage
+    function saveFilterHistory(filterId, value) {
+        if (!value || value.trim() === '') return; // Don't save empty values
+        
+        try {
+            const history = loadFilterHistory();
+            
+            // Initialize array for this filter if it doesn't exist
+            if (!history[filterId]) {
+                history[filterId] = [];
+            }
+            
+            // Remove existing entry if it exists
+            const existingIndex = history[filterId].indexOf(value);
+            if (existingIndex > -1) {
+                history[filterId].splice(existingIndex, 1);
+            }
+            
+            // Add to beginning of array
+            history[filterId].unshift(value);
+            
+            // Keep only the most recent MAX_HISTORY_ITEMS
+            if (history[filterId].length > MAX_HISTORY_ITEMS) {
+                history[filterId] = history[filterId].slice(0, MAX_HISTORY_ITEMS);
+            }
+            
+            localStorage.setItem(FILTER_HISTORY_KEY, JSON.stringify(history));
+        } catch (error) {
+            console.warn('Error saving filter history:', error);
+        }
+    }
+
+    // Populate datalist with history
+    function populateDatalist(filterId, datalistId) {
+        const history = loadFilterHistory();
+        const datalist = document.getElementById(datalistId);
+        
+        if (!datalist || !history[filterId]) return;
+        
+        // Clear existing options
+        datalist.innerHTML = '';
+        
+        // Add history items as options
+        history[filterId].forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            datalist.appendChild(option);
+        });
+    }
+
+    // Initialize filter history for all fields
+    function initializeFilterHistory() {
+        filterFields.forEach(field => {
+            const input = document.getElementById(field.id);
+            if (!input) return;
+            
+            // Populate datalist with existing history
+            populateDatalist(field.id, field.datalistId);
+            
+            // Add event listener to save values when they change
+            input.addEventListener('change', function() {
+                const value = this.value.trim();
+                if (value) {
+                    saveFilterHistory(field.id, value);
+                    populateDatalist(field.id, field.datalistId);
+                }
+            });
+            
+            // Also save on Enter key
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    const value = this.value.trim();
+                    if (value) {
+                        saveFilterHistory(field.id, value);
+                        populateDatalist(field.id, field.datalistId);
+                    }
+                }
+            });
+        });
     }
 
     // Utility function to get selected and visible table names
@@ -283,6 +397,9 @@
 
         // Update the table count on page load
         updateTableCount();
+
+        // Initialize filter history and autocomplete
+        initializeFilterHistory();
 
         // Function to filter tables
         function filterTables() {

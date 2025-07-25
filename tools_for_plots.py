@@ -291,6 +291,55 @@ else:
                     break
         return None, None, None
 
+def add_tiny_perturbation(data1, data2):
+    """
+    Add tiny perturbation to states with all identical values to enable BER intersection calculation.
+    If one state has all same values but another has a distribution, shift one data point 
+    slightly towards the other state's range.
+    """
+    data1_copy = data1.copy()
+    data2_copy = data2.copy()
+    
+    # Check if data1 has all identical values
+    data1_uniform = len(np.unique(data1)) == 1
+    # Check if data2 has all identical values  
+    data2_uniform = len(np.unique(data2)) == 1
+    
+    # Only apply perturbation if one state is uniform but not both
+    if data1_uniform and not data2_uniform:
+        # data1 is uniform, data2 has distribution
+        data2_mean = np.mean(data2)
+        data1_value = data1[0]  # All values are the same
+        
+        # Calculate direction towards data2's distribution
+        direction = 1 if data2_mean > data1_value else -1
+        
+        # Add tiny perturbation (0.01% of the difference) to one data point
+        perturbation = abs(data2_mean - data1_value) * 0.0001 * direction
+        if perturbation == 0:  # If data2_mean equals data1_value, use a small default
+            perturbation = 0.001 * direction
+            
+        # Modify the last data point to create minimal variation
+        data1_copy[-1] += perturbation
+        
+    elif data2_uniform and not data1_uniform:
+        # data2 is uniform, data1 has distribution
+        data1_mean = np.mean(data1)
+        data2_value = data2[0]  # All values are the same
+        
+        # Calculate direction towards data1's distribution
+        direction = 1 if data1_mean > data2_value else -1
+        
+        # Add tiny perturbation (0.01% of the difference) to one data point
+        perturbation = abs(data1_mean - data2_value) * 0.0001 * direction
+        if perturbation == 0:  # If data1_mean equals data2_value, use a small default
+            perturbation = 0.001 * direction
+            
+        # Modify the last data point to create minimal variation
+        data2_copy[-1] += perturbation
+    
+    return data1_copy, data2_copy
+
 def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_diff=2, figsize=(15, 10), num_interp_points=1000):
     # Initialize variables
     added_to_legend = set()
@@ -390,6 +439,9 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
 
+                    # Apply perturbation to handle states with all identical values
+                    x1_processed, x2_processed = add_tiny_perturbation(x1, x2)
+                    
                     y1 = -y1  # Reverse y-axis for first state
 
                     start_state = selected_groups[k]
@@ -397,16 +449,16 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     table_name = table_names[i]
 
                     # Optimize min/max calculations
-                    common_x_min_all = min(np.min(x1), np.min(x2))
-                    common_x_max_all = max(np.max(x1), np.max(x2))
+                    common_x_min_all = min(np.min(x1_processed), np.min(x2_processed))
+                    common_x_max_all = max(np.max(x1_processed), np.max(x2_processed))
                     
                     # Pre-allocate the array for better memory management
                     common_x_all = np.linspace(common_x_min_all, common_x_max_all, num=num_interp_points, dtype=np.float32)
 
                     # Remove duplicates and prepare for interpolation
-                    unique_x1, unique_indices_x1 = np.unique(x1, return_index=True)
+                    unique_x1, unique_indices_x1 = np.unique(x1_processed, return_index=True)
                     unique_y1 = y1[unique_indices_x1]
-                    unique_x2, unique_indices_x2 = np.unique(x2, return_index=True)
+                    unique_x2, unique_indices_x2 = np.unique(x2_processed, return_index=True)
                     unique_y2 = y2[unique_indices_x2]
 
                     # Create interpolation functions once and reuse
@@ -446,7 +498,8 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                         else:
                             horizontal_line_y_value = None
                             ppm = None
-                    else:  # Handle extreme case for perfect distribution
+                    else:  # Handle extreme case where perturbation still doesn't help
+                        # This should rarely occur now due to perturbation
                         ber = 0
                         ppm_ber = 0
                         ppm = 0
@@ -575,20 +628,23 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
 
+                    # Apply perturbation to handle states with all identical values
+                    x1_processed, x2_processed = add_tiny_perturbation(x1, x2)
+
                     y1 = -y1  # Reverse y-axis for first state
 
                     start_state = selected_groups[k]
                     end_state = selected_groups[k + 1]
                     table_name = table_names[i]
 
-                    common_x_min_all = min(min(x1), min(x2))
-                    common_x_max_all = max(max(x1), max(x2))
+                    common_x_min_all = min(min(x1_processed), min(x2_processed))
+                    common_x_max_all = max(max(x1_processed), max(x2_processed))
                     common_x_all = np.linspace(common_x_min_all, common_x_max_all, num=4000)
 
                     # Remove duplicates and interpolate
-                    unique_x1, unique_indices_x1 = np.unique(x1, return_index=True)
+                    unique_x1, unique_indices_x1 = np.unique(x1_processed, return_index=True)
                     unique_y1 = y1[unique_indices_x1]
-                    unique_x2, unique_indices_x2 = np.unique(x2, return_index=True)
+                    unique_x2, unique_indices_x2 = np.unique(x2_processed, return_index=True)
                     unique_y2 = y2[unique_indices_x2]
 
                     interp_common_x_1 = interp1d(unique_x1, unique_y1, fill_value="extrapolate")(common_x_all)
@@ -638,7 +694,8 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
                         if not line_drawn:
                             horizontal_line_y_value = None
                             ppm = None
-                    else:  #it was due to extreme case where all x values are identical (perfect distribution where we can see sometimes in level3 and when data points are less), the ber must be given 0 (to deal with this special case) since interpolation becomes mathematically impossible
+                    else:  # Handle extreme case where perturbation still doesn't help
+                        # This should rarely occur now due to perturbation
                         ber = 0
                         ppm_ber = 0
                         ppm = 0

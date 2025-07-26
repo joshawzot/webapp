@@ -21,7 +21,13 @@
                 </div>
                 
                 <div class="form-text text-muted mb-3">
-                    <p>These values define the output range for linear conversion. Input range is fixed at 0-63.</p>
+                    <p>These values define the output range for linear conversion. 
+                    {% if actual_input_min is defined and actual_input_max is defined %}
+                        Input range is {{ actual_input_min }}-{{ actual_input_max }} (determined from your data).
+                    {% else %}
+                        Input range is 0-63.
+                    {% endif %}
+                    </p>
                 </div>
                 
                 <button type="submit" class="btn btn-primary">Apply Custom Conversion</button>

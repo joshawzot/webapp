@@ -28,7 +28,7 @@
     </div>
     {% elif using_linear_conversion %}
     <div class="alert alert-info">
-        <strong>Current Mode:</strong> Using linear conversion values (0-63 → {{ linear_min }}-{{ linear_max }}) for plotting.
+        <strong>Current Mode:</strong> Using linear conversion values ({{ linear_input_min }}-{{ linear_input_max }} → {{ linear_output_min }}-{{ linear_output_max }}) for plotting.
     </div>
     {% else %}
     <div class="alert alert-light border">

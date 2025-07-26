@@ -149,21 +149,29 @@ def get_unique_original_values_and_conductance(table_data, input_params):
     
     return comparison
 
-def run_linear_conversion(value):
+def run_linear_conversion(value, conversion_params=None):
     """
-    Perform a linear conversion from input range (0-63) to output range (60-170).
+    Perform a linear conversion from input range to output range.
     
     Args:
         value (float): The original value to convert.
+        conversion_params (dict, optional): Custom conversion parameters. If None, uses global LINEAR_CONVERSION.
     
     Returns:
         float: The linearly converted value.
     """
-    # Extract conversion parameters
-    input_min = LINEAR_CONVERSION["input_min"]
-    input_max = LINEAR_CONVERSION["input_max"]
-    output_min = LINEAR_CONVERSION["output_min"]
-    output_max = LINEAR_CONVERSION["output_max"]
+    # Use provided parameters or fall back to global
+    if conversion_params:
+        input_min = conversion_params["input_min"]
+        input_max = conversion_params["input_max"]
+        output_min = conversion_params["output_min"]
+        output_max = conversion_params["output_max"]
+    else:
+        # Extract conversion parameters from global
+        input_min = LINEAR_CONVERSION["input_min"]
+        input_max = LINEAR_CONVERSION["input_max"]
+        output_min = LINEAR_CONVERSION["output_min"]
+        output_max = LINEAR_CONVERSION["output_max"]
     
     # Linear mapping formula: output = output_min + (value - input_min) * (output_max - output_min) / (input_max - input_min)
     # Ensure value is within the input range
@@ -174,12 +182,13 @@ def run_linear_conversion(value):
     
     return converted
 
-def convert_table_to_linear(table_data):
+def convert_table_to_linear(table_data, conversion_params=None):
     """
     Convert all values in a table using linear conversion.
     
     Args:
         table_data (numpy.ndarray): The original table data.
+        conversion_params (dict, optional): Custom conversion parameters. If None, uses global LINEAR_CONVERSION.
     
     Returns:
         numpy.ndarray: The converted table data.
@@ -190,16 +199,17 @@ def convert_table_to_linear(table_data):
     # Apply linear conversion to each element
     for i in range(table_data.shape[0]):
         for j in range(table_data.shape[1]):
-            converted_table[i, j] = run_linear_conversion(float(table_data[i, j]))
+            converted_table[i, j] = run_linear_conversion(float(table_data[i, j]), conversion_params)
     
     return converted_table
 
-def get_unique_original_values_and_linear_conversion(table_data):
+def get_unique_original_values_and_linear_conversion(table_data, conversion_params=None):
     """
     Get a list of unique original values and their corresponding linearly converted values.
     
     Args:
         table_data (numpy.ndarray): The original table data.
+        conversion_params (dict, optional): Custom conversion parameters. If None, uses global LINEAR_CONVERSION.
     
     Returns:
         list: A list of dictionaries containing original and converted values.
@@ -210,7 +220,7 @@ def get_unique_original_values_and_linear_conversion(table_data):
     
     # Calculate converted value for each unique original value
     for value in unique_values:
-        converted = run_linear_conversion(float(value))
+        converted = run_linear_conversion(float(value), conversion_params)
         comparison.append({
             "original": float(value),
             "converted": converted

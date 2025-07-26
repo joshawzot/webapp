@@ -122,11 +122,31 @@ def extract_statistical_data(table_names, database_name, form_data):
         selected_groups = form_data.get('selected_groups', '')
         target_ranges = form_data.get('target_ranges', [])
         
+        # Check if we should apply conductance or linear conversion
+        using_conductance = form_data.get('using_conductance', False)
+        using_linear_conversion = form_data.get('using_linear_conversion', False)
+        conductance_params = form_data.get('conductance_params', {})
+        
         # Process each table
         for table_name in table_names:
             try:
                 # Get data matrix for the table
                 data_matrix, _ = get_full_table_data(table_name, database_name)
+                
+                # Apply conversions if enabled (same as in generate_plot)
+                if using_conductance and conductance_params:
+                    from conductance_calculator import convert_table_to_conductance
+                    data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+                elif using_linear_conversion:
+                    from conductance_calculator import convert_table_to_linear
+                    # Get conversion parameters from form_data
+                    conversion_params = {
+                        'input_min': form_data.get('linear_input_min', 0),
+                        'input_max': form_data.get('linear_input_max', 63),
+                        'output_min': form_data.get('linear_output_min', 60),
+                        'output_max': form_data.get('linear_output_max', 170)
+                    }
+                    data_matrix = convert_table_to_linear(data_matrix, conversion_params)
                 
                 # Process based on pattern type
                 if form_data.get('state_pattern_type') == '1D':
@@ -544,6 +564,24 @@ def render_plot(database, table_name, plot_function):
                     initial_tables = table_name.split(',')
                     initial_table_count = len(initial_tables)
                 
+                # Get current linear conversion parameters to pass to template
+                using_linear_conversion = form_data.get('using_linear_conversion', False)
+                using_conductance = form_data.get('using_conductance', False)
+                
+                # Get the conversion parameters from form_data (which contains the correct values)
+                # or fall back to current LINEAR_CONVERSION
+                if using_linear_conversion and 'linear_input_min' in form_data:
+                    linear_input_min = form_data['linear_input_min']
+                    linear_input_max = form_data['linear_input_max']
+                    linear_output_min = form_data['linear_output_min']
+                    linear_output_max = form_data['linear_output_max']
+                else:
+                    from conductance_calculator import LINEAR_CONVERSION
+                    linear_input_min = LINEAR_CONVERSION["input_min"]
+                    linear_input_max = LINEAR_CONVERSION["input_max"]
+                    linear_output_min = LINEAR_CONVERSION["output_min"]
+                    linear_output_max = LINEAR_CONVERSION["output_max"]
+                
                 return render_template('plot.html', 
                                      plot_data=plot_data, 
                                      sorted_table_names=sorted_table_names, 
@@ -574,9 +612,40 @@ def render_plot(database, table_name, plot_function):
                                      avg_values_data=avg_values_data,
                                      std_values_data=std_values_data,
                                      ber_values_data=ber_values_data,
-                                     location_dots_map=location_dots_map)
+                                     location_dots_map=location_dots_map,
+                                     using_linear_conversion=using_linear_conversion,
+                                     using_conductance=using_conductance,
+                                     linear_input_min=linear_input_min,
+                                     linear_input_max=linear_input_max,
+                                     linear_output_min=linear_output_min,
+                                     linear_output_max=linear_output_max)
             else:
-                return render_template('plot.html', plot_data=plot_data)
+                # Get current linear conversion parameters to pass to template
+                using_linear_conversion = form_data.get('using_linear_conversion', False)
+                using_conductance = form_data.get('using_conductance', False)
+                
+                # Get the conversion parameters from form_data (which contains the correct values)
+                # or fall back to current LINEAR_CONVERSION
+                if using_linear_conversion and 'linear_input_min' in form_data:
+                    linear_input_min = form_data['linear_input_min']
+                    linear_input_max = form_data['linear_input_max']
+                    linear_output_min = form_data['linear_output_min']
+                    linear_output_max = form_data['linear_output_max']
+                else:
+                    from conductance_calculator import LINEAR_CONVERSION
+                    linear_input_min = LINEAR_CONVERSION["input_min"]
+                    linear_input_max = LINEAR_CONVERSION["input_max"]
+                    linear_output_min = LINEAR_CONVERSION["output_min"]
+                    linear_output_max = LINEAR_CONVERSION["output_max"]
+                
+                return render_template('plot.html', 
+                                     plot_data=plot_data,
+                                     using_linear_conversion=using_linear_conversion,
+                                     using_conductance=using_conductance,
+                                     linear_input_min=linear_input_min,
+                                     linear_input_max=linear_input_max,
+                                     linear_output_min=linear_output_min,
+                                     linear_output_max=linear_output_max)
 
         except Exception as e:
             print(f"Error generating plot: {e}")
@@ -944,8 +1013,21 @@ def view_plot(database, table_name, plot_function):
         
         # Get current linear conversion parameters for the banner
         from conductance_calculator import LINEAR_CONVERSION
-        linear_min = LINEAR_CONVERSION["output_min"]
-        linear_max = LINEAR_CONVERSION["output_max"]
+        linear_output_min = LINEAR_CONVERSION["output_min"]
+        linear_output_max = LINEAR_CONVERSION["output_max"]
+        
+        # Get linear conversion parameters from session (if available) or use global as fallback
+        conversion_params = session.get('linear_conversion_params')
+        if using_linear_conversion and conversion_params:
+            linear_input_min = conversion_params['input_min']
+            linear_input_max = conversion_params['input_max']
+            linear_output_min = conversion_params['output_min']
+            linear_output_max = conversion_params['output_max']
+            print(f"Using session conversion params: {conversion_params}")
+        else:
+            # Fallback to global LINEAR_CONVERSION
+            linear_input_min = LINEAR_CONVERSION["input_min"]
+            linear_input_max = LINEAR_CONVERSION["input_max"]
         
         return render_template('choose_plot_function_form.html', 
                               database=database, 
@@ -954,8 +1036,10 @@ def view_plot(database, table_name, plot_function):
                               conductance_comparison=conductance_comparison,
                               using_linear_conversion=using_linear_conversion,
                               linear_conversion_comparison=linear_conversion_comparison,
-                              linear_min=linear_min,
-                              linear_max=linear_max)
+                              linear_input_min=linear_input_min,
+                              linear_input_max=linear_input_max,
+                              linear_output_min=linear_output_min,
+                              linear_output_max=linear_output_max)
 
 @app.route('/set-conductance-values/<database>/<table_name>')
 def set_conductance_values(database, table_name):
@@ -5049,6 +5133,7 @@ def reset_conductance(database, table_name):
     session.pop('conductance_comparison', None)
     session.pop('using_linear_conversion', None)
     session.pop('linear_conversion_comparison', None)
+    session.pop('linear_conversion_params', None)  # Clear conversion parameters
     
     # Add a flash message for user feedback
     flash('Reset to original values successful. Original data will be used for plotting.', 'success')
@@ -5065,12 +5150,33 @@ def linear_conversion(database, table_name):
         output_min = LINEAR_CONVERSION["output_min"]
         output_max = LINEAR_CONVERSION["output_max"]
         
+        # Determine the actual data range for the tables
+        table_names = table_name.split(',')
+        all_original_values = []
+        
+        for single_table in table_names:
+            try:
+                data_matrix, _ = get_full_table_data(single_table, database)
+                all_original_values.extend(data_matrix.flatten())
+            except Exception as e:
+                print(f"Warning: Could not load data for table {single_table}: {e}")
+        
+        # Calculate actual input range
+        if all_original_values:
+            actual_input_min = float(np.min(all_original_values))
+            actual_input_max = float(np.max(all_original_values))
+        else:
+            actual_input_min = LINEAR_CONVERSION["input_min"]
+            actual_input_max = LINEAR_CONVERSION["input_max"]
+        
         # Redirect to the custom linear conversion form
         return render_template('custom_linear_conversion.html', 
                               database=database, 
                               table_name=table_name,
                               output_min=output_min,
-                              output_max=output_max)
+                              output_max=output_max,
+                              actual_input_min=actual_input_min,
+                              actual_input_max=actual_input_max)
         
     except Exception as e:
         print(f"Error showing linear conversion form: {str(e)}")
@@ -5092,10 +5198,30 @@ def apply_custom_linear_conversion(database, table_name):
         # Get original data for tables to create comparison
         table_names = table_name.split(',')
         comparison_tables = []
+        all_original_values = []
         
         for single_table in table_names:
             data_matrix, _ = get_full_table_data(single_table, database)
-            comparison = get_unique_original_values_and_linear_conversion(data_matrix)
+            # Collect all values to determine actual range
+            all_original_values.extend(data_matrix.flatten())
+        
+        # Create conversion parameters with the correct values
+        if all_original_values:
+            actual_min = float(np.min(all_original_values))
+            actual_max = float(np.max(all_original_values))
+            conversion_params = {
+                'input_min': actual_min,
+                'input_max': actual_max,
+                'output_min': output_min,
+                'output_max': output_max
+            }
+        else:
+            conversion_params = None
+        
+        # Generate comparison table with correct parameters
+        for single_table in table_names:
+            data_matrix, _ = get_full_table_data(single_table, database)
+            comparison = get_unique_original_values_and_linear_conversion(data_matrix, conversion_params)
             comparison_tables.extend(comparison)
         
         # Remove duplicates and sort by original value
@@ -5108,13 +5234,30 @@ def apply_custom_linear_conversion(database, table_name):
         
         unique_comparison.sort(key=lambda x: x['original'])
         
+        # Update the global LINEAR_CONVERSION for session display purposes
+        if conversion_params:
+            from conductance_calculator import LINEAR_CONVERSION
+            LINEAR_CONVERSION["input_min"] = conversion_params['input_min']
+            LINEAR_CONVERSION["input_max"] = conversion_params['input_max']
+            LINEAR_CONVERSION["output_min"] = conversion_params['output_min']
+            LINEAR_CONVERSION["output_max"] = conversion_params['output_max']
+            print(f"Updated global LINEAR_CONVERSION to {conversion_params}")
+        
         # Store settings in the session
         session['using_linear_conversion'] = True
         session['using_conductance'] = False  # Ensure conductance is turned off
         session['linear_conversion_comparison'] = unique_comparison
         
+        # Store the conversion parameters in session for persistence
+        if conversion_params:
+            session['linear_conversion_params'] = conversion_params
+        
         # Add a flash message for user feedback
-        flash(f'Linear conversion enabled. Values will be mapped from 0-63 to {output_min}-{output_max} range for plotting.', 'success')
+        if conversion_params:
+            input_range_str = f"{conversion_params['input_min']}-{conversion_params['input_max']}"
+        else:
+            input_range_str = "0-63"
+        flash(f'Linear conversion enabled. Values will be mapped from {input_range_str} to {output_min}-{output_max} range for plotting.', 'success')
         
         # Redirect back to the Choose Plot Function page
         return redirect(f'/view-plot/{database}/{table_name}/choose')
@@ -5557,8 +5700,8 @@ def process_plot_form():
                 using_linear_conversion = session.get('using_linear_conversion', False)
                 linear_conversion_comparison = session.get('linear_conversion_comparison', None)
                 from conductance_calculator import LINEAR_CONVERSION
-                linear_min = LINEAR_CONVERSION["output_min"]
-                linear_max = LINEAR_CONVERSION["output_max"]
+                linear_output_min = LINEAR_CONVERSION["output_min"]
+                linear_output_max = LINEAR_CONVERSION["output_max"]
                 
                 return render_template('input_form_generate_plot.html', 
                                       database=database, 
@@ -5568,8 +5711,8 @@ def process_plot_form():
                                       conductance_comparison=conductance_comparison,
                                       using_linear_conversion=using_linear_conversion,
                                       linear_conversion_comparison=linear_conversion_comparison,
-                                      linear_min=linear_min,
-                                      linear_max=linear_max)
+                                      linear_output_min=linear_output_min,
+                                      linear_output_max=linear_output_max)
     else:
         return 'Invalid plot function', 400
     
@@ -5583,6 +5726,22 @@ def process_plot_form():
     using_linear_conversion = session.get('using_linear_conversion', False)
     if using_linear_conversion:
         form_data['using_linear_conversion'] = True
+        
+        # Get conversion parameters from session (which persists correctly)
+        conversion_params = session.get('linear_conversion_params')
+        if conversion_params:
+            form_data['linear_input_min'] = conversion_params['input_min']
+            form_data['linear_input_max'] = conversion_params['input_max']
+            form_data['linear_output_min'] = conversion_params['output_min']
+            form_data['linear_output_max'] = conversion_params['output_max']
+            print(f"Stored conversion params in form_data: {conversion_params}")
+        else:
+            # Fallback to defaults if session doesn't have params
+            form_data['linear_input_min'] = 0
+            form_data['linear_input_max'] = 63
+            form_data['linear_output_min'] = 60
+            form_data['linear_output_max'] = 170
+            print("Using default conversion params as fallback")
     
     # Convert form data to JSON
     form_data_json = json.dumps(form_data)

@@ -651,8 +651,15 @@ def generate_plot(table_names, database_name, form_data):
             data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
         # Apply linear conversion if enabled
         elif using_linear_conversion:
-            print(f"Converting table {table_name} using linear conversion (0-63 → 60-170)")
-            data_matrix = convert_table_to_linear(data_matrix)
+            # Get conversion parameters from form_data
+            conversion_params = {
+                'input_min': form_data.get('linear_input_min', 0),
+                'input_max': form_data.get('linear_input_max', 63),
+                'output_min': form_data.get('linear_output_min', 60),
+                'output_max': form_data.get('linear_output_max', 170)
+            }
+            print(f"Converting table {table_name} using linear conversion ({conversion_params['input_min']}-{conversion_params['input_max']} → {conversion_params['output_min']}-{conversion_params['output_max']})")
+            data_matrix = convert_table_to_linear(data_matrix, conversion_params)
         
         # Check if we need to apply an existing bitmap mask
         apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()

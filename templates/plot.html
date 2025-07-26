@@ -12,6 +12,25 @@
         </div>
     </div>
     
+    <!-- Linear Conversion Status Banner -->
+    {% if using_linear_conversion %}
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-info">
+                <strong>Data Conversion Applied:</strong> Using linear conversion values ({{ linear_input_min }}-{{ linear_input_max }} → {{ linear_output_min }}-{{ linear_output_max }}) for plotting.
+            </div>
+        </div>
+    </div>
+    {% elif using_conductance %}
+    <div class="row mb-3">
+        <div class="col">
+            <div class="alert alert-info">
+                <strong>Data Conversion Applied:</strong> Using precise conductance values for plotting.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- Add information banner for Tables with best BER -->
     {% if ber_display_option == 'top_ios' and top_ios_count and top_ios_count < initial_table_count %}
     <div class="row mb-3">

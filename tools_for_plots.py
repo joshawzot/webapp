@@ -291,54 +291,157 @@ else:
                     break
         return None, None, None
 
-def add_tiny_perturbation(data1, data2):
+def find_intersection_enhanced(x1_processed, y1, x2_processed, y2, common_x_all, cdf_value_1, cdf_value_2):
     """
-    Add tiny perturbation to states with all identical values to enable BER intersection calculation.
-    If one state has all same values but another has a distribution, shift one data point 
-    slightly towards the other state's range.
+    Enhanced intersection finding that handles vertical lines and provides detailed information.
+    Returns intersection coordinates, BER, and additional info even for vertical lines.
     """
-    data1_copy = data1.copy()
-    data2_copy = data2.copy()
+    # Check if either state is a vertical line (all identical values)
+    x1_is_vertical = len(np.unique(x1_processed)) == 1
+    x2_is_vertical = len(np.unique(x2_processed)) == 1
     
-    # Check if data1 has all identical values
-    data1_uniform = len(np.unique(data1)) == 1
-    # Check if data2 has all identical values  
-    data2_uniform = len(np.unique(data2)) == 1
+    intersection_info = {
+        'intersection_x': None,
+        'intersection_y': None,
+        'ber': None,
+        'ppm_ber': None,
+        'state1_is_vertical': x1_is_vertical,
+        'state2_is_vertical': x2_is_vertical,
+        'state1_value': x1_processed[0] if x1_is_vertical else None,
+        'state2_value': x2_processed[0] if x2_is_vertical else None
+    }
     
-    # Only apply perturbation if one state is uniform but not both
-    if data1_uniform and not data2_uniform:
-        # data1 is uniform, data2 has distribution
-        data2_mean = np.mean(data2)
-        data1_value = data1[0]  # All values are the same
-        
-        # Calculate direction towards data2's distribution
-        direction = 1 if data2_mean > data1_value else -1
-        
-        # Add tiny perturbation (0.01% of the difference) to one data point
-        perturbation = abs(data2_mean - data1_value) * 0.0001 * direction
-        if perturbation == 0:  # If data2_mean equals data1_value, use a small default
-            perturbation = 0.001 * direction
+    if x1_is_vertical and x2_is_vertical:
+        # Both states are vertical lines
+        x_val = x1_processed[0]  # Same for both since they're at the same position
+        y_val = 0  # Intersection at y=0 when both are vertical
+        intersection_info.update({
+            'intersection_x': x_val,
+            'intersection_y': y_val,
+            'ber': abs(y_val),
+            'ppm_ber': sigma_to_ppm(abs(y_val)),
+            'note': 'Both states are vertical lines'
+        })
+    elif x1_is_vertical:
+        # State 1 is vertical, find where state 2 intersects it
+        x_val = x1_processed[0]
+        # Find the closest x value in common_x_all to the vertical line
+        closest_idx = np.argmin(np.abs(common_x_all - x_val))
+        y_val = cdf_value_2[closest_idx]
+        intersection_info.update({
+            'intersection_x': x_val,
+            'intersection_y': y_val,
+            'ber': abs(y_val),
+            'ppm_ber': sigma_to_ppm(abs(y_val)),
+            'note': 'State 1 is vertical line'
+        })
+    elif x2_is_vertical:
+        # State 2 is vertical, find where state 1 intersects it
+        x_val = x2_processed[0]
+        # Find the closest x value in common_x_all to the vertical line
+        closest_idx = np.argmin(np.abs(common_x_all - x_val))
+        y_val = cdf_value_1[closest_idx]
+        intersection_info.update({
+            'intersection_x': x_val,
+            'intersection_y': y_val,
+            'ber': abs(y_val),
+            'ppm_ber': sigma_to_ppm(abs(y_val)),
+            'note': 'State 2 is vertical line'
+        })
+    else:
+        # Neither state is vertical, use regular intersection finding
+        if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
+            intersection_x, intersection_y = find_intersection(common_x_all, cdf_value_1, cdf_value_2)
+            intersection_info.update({
+                'intersection_x': intersection_x,
+                'intersection_y': intersection_y,
+                'ber': abs(intersection_y),
+                'ppm_ber': sigma_to_ppm(abs(intersection_y)),
+                'note': 'Regular intersection'
+            })
+        else:
+            intersection_info.update({
+                'intersection_x': 0,
+                'intersection_y': 0,
+                'ber': 0,
+                'ppm_ber': 0,
+                'note': 'Interpolation failed'
+            })
+    
+    return intersection_info
+
+def find_window_enhanced(x1_processed, y1, x2_processed, y2, common_x_all, cdf_value_1, cdf_value_2, target_x_diff, tolerance):
+    """
+    Enhanced window finding that handles vertical lines and provides detailed information.
+    Returns window coordinates and measurements even for vertical lines.
+    """
+    # Check if either state is a vertical line
+    x1_is_vertical = len(np.unique(x1_processed)) == 1
+    x2_is_vertical = len(np.unique(x2_processed)) == 1
+    
+    window_info = {
+        'x_start': None,
+        'x_end': None,
+        'h_line_y': None,
+        'ppm': None,
+        'state1_is_vertical': x1_is_vertical,
+        'state2_is_vertical': x2_is_vertical
+    }
+    
+    if x1_is_vertical and x2_is_vertical:
+        # Both states are vertical - window is just the distance between them
+        x1_val = x1_processed[0]
+        x2_val = x2_processed[0]
+        x_diff = abs(x2_val - x1_val)
+        if abs(x_diff - target_x_diff) < tolerance:
+            window_info.update({
+                'x_start': min(x1_val, x2_val),
+                'x_end': max(x1_val, x2_val),
+                'h_line_y': 0,  # Both vertical lines intersect at y=0
+                'ppm': 0,
+                'note': f'Both vertical, distance: {x_diff:.2f}'
+            })
+    elif x1_is_vertical or x2_is_vertical:
+        # One state is vertical - find window points from vertical line
+        if x1_is_vertical:
+            vertical_x = x1_processed[0]
+            other_x = common_x_all
+            other_y = cdf_value_2
+        else:
+            vertical_x = x2_processed[0]
+            other_x = common_x_all
+            other_y = cdf_value_1
             
-        # Modify the last data point to create minimal variation
-        data1_copy[-1] += perturbation
-        
-    elif data2_uniform and not data1_uniform:
-        # data2 is uniform, data1 has distribution
-        data1_mean = np.mean(data1)
-        data2_value = data2[0]  # All values are the same
-        
-        # Calculate direction towards data1's distribution
-        direction = 1 if data1_mean > data2_value else -1
-        
-        # Add tiny perturbation (0.01% of the difference) to one data point
-        perturbation = abs(data1_mean - data2_value) * 0.0001 * direction
-        if perturbation == 0:  # If data1_mean equals data2_value, use a small default
-            perturbation = 0.001 * direction
-            
-        # Modify the last data point to create minimal variation
-        data2_copy[-1] += perturbation
+        # Find points that are target_x_diff away from vertical line
+        for i, x_val in enumerate(other_x):
+            x_diff = abs(x_val - vertical_x)
+            if abs(x_diff - target_x_diff) < tolerance:
+                window_info.update({
+                    'x_start': min(vertical_x, x_val),
+                    'x_end': max(vertical_x, x_val),
+                    'h_line_y': other_y[i],
+                    'ppm': sigma_to_ppm(abs(other_y[i])),
+                    'note': f'One vertical, window found at distance: {x_diff:.2f}'
+                })
+                break
+    else:
+        # Neither state is vertical, use regular window finding
+        if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
+            x_start, x_end, h_line_y = find_target_x_diff(
+                common_x_all, cdf_value_1, cdf_value_2, target_x_diff, tolerance
+            )
+            if h_line_y is not None:
+                window_info.update({
+                    'x_start': x_start,
+                    'x_end': x_end,
+                    'h_line_y': h_line_y,
+                    'ppm': sigma_to_ppm(abs(h_line_y)),
+                    'note': 'Regular window'
+                })
     
-    return data1_copy, data2_copy
+    return window_info
+
+
 
 def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_diff=2, figsize=(15, 10), num_interp_points=1000):
     # Initialize variables
@@ -348,6 +451,7 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
     global_x_min = float('inf')
     global_x_max = float('-inf')
     sigma_intersections = {}  # Store sigma intersections for each table and state
+    annotation_details = []  # Store annotation details for organized display
 
     # Create separate figures for sigma and CDF plots
     fig_sigma = plt.figure(figsize=figsize)
@@ -439,8 +543,8 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
 
-                    # Apply perturbation to handle states with all identical values
-                    x1_processed, x2_processed = add_tiny_perturbation(x1, x2)
+                    # No perturbation - let vertical lines remain as they are
+                    x1_processed, x2_processed = x1, x2
                     
                     y1 = -y1  # Reverse y-axis for first state
 
@@ -455,15 +559,29 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     # Pre-allocate the array for better memory management
                     common_x_all = np.linspace(common_x_min_all, common_x_max_all, num=num_interp_points, dtype=np.float32)
 
-                    # Remove duplicates and prepare for interpolation
-                    unique_x1, unique_indices_x1 = np.unique(x1_processed, return_index=True)
-                    unique_y1 = y1[unique_indices_x1]
-                    unique_x2, unique_indices_x2 = np.unique(x2_processed, return_index=True)
-                    unique_y2 = y2[unique_indices_x2]
+                    # Handle duplicates properly by averaging y-values for same x-values
+                    # This preserves the frequency information of each value
+                    def handle_duplicates(x_data, y_data):
+                        # Create a dictionary to collect y-values for each x-value
+                        x_to_y_dict = {}
+                        for x_val, y_val in zip(x_data, y_data):
+                            if x_val not in x_to_y_dict:
+                                x_to_y_dict[x_val] = []
+                            x_to_y_dict[x_val].append(y_val)
+                        
+                        # Sort by x-values and average y-values for duplicates
+                        sorted_x = sorted(x_to_y_dict.keys())
+                        averaged_y = [np.mean(x_to_y_dict[x_val]) for x_val in sorted_x]
+                        
+                        return np.array(sorted_x), np.array(averaged_y)
+                    
+                    # Process both datasets to handle duplicates properly
+                    processed_x1, processed_y1 = handle_duplicates(x1_processed, y1)
+                    processed_x2, processed_y2 = handle_duplicates(x2_processed, y2)
 
-                    # Create interpolation functions once and reuse
-                    f1 = interp1d(unique_x1, unique_y1, fill_value="extrapolate", bounds_error=False)
-                    f2 = interp1d(unique_x2, unique_y2, fill_value="extrapolate", bounds_error=False)
+                    # Create interpolation functions with properly handled duplicates
+                    f1 = interp1d(processed_x1, processed_y1, fill_value="extrapolate", bounds_error=False)
+                    f2 = interp1d(processed_x2, processed_y2, fill_value="extrapolate", bounds_error=False)
                     
                     # Apply interpolation
                     interp_common_x_1 = f1(common_x_all)
@@ -472,50 +590,86 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                     cdf_value_1 = interp_common_x_1
                     cdf_value_2 = interp_common_x_2
 
-                    if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
-                        ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=current_color, alpha=0.7, 
-                                     label=f'{table_name} - state {start_state}')
-                        ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=current_color, alpha=0.7, 
-                                     label=f'{table_name} - state {end_state}')
+                    # Always plot the lines, even if they are vertical or have NaN values
+                    ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=current_color, alpha=0.7, 
+                                 label=f'{table_name} - state {start_state}')
+                    ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=current_color, alpha=0.7, 
+                                 label=f'{table_name} - state {end_state}')
 
-                        # Use optimized intersection finding
-                        intersection_x, intersection_y = find_intersection(common_x_all, cdf_value_1, cdf_value_2)
-                        ax_interp.scatter(intersection_x, intersection_y, color='red', s=50, zorder=5)
+                    # Use enhanced intersection finding that handles vertical lines
+                    intersection_info = find_intersection_enhanced(
+                        x1_processed, y1, x2_processed, y2, common_x_all, cdf_value_1, cdf_value_2
+                    )
+                    
+                    # Plot intersection point if found (without annotation to avoid overlap)
+                    if intersection_info['intersection_x'] is not None:
+                        ax_interp.scatter(intersection_info['intersection_x'], intersection_info['intersection_y'], 
+                                        color='red', s=50, zorder=5)
 
-                        ber = np.abs(intersection_y)
-                        ppm_ber = sigma_to_ppm(ber)
+                    ber = intersection_info['ber'] if intersection_info['ber'] is not None else 0
+                    ppm_ber = intersection_info['ppm_ber'] if intersection_info['ppm_ber'] is not None else 0
 
-                        # Find horizontal line points using optimized function
-                        x_start, x_end, h_line_y = find_target_x_diff(
-                            common_x_all, cdf_value_1, cdf_value_2, target_x_diff, tolerance
-                        )
-                        
-                        if h_line_y is not None:
-                            ax_interp.hlines(y=h_line_y, xmin=x_start, xmax=x_end, 
-                                           color='green', linestyles='dotted')
-                            horizontal_line_y_value = h_line_y
-                            ppm = sigma_to_ppm(abs(horizontal_line_y_value))
-                        else:
-                            horizontal_line_y_value = None
-                            ppm = None
-                    else:  # Handle extreme case where perturbation still doesn't help
-                        # This should rarely occur now due to perturbation
-                        ber = 0
-                        ppm_ber = 0
-                        ppm = 0
-                        horizontal_line_y_value = 0
+                    # Use enhanced window finding that handles vertical lines
+                    window_info = find_window_enhanced(
+                        x1_processed, y1, x2_processed, y2, common_x_all, cdf_value_1, cdf_value_2, target_x_diff, tolerance
+                    )
+                    
+                    # Plot window if found (without annotation to avoid overlap)
+                    if window_info['x_start'] is not None and window_info['x_end'] is not None:
+                        ax_interp.hlines(y=window_info['h_line_y'], xmin=window_info['x_start'], xmax=window_info['x_end'], 
+                                       color='green', linestyles='dotted', linewidth=2)
+                        horizontal_line_y_value = window_info['h_line_y']
+                        ppm = window_info['ppm']
+                    else:
+                        horizontal_line_y_value = None
+                        ppm = None
 
                     hlyv_rounded = round(abs(horizontal_line_y_value), 4) if horizontal_line_y_value is not None else None
                     ber_results.append((table_name, f'state{start_state} to state{end_state}', 
                                       ber, ppm_ber, ppm, hlyv_rounded, 4))
+                    
+                    # Store annotation details for organized display
+                    annotation_details.append({
+                        'table_name': table_name,
+                        'transition': f'state{start_state} to state{end_state}',
+                        'intersection_x': intersection_info['intersection_x'],
+                        'intersection_y': intersection_info['intersection_y'],
+                        'intersection_note': intersection_info.get('note', ''),
+                        'ber': ber,
+                        'ppm_ber': ppm_ber,
+                        'window_x_start': window_info.get('x_start'),
+                        'window_x_end': window_info.get('x_end'),
+                        'window_y': horizontal_line_y_value,
+                        'window_ppm': ppm,
+                        'window_note': window_info.get('note', '')
+                    })
 
             ax_interp.grid(True)
             ax_interp.set_ylim(bottom=-8, top=8)
+            
+            # Create organized text summary outside the plot to replace overlapping annotations
+            if annotation_details:
+                summary_text = "Analysis Summary:\n"
+                for i, detail in enumerate(annotation_details[:5]):  # Show first 5 to avoid crowding
+                    summary_text += f"{detail['table_name'][:8]}-{detail['transition'][:8]}: BER={detail['ber']:.3f}, "
+                    if detail['window_y'] is not None:
+                        summary_text += f"WinY={detail['window_y']:.3f}\n"
+                    else:
+                        summary_text += "WinY=N/A\n"
+                
+                if len(annotation_details) > 5:
+                    summary_text += f"... and {len(annotation_details) - 5} more transitions"
+                
+                # Add text box outside plot area
+                ax_interp.text(1.02, 0.98, summary_text, transform=ax_interp.transAxes, 
+                             fontsize=8, verticalalignment='top', 
+                             bbox=dict(boxstyle='round,pad=0.5', facecolor='lightblue', alpha=0.8))
+            
             ax_interp.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), borderaxespad=0.)
 
-            # Save interpolated CDF plot
+            # Save interpolated CDF plot with extra space for summary
             buf_interp = BytesIO()
-            fig_interp.savefig(buf_interp, format='png', bbox_inches='tight')
+            fig_interp.savefig(buf_interp, format='png', bbox_inches='tight', pad_inches=0.3)
             buf_interp.seek(0)
             plot_data_interpolated_cdf = base64.b64encode(buf_interp.getvalue()).decode('utf-8')
 
@@ -618,6 +772,9 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
         try:
             ax_interp.set_xlim(global_x_min, global_x_max)
 
+            # Define tolerance for window finding
+            tolerance = 0.2
+            
             intersections = []
             horizontal_line_y_value = []
 
@@ -628,8 +785,8 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
 
-                    # Apply perturbation to handle states with all identical values
-                    x1_processed, x2_processed = add_tiny_perturbation(x1, x2)
+                    # No perturbation - let vertical lines remain as they are
+                    x1_processed, x2_processed = x1, x2
 
                     y1 = -y1  # Reverse y-axis for first state
 
@@ -641,65 +798,69 @@ def plot_transformed_cdf_2_original(data, table_names, selected_groups, colors, 
                     common_x_max_all = max(max(x1_processed), max(x2_processed))
                     common_x_all = np.linspace(common_x_min_all, common_x_max_all, num=4000)
 
-                    # Remove duplicates and interpolate
-                    unique_x1, unique_indices_x1 = np.unique(x1_processed, return_index=True)
-                    unique_y1 = y1[unique_indices_x1]
-                    unique_x2, unique_indices_x2 = np.unique(x2_processed, return_index=True)
-                    unique_y2 = y2[unique_indices_x2]
+                    # Handle duplicates properly by averaging y-values for same x-values
+                    # This preserves the frequency information of each value
+                    def handle_duplicates(x_data, y_data):
+                        # Create a dictionary to collect y-values for each x-value
+                        x_to_y_dict = {}
+                        for x_val, y_val in zip(x_data, y_data):
+                            if x_val not in x_to_y_dict:
+                                x_to_y_dict[x_val] = []
+                            x_to_y_dict[x_val].append(y_val)
+                        
+                        # Sort by x-values and average y-values for duplicates
+                        sorted_x = sorted(x_to_y_dict.keys())
+                        averaged_y = [np.mean(x_to_y_dict[x_val]) for x_val in sorted_x]
+                        
+                        return np.array(sorted_x), np.array(averaged_y)
+                    
+                    # Process both datasets to handle duplicates properly
+                    processed_x1, processed_y1 = handle_duplicates(x1_processed, y1)
+                    processed_x2, processed_y2 = handle_duplicates(x2_processed, y2)
 
-                    interp_common_x_1 = interp1d(unique_x1, unique_y1, fill_value="extrapolate")(common_x_all)
-                    interp_common_x_2 = interp1d(unique_x2, unique_y2, fill_value="extrapolate")(common_x_all)
+                    # Interpolate with properly handled duplicates
+                    interp_common_x_1 = interp1d(processed_x1, processed_y1, fill_value="extrapolate")(common_x_all)
+                    interp_common_x_2 = interp1d(processed_x2, processed_y2, fill_value="extrapolate")(common_x_all)
 
                     cdf_value_1 = interp_common_x_1
                     cdf_value_2 = interp_common_x_2
 
-                    if not (np.isnan(cdf_value_1).all() or np.isnan(cdf_value_2).all()):
-                        ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=current_color, alpha=0.7, 
-                                     label=f'{table_name} - state {start_state}')
-                        ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=current_color, alpha=0.7, 
-                                     label=f'{table_name} - state {end_state}')
+                    # Always plot the lines, even if they are vertical or have NaN values
+                    ax_interp.plot(common_x_all, cdf_value_1, linestyle='-', color=current_color, alpha=0.7, 
+                                 label=f'{table_name} - state {start_state}')
+                    ax_interp.plot(common_x_all, cdf_value_2, linestyle='-', color=current_color, alpha=0.7, 
+                                 label=f'{table_name} - state {end_state}')
 
-                        # Find and mark intersection
-                        idx_closest = np.argmin(np.abs(cdf_value_1 - cdf_value_2))
-                        intersection_x = common_x_all[idx_closest]
-                        intersection_y = cdf_value_1[idx_closest]
-                        ax_interp.scatter(intersection_x, intersection_y, color='red', s=50, zorder=5)
-                        intersections.append((intersection_x, intersection_y))
+                    # Use enhanced intersection finding that handles vertical lines
+                    intersection_info = find_intersection_enhanced(
+                        x1_processed, y1, x2_processed, y2, common_x_all, cdf_value_1, cdf_value_2
+                    )
+                    
+                    # Plot intersection point if found
+                    if intersection_info['intersection_x'] is not None:
+                        ax_interp.scatter(intersection_info['intersection_x'], intersection_info['intersection_y'], 
+                                        color='red', s=50, zorder=5)
+                        intersections.append((intersection_info['intersection_x'], intersection_info['intersection_y']))
+                        # Intersection annotation removed to avoid overlap
 
-                        ber = np.abs(cdf_value_1[idx_closest])
-                        ppm_ber = sigma_to_ppm(ber)
+                    ber = intersection_info['ber'] if intersection_info['ber'] is not None else 0
+                    ppm_ber = intersection_info['ppm_ber'] if intersection_info['ppm_ber'] is not None else 0
 
-                        # Draw horizontal lines for divergence analysis
-                        tolerance = 0.2
-                        line_drawn = False
-
-                        for idx in range(len(common_x_all) - 1):
-                            for jdx in range(idx + 1, len(common_x_all)):
-                                x_diff = common_x_all[jdx] - common_x_all[idx]
-                                if abs(x_diff - target_x_diff) < tolerance:
-                                    if cdf_value_2[jdx] > cdf_value_1[idx]:
-                                        ax_interp.hlines(y=cdf_value_2[jdx], xmin=common_x_all[idx], 
-                                                       xmax=common_x_all[jdx], color='green', linestyles='dotted')
-                                        horizontal_line_y_value = cdf_value_2[jdx]
-                                        ppm = sigma_to_ppm(abs(horizontal_line_y_value))
-                                        line_drawn = True
-                                        break
-                                    else:
-                                        horizontal_line_y_value = None
-                                        ppm = None
-
-                            if line_drawn:
-                                break
-
-                        if not line_drawn:
-                            horizontal_line_y_value = None
-                            ppm = None
-                    else:  # Handle extreme case where perturbation still doesn't help
-                        # This should rarely occur now due to perturbation
-                        ber = 0
-                        ppm_ber = 0
-                        ppm = 0
-                        horizontal_line_y_value = 0
+                    # Use enhanced window finding that handles vertical lines
+                    window_info = find_window_enhanced(
+                        x1_processed, y1, x2_processed, y2, common_x_all, cdf_value_1, cdf_value_2, target_x_diff, tolerance
+                    )
+                    
+                    # Plot window if found
+                    if window_info['x_start'] is not None and window_info['x_end'] is not None:
+                        ax_interp.hlines(y=window_info['h_line_y'], xmin=window_info['x_start'], xmax=window_info['x_end'], 
+                                       color='green', linestyles='dotted', linewidth=2)
+                        # Window annotation removed to avoid overlap
+                        horizontal_line_y_value = window_info['h_line_y']
+                        ppm = window_info['ppm']
+                    else:
+                        horizontal_line_y_value = None
+                        ppm = None
 
                     hlyv_rounded = round(abs(horizontal_line_y_value), 4) if horizontal_line_y_value is not None else None
                     ber_results.append((table_name, f'state{start_state} to state{end_state}', 
@@ -1960,6 +2121,7 @@ def combine_images_vertically(base64_images, titles=None, spacing=50):
 def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_names, selected_groups, ber_results=None):
     """
     Create a comprehensive table combining data points, averages, standard deviations, and BER PPM.
+    Groups every 4 states into separate sections to solve layout issues.
     
     Args:
         group_data: The group data for data points counting
@@ -1973,45 +2135,15 @@ def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_n
         Base64 encoded image of the comprehensive table
     """
     try:
-        # Create a new figure instance for this plot
-        fig = plt.figure(figsize=(25, 20))  # Larger size for comprehensive table
-        ax = fig.add_subplot(111)
-        ax.axis('off')
-
-        # Build comprehensive table data
-        table_data = []
+        # Group states into chunks of 4
+        states_per_section = 4
+        num_sections = (len(selected_groups) + states_per_section - 1) // states_per_section
         
-        # Create header row with compact format - group similar metrics together
-        header = ["Table Name"]
-        
-        # Add all Points columns first (S0 Points, S1 Points, etc.)
-        for group_idx in selected_groups:
-            header.append(f"S{group_idx} Points")
-        
-        # Add all Average columns second (S0 Avg, S1 Avg, etc.)
-        for group_idx in selected_groups:
-            header.append(f"S{group_idx} Avg")
-            
-        # Add all Std Dev columns third (S0 Std, S1 Std, etc.)
-        for group_idx in selected_groups:
-            header.append(f"S{group_idx} Std")
-            
-        # Add BER columns if BER data is available (S0→S1 BER, S1→S2 BER, etc.)
-        if ber_results and len(selected_groups) > 1:
-            # Extract state transitions from BER results and format them compactly
-            state_transitions = sorted(set(entry[1] for entry in ber_results))
-            for transition in state_transitions:
-                # Convert "state0 to state1" to "S0→S1 BER"
-                if "to" in transition:
-                    parts = transition.replace("state", "S").replace(" to ", "→")
-                    header.append(f"{parts} BER")
-                else:
-                    header.append(f"{transition} BER")
-        
-        table_data.append(header)
+        section_images = []
         
         # Process BER data if available
         ber_data_by_table = {}
+        state_transitions = []
         if ber_results:
             for entry in ber_results:
                 table_name = entry[0]
@@ -2021,120 +2153,205 @@ def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_n
                 if table_name not in ber_data_by_table:
                     ber_data_by_table[table_name] = {}
                 ber_data_by_table[table_name][state_transition] = ppm_ber
+            
+            state_transitions = sorted(set(entry[1] for entry in ber_results))
         
-        # Process each table's data
-        for i, (table_name, group, avg_vals, std_vals) in enumerate(zip(table_names, group_data, avg_values, std_values)):
-            row = [f"{table_name}"]
+        # Create a table for each section
+        for section_idx in range(num_sections):
+            start_state = section_idx * states_per_section
+            end_state = min(start_state + states_per_section, len(selected_groups))
+            section_groups = selected_groups[start_state:end_state]
             
-            # Add all data points counts first
-            for j, group_idx in enumerate(selected_groups):
-                if j < len(group):
-                    points = np.array(group[j]).flatten()
-                    row.append(f"{len(points)}")
-                else:
-                    row.append("N/A")
+            # Create figure for this section (very compact)
+            fig = plt.figure(figsize=(20, 5))
+            ax = fig.add_subplot(111)
+            ax.axis('off')
+
+            # Build table data for this section
+            table_data = []
             
-            # Add all average values second
-            for j, group_idx in enumerate(selected_groups):
-                if j < len(avg_vals):
-                    row.append(f"{avg_vals[j]:.2f}")
-                else:
-                    row.append("N/A")
+            # Create header row with compact format - group similar metrics together
+            header = ["Table Name"]
             
-            # Add all standard deviations third
-            for j, group_idx in enumerate(selected_groups):
-                if j < len(std_vals):
-                    row.append(f"{std_vals[j]:.2f}")
-                else:
-                    row.append("N/A")
+            # Add all Points columns first for this section
+            for group_idx in section_groups:
+                header.append(f"S{group_idx} Points")
             
-            # Add BER data if available
+            # Add all Average columns second for this section
+            for group_idx in section_groups:
+                header.append(f"S{group_idx} Avg")
+                
+            # Add all Std Dev columns third for this section
+            for group_idx in section_groups:
+                header.append(f"S{group_idx} Std")
+                
+            # Add BER columns if BER data is available for this section
             if ber_results and len(selected_groups) > 1:
-                table_ber_data = ber_data_by_table.get(table_name, {})
+                # Include transitions that involve states in this section or cross-section transitions
+                section_transitions_with_states = []
                 for transition in state_transitions:
-                    ber_value = table_ber_data.get(transition)
-                    if ber_value is not None:
-                        row.append(f"{ber_value:.0f}")
+                    # Extract state numbers from transition string
+                    if "state" in transition and "to" in transition:
+                        parts = transition.split(" to ")
+                        if len(parts) == 2:
+                            state1_num = int(parts[0].replace("state", ""))
+                            state2_num = int(parts[1].replace("state", ""))
+                            
+                            # Include if both states are in this section
+                            if state1_num in section_groups and state2_num in section_groups:
+                                section_transitions_with_states.append((state1_num, transition))
+                            # Also include cross-section transitions where first state is last in current section
+                            # and second state is first in next section
+                            elif (state1_num == section_groups[-1] and 
+                                  state2_num == state1_num + 1 and 
+                                  state2_num in selected_groups):
+                                section_transitions_with_states.append((state1_num, transition))
+                
+                # Sort transitions by the first state number to ensure correct order
+                section_transitions_with_states.sort(key=lambda x: x[0])
+                
+                # Add sorted BER columns to header
+                section_transitions = []
+                for state_num, transition in section_transitions_with_states:
+                    formatted_transition = transition.replace("state", "S").replace(" to ", "→")
+                    header.append(f"{formatted_transition} BER")
+                    section_transitions.append(transition)
+            else:
+                section_transitions = []
+            
+            table_data.append(header)
+            
+            # Process each table's data for this section
+            for i, (table_name, group, avg_vals, std_vals) in enumerate(zip(table_names, group_data, avg_values, std_values)):
+                row = [f"{table_name}"]
+                
+                # Add data points counts for this section
+                for j, group_idx in enumerate(section_groups):
+                    state_idx = selected_groups.index(group_idx) if group_idx in selected_groups else -1
+                    if state_idx >= 0 and state_idx < len(group):
+                        points = np.array(group[state_idx]).flatten()
+                        row.append(f"{len(points)}")
                     else:
                         row.append("N/A")
+                
+                # Add average values for this section
+                for j, group_idx in enumerate(section_groups):
+                    state_idx = selected_groups.index(group_idx) if group_idx in selected_groups else -1
+                    if state_idx >= 0 and state_idx < len(avg_vals):
+                        row.append(f"{avg_vals[state_idx]:.2f}")
+                    else:
+                        row.append("N/A")
+                
+                # Add standard deviations for this section
+                for j, group_idx in enumerate(section_groups):
+                    state_idx = selected_groups.index(group_idx) if group_idx in selected_groups else -1
+                    if state_idx >= 0 and state_idx < len(std_vals):
+                        row.append(f"{std_vals[state_idx]:.2f}")
+                    else:
+                        row.append("N/A")
+                
+                # Add BER data for this section if available
+                if section_transitions:
+                    table_ber_data = ber_data_by_table.get(table_name, {})
+                    for transition in section_transitions:
+                        ber_value = table_ber_data.get(transition)
+                        if ber_value is not None:
+                            row.append(f"{ber_value:.0f}")
+                        else:
+                            row.append("N/A")
+                
+                table_data.append(row)
             
-            table_data.append(row)
-        
-        # Calculate column widths dynamically
-        num_columns = len(table_data[0])
-        col_widths = []
-        
-        # Table name column gets more space
-        col_widths.append(0.15)
-        
-        # Distribute remaining space among data columns
-        remaining_width = 0.85
-        data_cols = num_columns - 1
-        col_width_each = remaining_width / data_cols
-        
-        for _ in range(data_cols):
-            col_widths.append(col_width_each)
-
-        # Create the table
-        table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
-        table.auto_set_font_size(False)
-        table.set_fontsize(10)  # Smaller font for comprehensive table
-        table.scale(1, 1.8)
-
-        # Style the header row
-        for i in range(num_columns):
-            table[(0, i)].set_facecolor('#40466e')
-            table[(0, i)].set_text_props(weight='bold', color='white')
-        
-        # Style data rows with alternating colors
-        for i in range(1, len(table_data)):
-            for j in range(num_columns):
-                if i % 2 == 0:
-                    table[(i, j)].set_facecolor('#f0f0f0')
-                else:
-                    table[(i, j)].set_facecolor('#ffffff')
-        
-        # Add section dividers in header for better readability
-        # Color-code different metric sections grouped together
-        col_idx = 1
-        
-        # All Points columns first
-        for group_idx in selected_groups:
-            table[(0, col_idx)].set_facecolor('#2E8B57')  # Sea Green for points
-            col_idx += 1
+            # Calculate column widths dynamically
+            num_columns = len(table_data[0])
+            col_widths = []
             
-        # All Average columns second
-        for group_idx in selected_groups:
-            table[(0, col_idx)].set_facecolor('#4682B4')  # Steel Blue for averages
-            col_idx += 1
+            # Table name column gets more space
+            col_widths.append(0.2)
             
-        # All Std Dev columns third
-        for group_idx in selected_groups:
-            table[(0, col_idx)].set_facecolor('#8B4513')  # Saddle Brown for std dev
-            col_idx += 1
+            # Distribute remaining space among data columns
+            remaining_width = 0.8
+            data_cols = num_columns - 1
+            col_width_each = remaining_width / data_cols if data_cols > 0 else 0.8
+            
+            for _ in range(data_cols):
+                col_widths.append(col_width_each)
+
+            # Create the table
+            table = ax.table(cellText=table_data, loc='center', colWidths=col_widths, cellLoc='center')
+            table.auto_set_font_size(False)
+            table.set_fontsize(9)  # Smaller font for more compact layout
+            table.scale(1, 1.3)  # Reduced scale for tighter rows
+
+            # Style the header row
+            for i in range(num_columns):
+                table[(0, i)].set_facecolor('#40466e')
+                table[(0, i)].set_text_props(weight='bold', color='white')
+            
+            # Style data rows with alternating colors
+            for i in range(1, len(table_data)):
+                for j in range(num_columns):
+                    if i % 2 == 0:
+                        table[(i, j)].set_facecolor('#f0f0f0')
+                    else:
+                        table[(i, j)].set_facecolor('#ffffff')
+            
+            # Add section dividers in header for better readability
+            # Color-code different metric sections grouped together
+            col_idx = 1
+            
+            # All Points columns first
+            for group_idx in section_groups:
+                if col_idx < num_columns:
+                    table[(0, col_idx)].set_facecolor('#2E8B57')  # Sea Green for points
+                    col_idx += 1
+                
+            # All Average columns second
+            for group_idx in section_groups:
+                if col_idx < num_columns:
+                    table[(0, col_idx)].set_facecolor('#4682B4')  # Steel Blue for averages
+                    col_idx += 1
+                
+            # All Std Dev columns third
+            for group_idx in section_groups:
+                if col_idx < num_columns:
+                    table[(0, col_idx)].set_facecolor('#8B4513')  # Saddle Brown for std dev
+                    col_idx += 1
+            
+            # BER columns last
+            for _ in section_transitions:
+                if col_idx < num_columns:
+                    table[(0, col_idx)].set_facecolor('#B22222')  # Fire Brick for BER
+                    col_idx += 1
+
+            # Add minimal section identifier without taking up much space
+            if num_sections > 1:
+                state_range = f"States {section_groups[0]}-{section_groups[-1]}" if len(section_groups) > 1 else f"State {section_groups[0]}"
+                section_title = f'Section {section_idx + 1}: {state_range}'
+                ax.set_title(section_title, fontsize=10, fontweight='bold', pad=2)
+            # No title for single section to avoid duplication
+
+            # Save this section to buffer
+            buf = BytesIO()
+            fig.savefig(buf, format='png', bbox_inches='tight', dpi=200, pad_inches=0)
+            buf.seek(0)
+            section_image = base64.b64encode(buf.read()).decode('utf-8')
+            section_images.append(section_image)
+            
+            # Clean up
+            plt.close(fig)
+            buf.close()
         
-        # BER columns last
-        if ber_results and len(selected_groups) > 1:
-            for _ in state_transitions:
-                table[(0, col_idx)].set_facecolor('#B22222')  # Fire Brick for BER
-                col_idx += 1
-
-        # Set title
-        ax.set_title('Comprehensive Metrics Table (Grouped by Metric Type)', fontsize=18, fontweight='bold', pad=30)
-
-        # Save plot to buffer with high DPI for detailed table
-        buf = BytesIO()
-        fig.savefig(buf, format='png', bbox_inches='tight', dpi=200)
-        buf.seek(0)
-        encoded_image = base64.b64encode(buf.read()).decode('utf-8')
-        return encoded_image
+        # Combine all section images vertically with minimal spacing
+        if len(section_images) == 1:
+            return section_images[0]
+        else:
+            # Use extremely minimal spacing and no titles to avoid duplication
+            combined_image = combine_images_vertically(section_images, titles=None, spacing=2)
+            return combined_image
         
     except Exception as e:
         print(f"Error in plot_comprehensive_metrics_table: {str(e)}")
         import traceback
         traceback.print_exc()
         return None
-    finally:
-        plt.close(fig)
-        if 'buf' in locals():
-            buf.close()

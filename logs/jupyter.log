@@ -69,3 +69,16 @@
 [W 2025-07-25 15:46:41.758 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 1.71ms referer=http://192.168.68.215:3003/
 [W 2025-07-25 15:46:41.768 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.94ms referer=http://192.168.68.215:3003/
 [W 2025-07-25 15:46:45.291 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.05ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[W 2025-07-26 07:22:13.892 ServerApp] WebSocket ping timeout after 119861 ms.
+[I 2025-07-26 07:22:18.920 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
+[I 2025-07-27 00:05:36.516 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
+[I 2025-07-27 13:29:55.861 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
+[I 2025-07-27 13:39:36.812 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
+[I 2025-07-27 13:39:38.863 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
+[I 2025-07-27 13:39:41.332 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
+[I 2025-07-27 16:23:46.450 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
+[W 2025-07-28 10:10:24.898 ServerApp] Replacing stale connection: 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
+[I 2025-07-28 10:10:29.901 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
+[I 2025-07-28 10:10:29.905 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
+[W 2025-07-28 10:11:59.906 ServerApp] WebSocket ping timeout after 90000 ms.
+[I 2025-07-28 10:12:04.908 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee

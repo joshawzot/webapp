@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Search Test</title>
+</head>
+<body>
+    <h2>Simple Search Test</h2>
+    
+    <button id="testSearch">Test Search (1 Table)</button>
+    
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('testSearch').addEventListener('click', function() {
+            console.log('Test search button clicked');
+            
+            const requestBody = {
+                database: '{{ database }}',
+                tableNames: ['test_table'], // Just one table for testing
+                minRow: 0,
+                maxRow: 10,
+                minCol: 0,
+                maxCol: 10,
+                searchValue: 0,
+                sessionId: 'test_' + Date.now()
+            };
+            
+            console.log('Sending request:', requestBody);
+            
+            fetch('/search-value-in-range', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => {
+                console.log('Response:', response.status);
+                return response.json();
+            })
+            .then(result => {
+                console.log('Result:', result);
+                document.getElementById('result').innerHTML = JSON.stringify(result, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html> 

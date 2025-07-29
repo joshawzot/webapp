@@ -29,13 +29,25 @@ connection = None
 
 def create_connection(database=None):
     """Create a new database connection."""
-    connection = mysql.connector.connect(
-        host=DB_CONFIG['DB_HOST'],
-        user=DB_CONFIG['DB_USER'],
-        password=DB_CONFIG['MYSQL_PASSWORD_RAW'],
-        database=database
-    )
-    return connection
+    try:
+        print(f"Creating database connection to: {database}")
+        print(f"DB_CONFIG host: {DB_CONFIG.get('DB_HOST', 'NOT SET')}")
+        print(f"DB_CONFIG user: {DB_CONFIG.get('DB_USER', 'NOT SET')}")
+        print(f"Password set: {'Yes' if DB_CONFIG.get('MYSQL_PASSWORD_RAW') else 'No'}")
+        
+        connection = mysql.connector.connect(
+            host=DB_CONFIG['DB_HOST'],
+            user=DB_CONFIG['DB_USER'],
+            password=DB_CONFIG['MYSQL_PASSWORD_RAW'],
+            database=database
+        )
+        print(f"Successfully connected to database: {database}")
+        return connection
+    except Exception as conn_error:
+        print(f"Database connection failed: {conn_error}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 def create_db(db_name):
     """

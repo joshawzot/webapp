@@ -6690,18 +6690,50 @@ def analyze_row_averages():
             return jsonify({'success': False, 'message': 'Minimum value must be less than maximum value'})
         
         # Create database connection
-        connection = create_connection(database)
-        cursor = connection.cursor()
+        try:
+            print(f"Attempting to connect to database: {database}")
+            safe_update_progress(session_id, {
+                'status': 'connecting',
+                'current_table_name': 'Connecting to database...'
+            })
+            
+            connection = create_connection(database)
+            cursor = connection.cursor()
+            print(f"Successfully connected to database: {database}")
+            
+            safe_update_progress(session_id, {
+                'status': 'connected',
+                'current_table_name': 'Database connected, starting search...'
+            })
+            
+        except Exception as db_error:
+            error_msg = f"Database connection failed: {str(db_error)}"
+            print(f"Failed to connect to database {database}: {db_error}")
+            import traceback
+            traceback.print_exc()
+            
+            safe_update_progress(session_id, {
+                'status': 'error',
+                'error': error_msg,
+                'completed': True,
+                'current_table_name': f"ERROR: {error_msg}"
+            })
+            raise Exception(error_msg)
         
         report = []
+        total_tables = len(table_names)
         
-        for table_name in table_names:
-            print(f"Processing table: {table_name}")
+        for table_index, table_name in enumerate(table_names, 1):
+            table_progress = (table_index / total_tables) * 100
+            print(f"Processing table {table_index}/{total_tables} ({table_progress:.1f}%): {table_name}")
             try:
                 # Get table data
                 query = f"SELECT * FROM `{table_name}`"
+                print(f"Executing query for table {table_name}")
                 cursor.execute(query)
+                print(f"Query executed, fetching rows for table {table_name}")
                 rows = cursor.fetchall()
+                print(f"Fetched {len(rows)} rows for table {table_name}")
                 
                 if not rows:
                     print(f"Table {table_name} is empty")
@@ -6724,11 +6756,12 @@ def analyze_row_averages():
                 print(f"Table {table_name}: {total_rows} rows, {total_columns} columns")
                 
                 # Convert rows to numpy array, handling potential None values
+                print(f"Starting data conversion for table {table_name} with {total_rows}x{total_columns}")
                 data_matrix = []
-                for row in rows:
+                for row_idx, row in enumerate(rows):
                     # Convert row to list and handle None values
                     row_data = []
-                    for value in row:
+                    for col_idx, value in enumerate(row):
                         if value is None:
                             row_data.append(0.0)
                         else:
@@ -6737,9 +6770,19 @@ def analyze_row_averages():
                             except (ValueError, TypeError):
                                 row_data.append(0.0)  # Handle non-numeric values
                     data_matrix.append(row_data)
+                    
+                    # Progress indicator for very large tables
+                    if total_rows > 1000 and (row_idx + 1) % 1000 == 0:
+                        print(f"Table {table_name}: Converted {row_idx + 1}/{total_rows} rows to matrix")
                 
+                print(f"Converting to numpy array for table {table_name}")
                 # Convert to numpy array
-                data_array = np.array(data_matrix)
+                try:
+                    data_array = np.array(data_matrix)
+                    print(f"Successfully created numpy array for table {table_name}: shape {data_array.shape}")
+                except Exception as np_error:
+                    print(f"Error creating numpy array for table {table_name}: {np_error}")
+                    raise
                 
                 # Calculate row averages
                 row_averages = np.mean(data_array, axis=1)
@@ -6808,3 +6851,579 @@ def analyze_row_averages():
             pass
             
         return jsonify({'success': False, 'message': str(e)})
+
+
+# Global progress tracking for search operations
+search_progress = {}
+search_progress_lock = threading.Lock()  # Thread safety for progress updates
+
+def safe_get_progress(session_id):
+    """Thread-safe way to get progress data."""
+    with search_progress_lock:
+        return search_progress.get(session_id, {}).copy() if session_id in search_progress else None
+
+def safe_update_progress(session_id, updates):
+    """Thread-safe way to update progress data."""
+    with search_progress_lock:
+        if session_id in search_progress:
+            search_progress[session_id].update(updates)
+            print(f"Progress updated for session {session_id}: {updates}")
+        else:
+            print(f"Warning: Trying to update non-existent session {session_id}")
+
+def safe_delete_progress(session_id):
+    """Thread-safe way to delete progress data."""
+    with search_progress_lock:
+        if session_id in search_progress:
+            del search_progress[session_id]
+            print(f"Progress data deleted for session {session_id}")
+
+@app.route('/search-progress/<session_id>')
+def get_search_progress(session_id):
+    """Server-Sent Events endpoint for real-time progress updates."""
+    print(f"SSE connection requested for session: {session_id}")
+    
+    def generate_progress():
+        import time
+        try:
+            max_iterations = 3600  # Maximum 30 minutes (3600 * 0.5 seconds)
+            iterations = 0
+            last_status = None
+            
+            while iterations < max_iterations:
+                try:
+                    progress_data = safe_get_progress(session_id)
+                    
+                    if progress_data:
+                        # Only log status changes to reduce noise
+                        current_status = progress_data.get('status')
+                        if current_status != last_status:
+                            print(f"SSE status change for {session_id}: {last_status} -> {current_status}")
+                            last_status = current_status
+                        
+                        yield f"data: {json.dumps(progress_data)}\n\n"
+                        
+                        # If search is complete, stop after delay but don't delete yet
+                        if progress_data.get('completed', False):
+                            print(f"SSE search completed for session {session_id}")
+                            time.sleep(2)  # Give client time to process final message
+                            break
+                    else:
+                        yield f"data: {json.dumps({'status': 'waiting', 'session_id': session_id, 'iterations': iterations})}\n\n"
+                    
+                    time.sleep(0.5)  # Update every 500ms
+                    iterations += 1
+                    
+                except Exception as e:
+                    print(f"Error in SSE progress generation for {session_id}: {e}")
+                    yield f"data: {json.dumps({'status': 'error', 'message': str(e), 'session_id': session_id})}\n\n"
+                    break
+                    
+        except Exception as e:
+            print(f"Fatal error in SSE endpoint for {session_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'status': 'fatal_error', 'message': str(e), 'session_id': session_id})}\n\n"
+        
+        print(f"SSE connection ended for session {session_id}")
+    
+    response = Response(generate_progress(), mimetype='text/event-stream')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
+    return response
+
+@app.route('/search-progress-simple/<session_id>')
+def get_search_progress_simple(session_id):
+    """Simple REST endpoint for progress checking as SSE fallback."""
+    progress_data = safe_get_progress(session_id)
+    if progress_data:
+        return jsonify(progress_data)
+    else:
+        print(f"Simple progress check: Session {session_id} not found")
+        return jsonify({'status': 'not_found', 'session_id': session_id})
+
+@app.route('/debug-sessions')
+def debug_sessions():
+    """Debug endpoint to show all active sessions."""
+    with search_progress_lock:
+        sessions_info = {}
+        for sid, data in search_progress.items():
+            sessions_info[sid] = {
+                'status': data.get('status'),
+                'current_table': data.get('current_table'),
+                'total_tables': data.get('total_tables'),
+                'timestamp': data.get('timestamp'),
+                'completed': data.get('completed', False)
+            }
+    
+    return jsonify({
+        'active_sessions': len(sessions_info),
+        'sessions': sessions_info
+    })
+
+@app.route('/test-search-endpoint', methods=['POST'])
+def test_search_endpoint():
+    """Test endpoint to verify basic functionality."""
+    try:
+        print("=== TEST SEARCH ENDPOINT CALLED ===")
+        data = request.get_json()
+        print(f"Received data: {data}")
+        
+        # Create a test session
+        session_id = f"test_{int(time.time())}"
+        with search_progress_lock:
+            search_progress[session_id] = {
+                'status': 'test',
+                'message': 'Test session created successfully',
+                'timestamp': time.time()
+            }
+        
+        print(f"Created test session: {session_id}")
+        return jsonify({
+            'success': True,
+            'message': 'Test endpoint working',
+            'session_id': session_id,
+            'received_data': data
+        })
+    except Exception as e:
+        print(f"Test endpoint error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/search-value-in-range', methods=['POST'])
+def search_value_in_range():
+    """Search for specific values within specified row and column ranges in selected tables."""
+    connection = None
+    cursor = None
+    session_id = None
+    
+    try:
+        print("=== SEARCH VALUE IN RANGE REQUEST STARTED ===")
+        
+        # Get request data with detailed error checking
+        try:
+            data = request.get_json()
+            if not data:
+                raise ValueError("No JSON data received in request")
+            print(f"Received request data keys: {list(data.keys())}")
+        except Exception as json_error:
+            print(f"Failed to parse JSON data: {json_error}")
+            return jsonify({'success': False, 'message': f'Invalid JSON data: {str(json_error)}'}), 400
+        
+        # Extract and validate parameters
+        try:
+            database = data.get('database')
+            table_names = data.get('tableNames', [])
+            min_row = int(data.get('minRow'))
+            max_row = int(data.get('maxRow'))
+            min_col = int(data.get('minCol'))
+            max_col = int(data.get('maxCol'))
+            search_value = float(data.get('searchValue'))
+            session_id = data.get('sessionId', str(int(time.time())))
+            pattern_file = data.get('patternFile')  # New parameter
+            
+            print(f"Extracted parameters:")
+            print(f"  Database: {database}")
+            print(f"  Tables count: {len(table_names)}")
+            print(f"  Row range: {min_row}-{max_row}")
+            print(f"  Col range: {min_col}-{max_col}")
+            print(f"  Search value: {search_value}")
+            print(f"  Pattern file: {pattern_file}")
+            print(f"  Session ID: {session_id}")
+            
+        except (ValueError, TypeError) as param_error:
+            error_msg = f"Invalid parameter format: {str(param_error)}"
+            print(error_msg)
+            return jsonify({'success': False, 'message': error_msg}), 400
+        
+        # Basic validation
+        if not database or not table_names:
+            error_msg = 'Database and table names are required'
+            print(f"Validation failed: {error_msg}")
+            return jsonify({'success': False, 'message': error_msg}), 400
+        
+        if min_row >= max_row or min_col >= max_col:
+            error_msg = 'Invalid range: minimum values must be less than maximum values'
+            print(f"Validation failed: {error_msg}")
+            return jsonify({'success': False, 'message': error_msg}), 400
+            
+        # Load and validate pattern file if provided
+        pattern_coordinates = None
+        if pattern_file:
+            try:
+                print(f"Loading pattern file: {pattern_file}")
+                pattern_file_path = get_pattern_file(pattern_file)
+                if not pattern_file_path or not os.path.exists(pattern_file_path):
+                    error_msg = f'Pattern file not found: {pattern_file}'
+                    print(error_msg)
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                
+                import numpy as np
+                pattern_array = np.load(pattern_file_path)
+                print(f"Loaded pattern array shape: {pattern_array.shape}")
+                
+                # Trim pattern to the specified range
+                pattern_min_row = max(0, min_row)
+                pattern_max_row = min(pattern_array.shape[0], max_row + 1)
+                pattern_min_col = max(0, min_col)
+                pattern_max_col = min(pattern_array.shape[1] if len(pattern_array.shape) > 1 else 1, max_col + 1)
+                
+                print(f"Trimming pattern to rows {pattern_min_row}-{pattern_max_row-1}, cols {pattern_min_col}-{pattern_max_col-1}")
+                
+                if len(pattern_array.shape) == 1:
+                    # 1D pattern - treat as single column
+                    trimmed_pattern = pattern_array[pattern_min_row:pattern_max_row]
+                    # Find non-zero coordinates with pattern values
+                    pattern_coordinates = []
+                    for row_idx in range(len(trimmed_pattern)):
+                        if trimmed_pattern[row_idx] != 0:
+                            pattern_coordinates.append((pattern_min_row + row_idx, pattern_min_col, int(trimmed_pattern[row_idx])))
+                else:
+                    # 2D pattern
+                    trimmed_pattern = pattern_array[pattern_min_row:pattern_max_row, pattern_min_col:pattern_max_col]
+                    # Find non-zero coordinates with pattern values
+                    pattern_coordinates = []
+                    for row_idx in range(trimmed_pattern.shape[0]):
+                        for col_idx in range(trimmed_pattern.shape[1]):
+                            if trimmed_pattern[row_idx, col_idx] != 0:
+                                pattern_coordinates.append((pattern_min_row + row_idx, pattern_min_col + col_idx, int(trimmed_pattern[row_idx, col_idx])))
+                
+                print(f"Found {len(pattern_coordinates)} non-zero coordinates in pattern")
+                if len(pattern_coordinates) == 0:
+                    error_msg = 'Pattern file has no non-zero values in the specified range'
+                    print(error_msg)
+                    return jsonify({'success': False, 'message': error_msg}), 400
+                
+            except Exception as pattern_error:
+                error_msg = f'Error loading pattern file: {str(pattern_error)}'
+                print(error_msg)
+                import traceback
+                traceback.print_exc()
+                return jsonify({'success': False, 'message': error_msg}), 400
+        
+        print(f"Validation passed. Starting search for value {search_value} in database: {database}")
+        print(f"Tables: {len(table_names)} tables")
+        print(f"Row range: {min_row}-{max_row}, Column range: {min_col}-{max_col}")
+        if pattern_coordinates:
+            print(f"Pattern-based search using {pattern_file} with {len(pattern_coordinates)} non-zero coordinates")
+        else:
+            print(f"Full range search (no pattern)")
+        
+        # Initialize progress tracking with thread safety
+        with search_progress_lock:
+            search_progress[session_id] = {
+                'status': 'starting',
+                'current_table': 0,
+                'total_tables': len(table_names),
+                'current_table_name': 'Initializing...',
+                'completed': False,
+                'total_matches': 0,
+                'error': None,
+                'timestamp': time.time(),
+                'search_params': {
+                    'database': database,
+                    'value': search_value,
+                    'min_row': min_row,
+                    'max_row': max_row,
+                    'min_col': min_col,
+                    'max_col': max_col
+                }
+            }
+        
+        print(f"Starting search with session ID: {session_id}")
+        print(f"Initialized progress tracking for {len(table_names)} tables")
+        print(f"Search parameters: value={search_value}, rows={min_row}-{max_row}, cols={min_col}-{max_col}")
+        print(f"First 5 tables: {table_names[:5]}")
+        
+        # Verify session was created
+        progress_check = safe_get_progress(session_id)
+        if progress_check:
+            print(f"Session {session_id} successfully created and verified")
+        else:
+            print(f"WARNING: Session {session_id} was not properly created!")
+        
+        # Create database connection
+        connection = create_connection(database)
+        cursor = connection.cursor()
+        
+        report = []
+        total_tables = len(table_names)
+        
+        for table_index, table_name in enumerate(table_names, 1):
+            try:
+                table_progress = (table_index / total_tables) * 100
+                print(f"Processing table {table_index}/{total_tables} ({table_progress:.1f}%): {table_name}")
+                
+                # Update progress - this is critical for user feedback
+                safe_update_progress(session_id, {
+                    'status': 'processing',
+                    'current_table': table_index,
+                    'current_table_name': table_name,
+                    'progress_percent': table_progress,
+                    'timestamp': time.time()
+                })
+                    
+                # Force a small delay to ensure SSE can send updates
+                time.sleep(0.01)
+                # Get table data
+                query = f"SELECT * FROM `{table_name}`"
+                cursor.execute(query)
+                rows = cursor.fetchall()
+                
+                if not rows:
+                    print(f"Table {table_name} is empty")
+                    report.append({
+                        'table_name': table_name,
+                        'dimensions': '0x0',
+                        'total_rows': 0,
+                        'total_columns': 0,
+                        'matches_count': 0,
+                        'matches': [],
+                        'error': 'Table is empty'
+                    })
+                    continue
+                
+                # Get column names
+                column_names = [desc[0] for desc in cursor.description]
+                total_columns = len(column_names)
+                total_rows = len(rows)
+                
+                print(f"Table {table_name}: {total_rows} rows, {total_columns} columns")
+                
+                # Convert rows to numpy array, handling potential None values
+                data_matrix = []
+                for row in rows:
+                    # Convert row to list and handle None values
+                    row_data = []
+                    for value in row:
+                        if value is None:
+                            row_data.append(0.0)
+                        else:
+                            try:
+                                row_data.append(float(value))
+                            except (ValueError, TypeError):
+                                row_data.append(0.0)  # Handle non-numeric values
+                    data_matrix.append(row_data)
+                
+                # Convert to numpy array
+                data_array = np.array(data_matrix)
+                
+                # Adjust ranges to be within array bounds (input is already 0-indexed)
+                actual_min_row = max(0, min_row)
+                actual_max_row = min(total_rows, max_row + 1)  # +1 because max_row is inclusive
+                actual_min_col = max(0, min_col)
+                actual_max_col = min(total_columns, max_col + 1)  # +1 because max_col is inclusive
+                
+                print(f"Searching in range: rows {actual_min_row}-{actual_max_row-1}, cols {actual_min_col}-{actual_max_col-1}")
+                
+                matches = []
+                
+                                 # Search within the specified range or pattern coordinates
+                if pattern_coordinates:
+                    # Pattern-based search - only check coordinates where pattern is non-zero
+                    search_coordinates = [(r, c, p_val) for r, c, p_val in pattern_coordinates 
+                                        if actual_min_row <= r < actual_max_row and actual_min_col <= c < actual_max_col]
+                    search_area_size = len(search_coordinates)
+                    cells_searched = 0
+                    
+                    print(f"Pattern-based search: checking {search_area_size} coordinates from pattern")
+                    
+                    for row_idx, col_idx, pattern_value in search_coordinates:
+                        try:
+                            cell_value = data_array[row_idx, col_idx]
+                            
+                            # Check if the value matches (with some tolerance for floating point comparison)
+                            if abs(cell_value - search_value) < 1e-10:
+                                matches.append({
+                                    'row': row_idx,  # Keep 0-indexed for display consistency
+                                    'col': col_idx,  # Keep 0-indexed for display consistency
+                                    'value': float(cell_value),
+                                    'pattern_value': pattern_value  # Add pattern value for color coding
+                                })
+                        except (IndexError, TypeError, ValueError):
+                            # Skip invalid cells
+                            pass
+                        
+                        cells_searched += 1
+                        
+                        # Update progress for large search areas
+                        if search_area_size > 1000 and cells_searched % max(1, search_area_size // 10) == 0:
+                            cell_progress = (cells_searched / search_area_size) * 100
+                            print(f"Table {table_name}: {cell_progress:.0f}% complete ({cells_searched}/{search_area_size} pattern coordinates)")
+                            
+                            # Update progress tracking for within-table progress
+                            safe_update_progress(session_id, {
+                                'cell_progress': cell_progress,
+                                'cells_searched': cells_searched,
+                                'total_cells': search_area_size
+                            })
+                else:
+                    # Original full range search
+                    search_area_size = (actual_max_row - actual_min_row) * (actual_max_col - actual_min_col)
+                    cells_searched = 0
+                    
+                    for row_idx in range(actual_min_row, actual_max_row):
+                        for col_idx in range(actual_min_col, actual_max_col):
+                            try:
+                                cell_value = data_array[row_idx, col_idx]
+                                
+                                # Check if the value matches (with some tolerance for floating point comparison)
+                                if abs(cell_value - search_value) < 1e-10:
+                                    matches.append({
+                                        'row': row_idx,  # Keep 0-indexed for display consistency
+                                        'col': col_idx,  # Keep 0-indexed for display consistency
+                                        'value': float(cell_value),
+                                        'pattern_value': None  # No pattern for full range search
+                                    })
+                            except (IndexError, TypeError, ValueError):
+                                # Skip invalid cells
+                                pass
+                            
+                            cells_searched += 1
+                            
+                            # Update progress for large search areas
+                            if search_area_size > 10000 and cells_searched % (search_area_size // 10) == 0:
+                                cell_progress = (cells_searched / search_area_size) * 100
+                                print(f"Table {table_name}: {cell_progress:.0f}% complete ({cells_searched}/{search_area_size} cells)")
+                                
+                                # Update progress tracking for within-table progress
+                                safe_update_progress(session_id, {
+                                    'cell_progress': cell_progress,
+                                    'cells_searched': cells_searched,
+                                    'total_cells': search_area_size
+                                })
+                            
+                print(f"Table {table_name}: Search complete - {cells_searched} cells searched")
+                
+                print(f"Table {table_name}: Found {len(matches)} matches for value {search_value}")
+                
+                # Update progress with match count
+                current_progress = safe_get_progress(session_id)
+                if current_progress:
+                    current_total_matches = current_progress.get('total_matches', 0) + len(matches)
+                    safe_update_progress(session_id, {
+                        'total_matches': current_total_matches
+                    })
+                
+                report.append({
+                    'table_name': table_name,
+                    'dimensions': f'{total_rows}x{total_columns}',
+                    'total_rows': total_rows,
+                    'total_columns': total_columns,
+                    'matches_count': len(matches),
+                    'matches': matches
+                })
+                
+                # Log successful completion of this table
+                print(f"Successfully processed table {table_index}/{total_tables}: {table_name}")
+                
+            except Exception as table_error:
+                print(f"Error processing table {table_name}: {table_error}")
+                import traceback
+                traceback.print_exc()
+                
+                # Update progress to show error but continue
+                safe_update_progress(session_id, {
+                    'current_table_name': f"{table_name} (ERROR: {str(table_error)[:50]}...)",
+                    'error': str(table_error)
+                })
+                
+                report.append({
+                    'table_name': table_name,
+                    'dimensions': 'Unknown',
+                    'total_rows': 0,
+                    'total_columns': 0,
+                    'matches_count': 0,
+                    'matches': [],
+                    'error': str(table_error)
+                })
+                
+                # Small delay to allow error to be seen in progress
+                time.sleep(0.1)
+        
+        # Close database connection
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+        
+        total_matches = sum(table['matches_count'] for table in report)
+        print(f"Search complete. Processed {len(report)} tables, found {total_matches} total matches")
+        
+        # Mark search as completed
+        safe_update_progress(session_id, {
+            'status': 'completed',
+            'completed': True,
+            'total_matches': total_matches,
+            'current_table_name': f'COMPLETED! Found {total_matches} total matches',
+            'timestamp': time.time()
+        })
+        
+        print(f"Search completed successfully for session {session_id}")
+        
+        # Schedule cleanup after 5 minutes to allow clients to finish reading
+        def cleanup_session():
+            time.sleep(300)  # 5 minutes
+            safe_delete_progress(session_id)
+            print(f"Cleaned up session {session_id} after completion")
+        
+        import threading
+        cleanup_thread = threading.Thread(target=cleanup_session, daemon=True)
+        cleanup_thread.start()
+        
+        return jsonify({
+            'success': True,
+            'report': report,
+            'total_tables': len(table_names),
+            'search_params': {
+                'value': search_value,
+                'row_range': {'min': min_row, 'max': max_row},
+                'col_range': {'min': min_col, 'max': max_col},
+                'pattern_file': pattern_file
+            },
+            'total_matches': total_matches,
+            'session_id': session_id,
+            'pattern_used': pattern_coordinates is not None,
+            'pattern_coordinates_count': len(pattern_coordinates) if pattern_coordinates else None
+        })
+        
+    except Exception as e:
+        print(f"Fatal error in search_value_in_range: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Update progress to show fatal error (if session was created)
+        try:
+            if session_id:
+                safe_update_progress(session_id, {
+                    'status': 'error',
+                    'error': str(e),
+                    'completed': True,
+                    'current_table_name': f"FATAL ERROR: {str(e)[:100]}...",
+                    'timestamp': time.time()
+                })
+            else:
+                print(f"Cannot update progress - no session_id available")
+        except Exception as update_error:
+            print(f"Failed to update progress with error: {update_error}")
+            pass
+        
+        # Ensure database connection is closed
+        try:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+        except:
+            pass
+            
+        result = {'success': False, 'message': str(e)}
+        if session_id:
+            result['session_id'] = session_id
+        return jsonify(result), 500

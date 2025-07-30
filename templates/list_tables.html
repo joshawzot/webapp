@@ -179,7 +179,7 @@
         {% for table in tables %}
             <li data-table-name="{{ table['table_name'] }}" class="table-item">
                 <input type="checkbox" id="select-table-{{ loop.index }}" class="table-checkbox" data-table-name="{{ table['table_name'] }}">
-                <!-- <button class="btn btn-primary btn-sm" onclick="window.location.href='{{ url_for('view_table', database=database, table_name=table['table_name']) }}'">View</button> -->
+                <button class="btn btn-primary btn-sm" onclick="window.location.href='{{ url_for('view_table', database=database, table_name=table['table_name']) }}'">View</button>
                 <span class="table-name" contenteditable="true" data-original-name="{{ table['table_name'] }}">{{ table['table_name'] }}</span>
                 <span id="table-name-{{ loop.index }}" class="table-name">({{ table['dimensions'] }})</span>
             </li>
@@ -1914,12 +1914,6 @@
                                         ${patternFiles.map(pattern => `<option value="${pattern}">${pattern}</option>`).join('')}
                                     </select>
                                 </div>
-                                <div class="alert alert-info" style="margin-top: 15px;">
-                                    <strong>Info:</strong> The search will only look for values at coordinates where the selected pattern file has non-zero values.
-                                    <br><strong>Tip:</strong> For 2048×32 tables, try "2048x32_rowbar_4states" or "2048x32_random".
-                                    <br><strong>Note:</strong> After pattern selection, you'll set a minimum threshold - only tables with that many or more matches will appear in the final report.
-                                    <br><strong>Color Coding:</strong> Dots will be colored based on pattern values - <span style="color: #dc3545;">●</span> Red (L1), <span style="color: #28a745;">●</span> Green (L2), <span style="color: #007bff;">●</span> Blue (L3).
-                                </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" id="cancelPatternBtn">Cancel</button>
@@ -2259,6 +2253,21 @@
                             <!-- Data points -->
             `;
             
+            // Debug: Count pattern values in frontend
+            const frontendPatternCounts = {};
+            matches.forEach(match => {
+                if (match.pattern_value !== undefined && match.pattern_value !== null) {
+                    frontendPatternCounts[match.pattern_value] = (frontendPatternCounts[match.pattern_value] || 0) + 1;
+                }
+            });
+            console.log('Frontend pattern value distribution for matches:', frontendPatternCounts);
+            console.log('Total matches being plotted:', matches.length);
+            
+            // Log individual matches for debugging if small number
+            if (matches.length <= 10) {
+                console.log('Individual matches:', matches);
+            }
+            
             // Plot the match points with color coding based on pattern values
             matches.forEach(match => {
                 const x = margin + ((match.col - xMin) / xRange) * (plotWidth - 2 * margin);
@@ -2292,10 +2301,16 @@
                             patternInfo = ` (L${match.pattern_value})`;
                             break;
                     }
+                } else {
+                    console.log('Match without pattern value:', match);
                 }
                 
+                const tooltipPatternCoord = match.pattern_rel_row !== undefined && match.pattern_rel_col !== undefined 
+                    ? ` - Pattern(${match.pattern_rel_row}, ${match.pattern_rel_col})=${match.pattern_value}`
+                    : ` - PatternValue=${match.pattern_value}`;
+                    
                 mapHtml += `<circle cx="${x}" cy="${y}" r="3" fill="${color}" stroke="${strokeColor}" stroke-width="0.5">
-                    <title>Match at Column ${match.col}, Row ${match.row}${patternInfo}</title>
+                    <title>Data(${match.row}, ${match.col})${patternInfo}${tooltipPatternCoord}</title>
                 </circle>`;
             });
             
@@ -2327,8 +2342,11 @@
             return mapHtml;
         }
 
-        function displaySearchResults(result, searchVal, minRow, maxRow, minCol, maxCol, database, threshold = 0) {
-            if (result.success) {
+                        function displaySearchResults(result, searchVal, minRow, maxRow, minCol, maxCol, database, threshold = 0) {
+                    console.log('Received search result:', result);
+                    console.log('Pattern value counts:', result.pattern_value_counts);
+                    
+                    if (result.success) {
                 // Filter tables based on threshold
                 const filteredReport = result.report ? result.report.filter(table => (table.matches_count || 0) >= threshold) : [];
                 const totalMatches = result.total_matches || 0;
@@ -2384,6 +2402,7 @@
                             <p><strong>Match Threshold:</strong> ${threshold} minimum matches</p>
                             <p><strong>Tables Meeting Threshold:</strong> ${filteredReport.length}</p>
                              ${result.pattern_used ? `<p><strong>Pattern File:</strong> ${result.search_params.pattern_file} (${result.pattern_coordinates_count} coordinates)</p>` : ''}
+                             ${result.pattern_value_counts ? `<p><strong>Pattern Matches Distribution:</strong> <span style="color: #dc3545; font-weight: bold;">L1: ${result.pattern_value_counts.L1}</span>, <span style="color: #28a745; font-weight: bold;">L2: ${result.pattern_value_counts.L2}</span>, <span style="color: #007bff; font-weight: bold;">L3: ${result.pattern_value_counts.L3}</span>${result.pattern_value_counts.other > 0 ? `, <span style="color: #ffc107; font-weight: bold;">Other: ${result.pattern_value_counts.other}</span>` : ''}</p>` : ''}
                         </div>
                         ${filteredReport ? filteredReport.map(tableReport => `
                             <div class="table-report">
@@ -2395,13 +2414,21 @@
                              ${(tableReport.matches_count || 0) === 0 ? 
                                  '<p class="no-matches">✗ No matches found in this table within the specified range!</p>' : 
                                                                                                     `<div class="coordinates-section" style="margin-bottom: 20px;">
+                                                       <div style="font-size: 11px; color: #666; margin-bottom: 5px;">
+                                                           <strong>Format:</strong> Data(row,col) [L#] Pattern(row,col)=value - where L# indicates pattern layer, Pattern shows relative coordinates within the trimmed pattern, and =value shows the actual pattern file value
+                                                       </div>
                                                        <div class="coordinates-list" style="padding: 10px; background-color: #f8f9fa; border-radius: 3px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; border-left: 4px solid #28a745;">
                                                            ${(tableReport.matches || []).map(match => {
                                                                const coord = `(${match.row}, ${match.col})`;
                                                                if (match.pattern_value !== undefined && match.pattern_value !== null) {
                                                                    const colors = {1: '#dc3545', 2: '#28a745', 3: '#007bff'};
                                                                    const color = colors[match.pattern_value] || '#ffc107';
-                                                                   return `<span style="color: ${color}; font-weight: bold;">${coord}</span>`;
+                                                                   const patternInfo = `L${match.pattern_value}`;
+                                                                   const patternRelCoord = match.pattern_rel_row !== undefined && match.pattern_rel_col !== undefined 
+                                                                       ? `Pattern(${match.pattern_rel_row}, ${match.pattern_rel_col})`
+                                                                       : `Pattern(${match.row}, ${match.col})`;
+                                                                   const patternValue = `=${match.pattern_value}`;
+                                                                   return `<span style="color: ${color}; font-weight: bold;">Data${coord} [${patternInfo}] ${patternRelCoord}${patternValue}</span>`;
                                                                }
                                                                return coord;
                                                            }).join(', ')}

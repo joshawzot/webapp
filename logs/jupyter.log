@@ -82,3 +82,6 @@
 [I 2025-07-28 10:10:29.905 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
 [W 2025-07-28 10:11:59.906 ServerApp] WebSocket ping timeout after 90000 ms.
 [I 2025-07-28 10:12:04.908 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
+[I 2025-07-28 22:31:12.919 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
+[W 2025-07-28 22:31:13.441 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.62ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-07-28 22:33:16.934 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:f5c334fbf63649b687aebcd0f92acdac

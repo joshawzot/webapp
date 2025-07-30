@@ -7083,7 +7083,11 @@ def search_value_in_range():
                     pattern_coordinates = []
                     for row_idx in range(len(trimmed_pattern)):
                         if trimmed_pattern[row_idx] != 0:
-                            pattern_coordinates.append((pattern_min_row + row_idx, pattern_min_col, int(trimmed_pattern[row_idx])))
+                            data_row = pattern_min_row + row_idx
+                            data_col = pattern_min_col
+                            pattern_value = int(trimmed_pattern[row_idx])
+                            # Store: (data_row, data_col, pattern_value, pattern_rel_row, pattern_rel_col)
+                            pattern_coordinates.append((data_row, data_col, pattern_value, row_idx, 0))
                 else:
                     # 2D pattern
                     trimmed_pattern = pattern_array[pattern_min_row:pattern_max_row, pattern_min_col:pattern_max_col]
@@ -7092,9 +7096,20 @@ def search_value_in_range():
                     for row_idx in range(trimmed_pattern.shape[0]):
                         for col_idx in range(trimmed_pattern.shape[1]):
                             if trimmed_pattern[row_idx, col_idx] != 0:
-                                pattern_coordinates.append((pattern_min_row + row_idx, pattern_min_col + col_idx, int(trimmed_pattern[row_idx, col_idx])))
+                                data_row = pattern_min_row + row_idx
+                                data_col = pattern_min_col + col_idx
+                                pattern_value = int(trimmed_pattern[row_idx, col_idx])
+                                # Store: (data_row, data_col, pattern_value, pattern_rel_row, pattern_rel_col)
+                                pattern_coordinates.append((data_row, data_col, pattern_value, row_idx, col_idx))
                 
                 print(f"Found {len(pattern_coordinates)} non-zero coordinates in pattern")
+                
+                # Debug: Count pattern values to verify distribution
+                pattern_value_counts = {}
+                for _, _, p_val, _, _ in pattern_coordinates:
+                    pattern_value_counts[p_val] = pattern_value_counts.get(p_val, 0) + 1
+                print(f"Pattern value distribution: {pattern_value_counts}")
+                
                 if len(pattern_coordinates) == 0:
                     error_msg = 'Pattern file has no non-zero values in the specified range'
                     print(error_msg)
@@ -7227,14 +7242,14 @@ def search_value_in_range():
                                  # Search within the specified range or pattern coordinates
                 if pattern_coordinates:
                     # Pattern-based search - only check coordinates where pattern is non-zero
-                    search_coordinates = [(r, c, p_val) for r, c, p_val in pattern_coordinates 
+                    search_coordinates = [(r, c, p_val, p_r, p_c) for r, c, p_val, p_r, p_c in pattern_coordinates 
                                         if actual_min_row <= r < actual_max_row and actual_min_col <= c < actual_max_col]
                     search_area_size = len(search_coordinates)
                     cells_searched = 0
                     
                     print(f"Pattern-based search: checking {search_area_size} coordinates from pattern")
                     
-                    for row_idx, col_idx, pattern_value in search_coordinates:
+                    for row_idx, col_idx, pattern_value, pattern_rel_row, pattern_rel_col in search_coordinates:
                         try:
                             cell_value = data_array[row_idx, col_idx]
                             
@@ -7244,8 +7259,11 @@ def search_value_in_range():
                                     'row': row_idx,  # Keep 0-indexed for display consistency
                                     'col': col_idx,  # Keep 0-indexed for display consistency
                                     'value': float(cell_value),
-                                    'pattern_value': pattern_value  # Add pattern value for color coding
+                                    'pattern_value': pattern_value,  # Add pattern value for color coding
+                                    'pattern_rel_row': pattern_rel_row,  # Relative row in trimmed pattern
+                                    'pattern_rel_col': pattern_rel_col   # Relative col in trimmed pattern
                                 })
+                                print(f"Match found at data({row_idx}, {col_idx}) pattern_rel({pattern_rel_row}, {pattern_rel_col}) with pattern value {pattern_value} (cell_value={cell_value})")
                         except (IndexError, TypeError, ValueError):
                             # Skip invalid cells
                             pass
@@ -7303,6 +7321,15 @@ def search_value_in_range():
                 
                 print(f"Table {table_name}: Found {len(matches)} matches for value {search_value}")
                 
+                # Debug: Count pattern values in matches for this table
+                if pattern_coordinates and matches:
+                    table_pattern_counts = {}
+                    for match in matches:
+                        p_val = match.get('pattern_value')
+                        if p_val is not None:
+                            table_pattern_counts[p_val] = table_pattern_counts.get(p_val, 0) + 1
+                    print(f"Table {table_name} match pattern distribution: {table_pattern_counts}")
+                
                 # Update progress with match count
                 current_progress = safe_get_progress(session_id)
                 if current_progress:
@@ -7354,7 +7381,24 @@ def search_value_in_range():
             connection.close()
         
         total_matches = sum(table['matches_count'] for table in report)
+        
+        # Calculate pattern value counts across all tables
+        pattern_value_counts = {'L1': 0, 'L2': 0, 'L3': 0, 'other': 0}
+        if pattern_coordinates:
+            for table in report:
+                for match in table.get('matches', []):
+                    pattern_value = match.get('pattern_value')
+                    if pattern_value == 1:
+                        pattern_value_counts['L1'] += 1
+                    elif pattern_value == 2:
+                        pattern_value_counts['L2'] += 1
+                    elif pattern_value == 3:
+                        pattern_value_counts['L3'] += 1
+                    elif pattern_value is not None:
+                        pattern_value_counts['other'] += 1
+        
         print(f"Search complete. Processed {len(report)} tables, found {total_matches} total matches")
+        print(f"Pattern value distribution: L1={pattern_value_counts['L1']}, L2={pattern_value_counts['L2']}, L3={pattern_value_counts['L3']}, other={pattern_value_counts['other']}")
         
         # Mark search as completed
         safe_update_progress(session_id, {
@@ -7390,7 +7434,8 @@ def search_value_in_range():
             'total_matches': total_matches,
             'session_id': session_id,
             'pattern_used': pattern_coordinates is not None,
-            'pattern_coordinates_count': len(pattern_coordinates) if pattern_coordinates else None
+            'pattern_coordinates_count': len(pattern_coordinates) if pattern_coordinates else None,
+            'pattern_value_counts': pattern_value_counts if pattern_coordinates else None
         })
         
     except Exception as e:

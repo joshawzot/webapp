@@ -5431,10 +5431,15 @@ def validate_mask_dimensions(mask_array, data_matrix):
     return True, "Dimensions match"
 
 def get_mysql_directory_size():
-    """Get the actual disk space used by the MySQL data directory."""
+    """Get the actual disk space used by the MySQL data directory.
+    
+    NOTE: MySQL reports datadir as /var/lib/mysql/ but this is a symbolic link.
+    Actual data is stored at /app/mysql/ on /dev/nvme2n1p1 (1.8TB disk).
+    """
     try:
         # Try to use the direct MySQL path first
-        mysql_path = "/app/mysql"
+        # IMPORTANT: This path is the ACTUAL location, not what MySQL reports
+        mysql_path = "/app/mysql"  # Real location via symlink: /var/lib/mysql -> /app/mysql
         
         try:
             # Use du command to get the actual disk usage

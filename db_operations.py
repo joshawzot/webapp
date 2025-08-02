@@ -1,9 +1,23 @@
 # db_operations.py
 import mysql.connector
 from urllib.parse import quote_plus
+import os
 
 # Initialize DB_CONFIG
 DB_CONFIG = {}
+
+# =============================================================================
+# IMPORTANT: MySQL Data Storage Location
+# =============================================================================
+# MySQL reports datadir as: /var/lib/mysql/
+# However, this is a SYMBOLIC LINK that redirects to: /app/mysql/
+# Actual physical storage location: /dev/nvme2n1p1 (1.8TB disk)
+# 
+# To verify the actual location, run:
+# $ ls -l /var/lib/mysql
+# $ readlink -f /var/lib/mysql
+# $ df -h /app
+# =============================================================================
 
 # Local mysql on admin2
 DB_CONFIG['RDS_PORT'] = None  # Implicitly defaults to 3306
@@ -27,6 +41,36 @@ DB_CONFIG['MYSQL_PASSWORD'] = quote_plus(DB_CONFIG['MYSQL_PASSWORD_RAW'])
 
 connection = None
 
+def get_mysql_storage_info():
+    """Get information about MySQL data storage location."""
+    try:
+        import subprocess
+        
+        # Get MySQL's reported datadir
+        result = subprocess.run(['mysql', '-u', 'root', '-e', 'SELECT @@datadir;'], 
+                              capture_output=True, text=True)
+        mysql_datadir = result.stdout.split('\n')[1].strip() if result.returncode == 0 else "Unknown"
+        
+        # Check if it's a symbolic link
+        is_symlink = os.path.islink('/var/lib/mysql')
+        actual_path = os.readlink('/var/lib/mysql') if is_symlink else mysql_datadir
+        
+        # Get disk information
+        df_result = subprocess.run(['df', '-h', '/app'], capture_output=True, text=True)
+        disk_info = df_result.stdout.split('\n')[1].split() if df_result.returncode == 0 else ["Unknown"]
+        
+        return {
+            'mysql_reported_datadir': mysql_datadir,
+            'is_symbolic_link': is_symlink,
+            'actual_storage_path': actual_path,
+            'disk_device': disk_info[0] if len(disk_info) > 0 else "Unknown",
+            'disk_size': disk_info[1] if len(disk_info) > 1 else "Unknown",
+            'disk_used': disk_info[2] if len(disk_info) > 2 else "Unknown",
+            'disk_available': disk_info[3] if len(disk_info) > 3 else "Unknown"
+        }
+    except Exception as e:
+        return {'error': str(e)}
+
 def create_connection(database=None):
     """Create a new database connection."""
     try:
@@ -34,6 +78,11 @@ def create_connection(database=None):
         print(f"DB_CONFIG host: {DB_CONFIG.get('DB_HOST', 'NOT SET')}")
         print(f"DB_CONFIG user: {DB_CONFIG.get('DB_USER', 'NOT SET')}")
         print(f"Password set: {'Yes' if DB_CONFIG.get('MYSQL_PASSWORD_RAW') else 'No'}")
+        
+        # Show actual storage location for clarity
+        storage_info = get_mysql_storage_info()
+        if 'error' not in storage_info:
+            print(f"MySQL data stored on: {storage_info['disk_device']} at {storage_info['actual_storage_path']}")
         
         connection = mysql.connector.connect(
             host=DB_CONFIG['DB_HOST'],

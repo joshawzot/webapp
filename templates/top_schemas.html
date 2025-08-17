@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<!-- Template: top_schemas.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> top_schemas.html
+</div>
+
 <div class="container">
     <!-- Low Disk Space Alert -->
     {% if disk_info and disk_info.free_space_gb < 10 %}

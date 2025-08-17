@@ -2033,6 +2033,56 @@ def plot_data_points_table(data, table_names, selected_groups, max_points_per_st
         if 'buf' in locals():
             buf.close()
 
+def crop_white_space(base64_image):
+    """
+    Crop white space from the top and bottom of a base64 image.
+    """
+    try:
+        from PIL import Image
+        import base64
+        from io import BytesIO
+        import numpy as np
+        
+        # Decode base64 to PIL Image
+        img_data = base64.b64decode(base64_image)
+        img = Image.open(BytesIO(img_data))
+        
+        # Convert to numpy array
+        img_array = np.array(img)
+        
+        # If it's RGB, check if all channels are white (255, 255, 255)
+        if len(img_array.shape) == 3:
+            # Check for white rows (all pixels in row are white)
+            white_rows = np.all(img_array == 255, axis=(1, 2))
+        else:
+            # Grayscale case
+            white_rows = np.all(img_array == 255, axis=1)
+        
+        # Find first and last non-white rows
+        non_white_rows = np.where(~white_rows)[0]
+        
+        if len(non_white_rows) == 0:
+            # Image is all white, return original
+            return base64_image
+        
+        top_crop = non_white_rows[0]
+        bottom_crop = non_white_rows[-1] + 1
+        
+        # Crop the image
+        cropped_img = img.crop((0, top_crop, img.width, bottom_crop))
+        
+        # Convert back to base64
+        buf = BytesIO()
+        cropped_img.save(buf, format='PNG')
+        buf.seek(0)
+        cropped_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+        
+        return cropped_b64
+        
+    except Exception as e:
+        print(f"Error cropping white space: {str(e)}")
+        return base64_image
+
 def combine_images_vertically(base64_images, titles=None, spacing=50):
     """
     Combine multiple base64 encoded images vertically into a single image.
@@ -2102,7 +2152,11 @@ def combine_images_vertically(base64_images, titles=None, spacing=50):
             # Center the image horizontally
             x_offset = (max_width - img.width) // 2
             combined.paste(img, (x_offset, y_offset))
-            y_offset += img.height + spacing
+            y_offset += img.height
+            
+            # Add spacing only if not the last image
+            if i < len(images) - 1:
+                y_offset += spacing
         
         # Convert back to base64
         buf = BytesIO()
@@ -2121,7 +2175,7 @@ def combine_images_vertically(base64_images, titles=None, spacing=50):
 def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_names, selected_groups, ber_results=None):
     """
     Create a comprehensive table combining data points, averages, standard deviations, and BER PPM.
-    Groups every 4 states into separate sections to solve layout issues.
+    Groups every 4 states into separate sections and concatenates them vertically without section titles.
     
     Args:
         group_data: The group data for data points counting
@@ -2132,7 +2186,7 @@ def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_n
         ber_results: Optional BER results for PPM values
     
     Returns:
-        Base64 encoded image of the comprehensive table
+        Base64 encoded image of the comprehensive table (sections stacked vertically)
     """
     try:
         # Group states into chunks of 4
@@ -2162,10 +2216,13 @@ def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_n
             end_state = min(start_state + states_per_section, len(selected_groups))
             section_groups = selected_groups[start_state:end_state]
             
-            # Create figure for this section (very compact)
+            # Create figure for this section (very compact with no margins)
             fig = plt.figure(figsize=(20, 5))
             ax = fig.add_subplot(111)
             ax.axis('off')
+            
+            # Remove all margins and padding
+            fig.subplots_adjust(left=0, right=1, top=1, bottom=0, hspace=0, wspace=0)
 
             # Build table data for this section
             table_data = []
@@ -2324,19 +2381,18 @@ def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_n
                     table[(0, col_idx)].set_facecolor('#B22222')  # Fire Brick for BER
                     col_idx += 1
 
-            # Add minimal section identifier without taking up much space
-            if num_sections > 1:
-                state_range = f"States {section_groups[0]}-{section_groups[-1]}" if len(section_groups) > 1 else f"State {section_groups[0]}"
-                section_title = f'Section {section_idx + 1}: {state_range}'
-                ax.set_title(section_title, fontsize=10, fontweight='bold', pad=2)
-            # No title for single section to avoid duplication
+            # No section titles - keep tables clean without headers
 
-            # Save this section to buffer
+            # Save this section to buffer with no padding whatsoever
             buf = BytesIO()
-            fig.savefig(buf, format='png', bbox_inches='tight', dpi=200, pad_inches=0)
+            fig.savefig(buf, format='png', bbox_inches='tight', dpi=200, pad_inches=0, 
+                       facecolor='white', edgecolor='none')
             buf.seek(0)
             section_image = base64.b64encode(buf.read()).decode('utf-8')
-            section_images.append(section_image)
+            
+            # Crop white space from the section image before adding to list
+            cropped_section_image = crop_white_space(section_image)
+            section_images.append(cropped_section_image)
             
             # Clean up
             plt.close(fig)
@@ -2346,8 +2402,8 @@ def plot_comprehensive_metrics_table(group_data, avg_values, std_values, table_n
         if len(section_images) == 1:
             return section_images[0]
         else:
-            # Use extremely minimal spacing and no titles to avoid duplication
-            combined_image = combine_images_vertically(section_images, titles=None, spacing=2)
+            # Use zero spacing to create seamless concatenated tables
+            combined_image = combine_images_vertically(section_images, titles=None, spacing=0)
             return combined_image
         
     except Exception as e:

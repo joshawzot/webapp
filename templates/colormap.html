@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Template: colormap.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> colormap.html
+</div>
+
+<div class="container-fluid">
+    <!-- Return to Home Page button -->
+    <div class="row mb-3">
+        <div class="col">
+            <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
+            <a href="{{ url_for('list_tables', database=database) }}" class="btn btn-secondary mb-3 ms-2">Back to Tables</a>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col">
+            <h2>Colormap for {{ table_name }}</h2>
+            <p class="text-muted">Database: {{ database }} | Dimensions: {{ dimensions }}</p>
+        </div>
+    </div>
+    
+    <!-- Download button -->
+    <div class="row mb-3">
+        <div class="col">
+            <button class="btn btn-success" id="downloadColormap">Download Colormap</button>
+        </div>
+    </div>
+
+    <!-- Colormap Display -->
+    <div class="mb-4">
+        <div class="plot-container mb-3">
+            <img src="data:image/png;base64,{{ colormap_image }}" alt="Colormap for {{ table_name }}" class="img-fluid" id="colormap-img">
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add event listener for download button
+        document.getElementById('downloadColormap').addEventListener('click', function() {
+            var imgElement = document.getElementById('colormap-img');
+            
+            // Create a link to download the colormap
+            var a = document.createElement('a');
+            a.href = imgElement.src;
+            a.download = 'colormap_{{ table_name }}.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        });
+    });
+</script>
+
+{% endblock %}

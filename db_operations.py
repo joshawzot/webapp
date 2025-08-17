@@ -2,21 +2,29 @@
 import mysql.connector
 from urllib.parse import quote_plus
 import os
+import json
+from datetime import datetime, timedelta
 
 # Initialize DB_CONFIG
 DB_CONFIG = {}
 
 # =============================================================================
-# IMPORTANT: MySQL Data Storage Location
+# IMPORTANT: MySQL Data Storage Location - DUAL STORAGE SETUP
 # =============================================================================
 # MySQL reports datadir as: /var/lib/mysql/
 # However, this is a SYMBOLIC LINK that redirects to: /app/mysql/
-# Actual physical storage location: /dev/nvme2n1p1 (1.8TB disk)
 # 
-# To verify the actual location, run:
+# DUAL STORAGE CONFIGURATION:
+# - Recent schemas (< 60 days): /app/mysql/ on /dev/nvme2n1p1 (1.8TB disk)
+# - Archived schemas (> 60 days): /local/mysql_old/ on /dev/sda1 (9.1TB disk)
+# 
+# The webapp automatically searches both locations for schemas.
+# 
+# To verify the actual locations, run:
 # $ ls -l /var/lib/mysql
-# $ readlink -f /var/lib/mysql
+# $ readlink -f /var/lib/mysql  
 # $ df -h /app
+# $ df -h /local
 # =============================================================================
 
 # Local mysql on admin2
@@ -39,10 +47,83 @@ DB_CONFIG['MYSQL_PASSWORD_RAW'] = '' '''
 # Common for all configurations
 DB_CONFIG['MYSQL_PASSWORD'] = quote_plus(DB_CONFIG['MYSQL_PASSWORD_RAW'])
 
+# =============================================================================
+# DUAL STORAGE CONFIGURATION
+# =============================================================================
+STORAGE_CONFIG = {
+    'primary_storage_path': '/app/mysql',
+    'archive_storage_path': '/local/mysql_old',
+    'primary_storage_mount': '/dev/nvme2n1p1',
+    'archive_storage_mount': '/dev/sda1',
+    'cutoff_days': 60
+}
+
 connection = None
 
+def extract_timestamp_from_schema_name(schema_name):
+    """Extract timestamp from schema name if it exists."""
+    import re
+    patterns = [
+        r'_(\d{14})$',  # _20250801231213 at end
+        r'_(\d{12})$',  # _202508012312 at end (12 digits)
+        r'_(\d{8})$',   # _20250801 at end (8 digits - date only)
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, schema_name)
+        if match:
+            timestamp_str = match.group(1)
+            try:
+                if len(timestamp_str) == 14:  # YYYYMMDDHHMMSS
+                    return datetime.strptime(timestamp_str, '%Y%m%d%H%M%S')
+                elif len(timestamp_str) == 12:  # YYYYMMDDHHMM
+                    return datetime.strptime(timestamp_str, '%Y%m%d%H%M')
+                elif len(timestamp_str) == 8:   # YYYYMMDD
+                    return datetime.strptime(timestamp_str, '%Y%m%d')
+            except ValueError:
+                continue
+    return None
+
+def determine_schema_storage_location(schema_name):
+    """Determine which storage location a schema should be in based on its age."""
+    timestamp = extract_timestamp_from_schema_name(schema_name)
+    
+    if timestamp is None:
+        # No timestamp in name, assume it's in primary storage
+        return STORAGE_CONFIG['primary_storage_path']
+    
+    cutoff_date = datetime.now() - timedelta(days=STORAGE_CONFIG['cutoff_days'])
+    
+    if timestamp < cutoff_date:
+        # Old schema, should be in archive storage
+        return STORAGE_CONFIG['archive_storage_path']
+    else:
+        # Recent schema, should be in primary storage
+        return STORAGE_CONFIG['primary_storage_path']
+
+def find_schema_location(schema_name):
+    """Find the actual location of a schema by checking both storage locations."""
+    # First check if it's a symlink in primary storage (points to archive)
+    primary_path = os.path.join(STORAGE_CONFIG['primary_storage_path'], schema_name)
+    if os.path.islink(primary_path):
+        # This is a symlinked schema - it's physically on archive storage
+        return STORAGE_CONFIG['archive_storage_path']
+    
+    # Check if it exists as a regular directory in primary storage
+    if os.path.exists(primary_path):
+        return STORAGE_CONFIG['primary_storage_path']
+    
+    # Check if it exists directly in archive storage
+    archive_path = os.path.join(STORAGE_CONFIG['archive_storage_path'], schema_name)
+    if os.path.exists(archive_path):
+        return STORAGE_CONFIG['archive_storage_path']
+    
+    # Schema not found in either location
+    return None
+    return None
+
 def get_mysql_storage_info():
-    """Get information about MySQL data storage location."""
+    """Get information about MySQL dual storage configuration."""
     try:
         import subprocess
         
@@ -55,22 +136,130 @@ def get_mysql_storage_info():
         is_symlink = os.path.islink('/var/lib/mysql')
         actual_path = os.readlink('/var/lib/mysql') if is_symlink else mysql_datadir
         
-        # Get disk information
-        df_result = subprocess.run(['df', '-h', '/app'], capture_output=True, text=True)
-        disk_info = df_result.stdout.split('\n')[1].split() if df_result.returncode == 0 else ["Unknown"]
+        # Get primary storage information
+        primary_df = subprocess.run(['df', '-h', '/app'], capture_output=True, text=True)
+        primary_info = primary_df.stdout.split('\n')[1].split() if primary_df.returncode == 0 else ["Unknown"]
+        
+        # Get archive storage information
+        archive_df = subprocess.run(['df', '-h', '/local'], capture_output=True, text=True)
+        archive_info = archive_df.stdout.split('\n')[1].split() if archive_df.returncode == 0 else ["Unknown"]
         
         return {
             'mysql_reported_datadir': mysql_datadir,
             'is_symbolic_link': is_symlink,
             'actual_storage_path': actual_path,
-            'disk_device': disk_info[0] if len(disk_info) > 0 else "Unknown",
-            'disk_size': disk_info[1] if len(disk_info) > 1 else "Unknown",
-            'disk_used': disk_info[2] if len(disk_info) > 2 else "Unknown",
-            'disk_available': disk_info[3] if len(disk_info) > 3 else "Unknown"
+            'dual_storage': True,
+            'primary_storage': {
+                'path': STORAGE_CONFIG['primary_storage_path'],
+                'mount': STORAGE_CONFIG['primary_storage_mount'],
+                'disk_device': primary_info[0] if len(primary_info) > 0 else "Unknown",
+                'disk_size': primary_info[1] if len(primary_info) > 1 else "Unknown",
+                'disk_used': primary_info[2] if len(primary_info) > 2 else "Unknown",
+                'disk_available': primary_info[3] if len(primary_info) > 3 else "Unknown"
+            },
+            'archive_storage': {
+                'path': STORAGE_CONFIG['archive_storage_path'],
+                'mount': STORAGE_CONFIG['archive_storage_mount'],
+                'disk_device': archive_info[0] if len(archive_info) > 0 else "Unknown",
+                'disk_size': archive_info[1] if len(archive_info) > 1 else "Unknown",
+                'disk_used': archive_info[2] if len(archive_info) > 2 else "Unknown",
+                'disk_available': archive_info[3] if len(archive_info) > 3 else "Unknown"
+            }
         }
     except Exception as e:
         return {'error': str(e)}
 
+
+
+def mysql_name_to_filesystem(schema_name):
+    """Convert MySQL database name to filesystem directory name."""
+    # MySQL encodes special characters in filesystem directory names
+    # Common encodings: - becomes @002d, @ becomes @0040, etc.
+    # Note: Order matters! Encode @ first to avoid double-encoding
+    encoded_name = schema_name.replace('@', '@0040').replace('-', '@002d')
+    return encoded_name
+
+def get_schema_storage_type(schema_name):
+    """Get detailed storage type information for a schema including symlink status."""
+    import subprocess
+    
+    # Convert schema name to filesystem encoding
+    fs_schema_name = mysql_name_to_filesystem(schema_name)
+    
+    primary_path = os.path.join(STORAGE_CONFIG['primary_storage_path'], fs_schema_name)
+    archive_path = os.path.join(STORAGE_CONFIG['archive_storage_path'], fs_schema_name)
+    
+    try:
+        # Check if it's a symlink in primary storage - use subprocess directly since permissions are restricted
+        result = subprocess.run(['sudo', 'test', '-L', primary_path], 
+                              capture_output=True, text=True)
+        is_symlink = (result.returncode == 0)
+        
+        if is_symlink:
+            # It's a symlink - physically on archive but accessible from primary
+            return {
+                'type': 'archive_with_direct_access',
+                'color': 'info',
+                'device': '/dev/sda1 (Archive - Direct Access)',
+                'path': archive_path,
+                'display': '📦 Archive Storage (Direct Access)',
+                'is_symlink': True,
+                'access_method': 'symlink'
+            }
+        
+        # Check if it exists as regular directory in primary storage
+        result = subprocess.run(['sudo', 'test', '-d', primary_path], 
+                              capture_output=True, text=True)
+        dir_exists = (result.returncode == 0)
+        
+        if dir_exists:
+            # Regular directory in primary storage
+            return {
+                'type': 'primary',
+                'color': 'success', 
+                'device': '/dev/nvme2n1p1 (Primary Drive)',
+                'path': primary_path,
+                'display': '🟢 Primary Storage',
+                'is_symlink': False,
+                'access_method': 'direct_primary'
+            }
+        
+        # Check if it exists in archive storage (doesn't need sudo)
+        if os.path.exists(archive_path):
+            # Only in archive storage (not linked)
+            return {
+                'type': 'archive_not_linked',
+                'color': 'warning',
+                'device': '/dev/sda1 (Archive - Not Accessible)',
+                'path': archive_path,
+                'display': '📦 Archive Storage (Not Linked)',
+                'is_symlink': False,
+                'access_method': 'none'
+            }
+        
+        # Not found in either location
+        return {
+            'type': 'not_found',
+            'color': 'danger',
+            'device': 'Unknown',
+            'path': 'Not found',
+            'display': '❌ Not Found',
+            'is_symlink': False,
+            'access_method': 'none'
+        }
+        
+    except Exception as e:
+        # Fallback on error
+        print(f"Error in storage detection for {schema_name}: {e}")
+        return {
+            'type': 'not_found',
+            'color': 'danger',
+            'device': 'Unknown',
+            'path': f'Error: {str(e)}',
+            'display': '❌ Detection Error',
+            'is_symlink': False,
+            'access_method': 'none'
+        }
 def create_connection(database=None):
     """Create a new database connection."""
     try:
@@ -79,10 +268,12 @@ def create_connection(database=None):
         print(f"DB_CONFIG user: {DB_CONFIG.get('DB_USER', 'NOT SET')}")
         print(f"Password set: {'Yes' if DB_CONFIG.get('MYSQL_PASSWORD_RAW') else 'No'}")
         
-        # Show actual storage location for clarity
+        # Show dual storage configuration for clarity
         storage_info = get_mysql_storage_info()
-        if 'error' not in storage_info:
-            print(f"MySQL data stored on: {storage_info['disk_device']} at {storage_info['actual_storage_path']}")
+        if 'error' not in storage_info and storage_info.get('dual_storage'):
+            print(f"MySQL dual storage: Primary {storage_info['primary_storage']['disk_device']}, Archive {storage_info['archive_storage']['disk_device']}")
+        elif 'error' not in storage_info:
+            print(f"MySQL data stored on: {storage_info['primary_storage']['disk_device']} at {storage_info['actual_storage_path']}")
         
         connection = mysql.connector.connect(
             host=DB_CONFIG['DB_HOST'],
@@ -208,16 +399,27 @@ def fetch_tables(database):
             cursor.execute(column_query, (database, name))
             column_count = cursor.fetchone()[0]
 
-            # Count the number of rows
-            row_query = f"SELECT COUNT(*) FROM `{name}`;"
-            cursor.execute(row_query)
-            row_count = cursor.fetchone()[0]
-
-            # Store table info
-            tables.append({'table_name': name, 'creation_time': time, 'dimensions': f"{row_count}x{column_count}"})
+            # Count the number of rows (this may fail for tablespace issues)
+            try:
+                row_query = f"SELECT COUNT(*) FROM `{name}`;"
+                cursor.execute(row_query)
+                row_count = cursor.fetchone()[0]
+                
+                # Store table info with actual dimensions
+                tables.append({'table_name': name, 'creation_time': time, 'dimensions': f"{row_count}x{column_count}"})
+            except Exception as row_error:
+                # Row count failed (likely tablespace issue), but we still have column count
+                if "Tablespace is missing" in str(row_error) or "1812" in str(row_error):
+                    # Tablespace issue - show columns but indicate data unavailable
+                    tables.append({'table_name': name, 'creation_time': time, 'dimensions': f"?x{column_count} (archived)"})
+                else:
+                    # Other error
+                    print(f"Row count error for table '{name}': {row_error}")
+                    tables.append({'table_name': name, 'creation_time': time, 'dimensions': f"?x{column_count} (error)"})
+                    
         except Exception as e:
             print(f"Error processing table/view '{name}': {e}")
-            # Still include the table in the list, but mark it as having an error
+            # Complete failure - can't even get column count
             tables.append({'table_name': name, 'creation_time': time, 'dimensions': 'ERROR: Invalid view or table'})
 
     cursor.close()
@@ -427,6 +629,7 @@ def get_pattern_files():
             "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
             "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
+            "248x248_64states": "/home/admin2/webapp_2/State_pattern_files/248x248_64states.npy",
             "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
             "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
             "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
@@ -434,6 +637,7 @@ def get_pattern_files():
             "65536x78_ecc": "/home/admin2/webapp_2/State_pattern_files/65536x78_ecc.npy",
             "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
+            "test_chin": "/home/admin2/webapp_2/State_pattern_files/ecc_new.npy",
         }
     else:
         # Relative paths dictionary
@@ -448,6 +652,7 @@ def get_pattern_files():
             "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "State_pattern_files/248x248_16states.npy",
             "248x248_2states": "State_pattern_files/248x248_2states.npy",
+            "248x248_64states": "State_pattern_files/248x248_64states.npy",
             "62x62_2states": "State_pattern_files/62x62_2states.npy",
             "248x1_1state": "State_pattern_files/248x1_1state.npy",
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
@@ -455,6 +660,7 @@ def get_pattern_files():
             "65536x78_ecc": "State_pattern_files/65536x78_ecc.npy",
             "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
+            "test_chin": "State_pattern_files/ecc_new.npy",
         }
 
 def get_table_dimensions(database, table_name):

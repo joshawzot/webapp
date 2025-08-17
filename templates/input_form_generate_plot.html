@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 
+<!-- Template: input_form_generate_plot.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> input_form_generate_plot.html
+</div>
+
 <style>
 .suggestions-container {
     background-color: #f8f9fa;
@@ -43,7 +48,7 @@
         <div class="form-group">
             <label for="state_pattern_type">State Pattern Type</label>
             <select class="form-control" name="state_pattern_type" id="state_pattern_type" onchange="toggleStatePatternType()">
-                <option value="predefined">Predefined State Pattern</option>
+                <option value="predefined">Predefined (Original) State Pattern</option>
                 <option value="1D">Reshaped and Combined Pattern</option>
             </select>
         </div>
@@ -99,6 +104,7 @@
                 <option value="1296x64_1state">1296x64_1state</option>
                 <option value="248x248_16states">248x248_16states</option>
                 <option value="248x248_2states">248x248_2states</option>
+                <option value="248x248_64states">248x248_64states</option>
                 <option value="62x62_2states">62x62_2states</option>
                 <option value="248x1_1state">248x1_1state</option>
                 <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
@@ -106,9 +112,151 @@
                 <option value="248x256_1state">248x256_1state</option>
                 <option value="256x32_pr0">256x32_pr0</option>
                 <option value="256x32_pr1">256x32_pr1</option>
+                <option value="test_chin">test_chin</option>
                 </select>
             </div>
             
+            <div class="form-group">
+                <label for="selected_groups_predefined">Selected States:</label>
+                <select class="form-control" name="selected_groups_predefined" id="selected_groups_predefined" onchange="updateCustomInput(this, 'custom_selected_groups_predefined')">
+                    <option value="0,1,2,3">0,1,2,3</option>
+                    <option value="0,3">0,3</option>
+                    <option value="0">0</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_selected_groups_predefined" id="custom_selected_groups_predefined" placeholder="Enter custom values" style="display:none;" />
+            </div>
+        </div>
+
+        <!-- Add the new window value input field -->
+        <div class="form-group">
+            <label for="target_x_diff">Window Value:</label>
+            <input type="text" class="form-control" name="target_x_diff" id="target_x_diff" placeholder="Enter window value" value="2">
+        </div>
+
+        <!-- Add the new interpolation points input field -->
+        <div class="form-group">
+            <label for="num_interp_points">Interpolation Points (higher = more accurate but slower):</label>
+            <input type="text" class="form-control" name="num_interp_points" id="num_interp_points" placeholder="Enter number of interpolation points" value="500">
+            <small class="form-text text-muted">Default: 500 (usually 500 is good enough, we used to use 4000) </small>
+        </div>
+
+        <!-- More Options Button -->
+        <div class="form-group">
+            <button type="button" class="btn btn-secondary" id="toggleMoreOptions">
+                More Options ▼
+            </button>
+        </div>
+
+        <!-- More Options Section (Hidden by default) -->
+        <div id="moreOptionsSection" style="display: none;">
+            <div class="form-group">
+                <label for="color_group_keywords">Color Grouping Keywords (comma-separated, optional):</label>
+                <input type="text" class="form-control" name="color_group_keywords" id="color_group_keywords" placeholder="e.g., T-1,gsof2">
+            </div>
+
+            <!-- Add the new target values input field -->
+            <div class="form-group">
+                <label for="target_values">Target Values (not required):</label>
+                <input type="text" class="form-control" name="target_values" id="target_values" placeholder="Enter target values (e.g., 1,50,100,150)">
+            </div>
+
+            <!-- Add the new data range filter fields -->
+            <div class="form-group">
+                <label><strong>Data Range Filter (optional):</strong></label>
+                <small class="form-text text-muted d-block mb-2">Filter data points to only include values within the specified range. Leave empty to include all data.</small>
+                <div class="row">
+                    <div class="col">
+                        <label for="data_min_value">Minimum Value:</label>
+                        <input type="number" class="form-control" name="data_min_value" id="data_min_value" placeholder="Enter minimum value" step="any">
+                    </div>
+                    <div class="col">
+                        <label for="data_max_value">Maximum Value:</label>
+                        <input type="number" class="form-control" name="data_max_value" id="data_max_value" placeholder="Enter maximum value" step="any">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add the new negative value filter option -->
+            <div class="form-group">
+                <label for="filter_negative_values">Filter out negative values:</label>
+                <input type="checkbox" name="filter_negative_values" id="filter_negative_values" value="True">
+                <small class="form-text text-muted d-block">Check this option to exclude all negative values from the analysis.</small>
+            </div>
+
+            <!-- Add bitmap mask functionality -->
+            <div class="form-group">
+                <label><strong>Bitmap Mask Options:</strong></label>
+                <small class="form-text text-muted d-block mb-2">Generate or apply bitmap masks based on data filtering (filtered out coordinates = 0, valid coordinates = 1).</small>
+                
+                <!-- Option to generate a bitmap mask -->
+                <div class="custom-control custom-checkbox mb-2">
+                    <input type="checkbox" class="custom-control-input" id="generate_bitmap_mask" name="generate_bitmap_mask" value="True" onchange="toggleBitmapMaskName()">
+                    <label class="custom-control-label" for="generate_bitmap_mask">Generate and save bitmap mask from current filter settings</label>
+                </div>
+                
+                <!-- Mask name input (only shown when generate checkbox is checked) -->
+                <div id="bitmap_mask_name_section" style="display:none;">
+                    <label for="bitmap_mask_name">Bitmap Mask Name:</label>
+                    <input type="text" class="form-control" name="bitmap_mask_name" id="bitmap_mask_name" placeholder="Enter a name for the bitmap mask">
+                    <small class="form-text text-muted">This mask will be saved and can be reused later.</small>
+                </div>
+                
+                <!-- Option to apply an existing bitmap mask -->
+                <div class="mt-3">
+                    <label for="apply_bitmap_mask">Apply existing bitmap mask:</label>
+                    <select class="form-control" name="apply_bitmap_mask" id="apply_bitmap_mask">
+                        <option value="">None - don't apply any mask</option>
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                    <small class="form-text text-muted d-block">Select an existing bitmap mask to apply during analysis. Only data points with value 1 in the mask will be included.</small>
+                </div>
+            </div>
+
+            <!-- BER Display Options section -->
+            <div class="form-group">
+                <label><strong>BER Display Options:</strong></label>
+                <div class="custom-control custom-radio">
+                    <input type="radio" id="option_top_ios" name="ber_display_option" class="custom-control-input" value="top_ios" checked>
+                    <label class="custom-control-label" for="option_top_ios">Tables with best BER</label>
+                </div>
+                <div class="custom-control custom-radio">
+                    <input type="radio" id="option_ber_range" name="ber_display_option" class="custom-control-input" value="ber_range">
+                    <label class="custom-control-label" for="option_ber_range">Filter by BER Range</label>
+                </div>
+            </div>
+
+            <!-- Top IOs count input field -->
+            <div class="form-group" id="top_ios_section">
+                <label for="top_ios_count">Number of tables with best BER:</label>
+                <input type="number" class="form-control" name="top_ios_count" id="top_ios_count" placeholder="Enter number of tables with best BER" min="1">
+                <small class="form-text text-muted">If left empty, all selected tables will be included.</small>
+            </div>
+
+            <!-- BER range filter fields -->
+            <div class="form-group" id="ber_range_section" style="display: none;">
+                <label for="ber_range_filter">Filter by BER Range:</label>
+                <div class="row">
+                    <div class="col">
+                        <input type="number" class="form-control" name="ber_lower_limit" id="ber_lower_limit" placeholder="Lower limit (ppm)" min="0">
+                    </div>
+                    <div class="col">
+                        <input type="number" class="form-control" name="ber_upper_limit" id="ber_upper_limit" placeholder="Upper limit (ppm)" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional predefined pattern options -->
+            <div class="form-group">
+                <label for="pass_range_predefined">Pass Range for Selected States:</label>
+                <select class="form-control" name="pass_range_predefined" id="pass_range_predefined" onchange="updateCustomInput(this, 'custom_pass_range_predefined')">
+                    <option value="">None</option>
+                    <option value="40,68.88,70.88,131.88,133.88,169.88,171.88,183">40,68.88,70.88,131.88,133.88,169.88,171.88,183</option>
+                    <option value="custom">Custom</option>
+                </select>
+                <input type="text" class="form-control mt-2" name="custom_pass_range_predefined" id="custom_pass_range_predefined" placeholder="Enter custom values" style="display:none;" />
+            </div>
+
             <!-- New analysis type field for 82944x78_ecc_fuxi -->
             <div class="form-group" id="analysis_type_container" style="display:none;">
                 <label for="analysis_type">Analysis Type:</label>
@@ -135,26 +283,6 @@
                     • <strong>Valid range:</strong> 0-77 (78 total columns)
                 </small>
             </div>
-            
-            <div class="form-group">
-                <label for="selected_groups_predefined">Selected States:</label>
-                <select class="form-control" name="selected_groups_predefined" id="selected_groups_predefined" onchange="updateCustomInput(this, 'custom_selected_groups_predefined')">
-                    <option value="0,1,2,3">0,1,2,3</option>
-                    <option value="0,3">0,3</option>
-                    <option value="0">0</option>
-                    <option value="custom">Custom</option>
-                </select>
-                <input type="text" class="form-control mt-2" name="custom_selected_groups_predefined" id="custom_selected_groups_predefined" placeholder="Enter custom values" style="display:none;" />
-            </div>
-            <div class="form-group">
-                <label for="pass_range_predefined">Pass Range for Selected States:</label>
-                <select class="form-control" name="pass_range_predefined" id="pass_range_predefined" onchange="updateCustomInput(this, 'custom_pass_range_predefined')">
-                    <option value="">None</option>
-                    <option value="40,68.88,70.88,131.88,133.88,169.88,171.88,183">40,68.88,70.88,131.88,133.88,169.88,171.88,183</option>
-                    <option value="custom">Custom</option>
-                </select>
-                <input type="text" class="form-control mt-2" name="custom_pass_range_predefined" id="custom_pass_range_predefined" placeholder="Enter custom values" style="display:none;" />
-            </div>
 
             <div class="form-group">
                 <label for="outlier_analysis_flag">Enable last level Outlier Analysis:</label>
@@ -180,188 +308,160 @@
                 <label for="yanCullinan_flag">Yan Cullinan:</label>
                 <input type="checkbox" name="yanCullinan_flag" id="yanCullinan_flag" value="True">
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="color_group_keywords">Color Grouping Keywords (comma-separated, optional):</label>
-            <input type="text" class="form-control" name="color_group_keywords" id="color_group_keywords" placeholder="e.g., T-1,gsof2">
-        </div>
+            <div class="form-group">
+                <label for="enable_sigma_analysis">Enable Sigma Analysis Tables:</label>
+                <input type="checkbox" name="enable_sigma_analysis" id="enable_sigma_analysis" value="True">
+                <small class="form-text text-muted">Show "Sigma Intersections Analysis" and "Sigma Drift Analysis" tables in the results.</small>
+            </div>
 
-        <!-- Add the new target values input field -->
-        <div class="form-group">
-            <label for="target_values">Target Values (not required):</label>
-            <input type="text" class="form-control" name="target_values" id="target_values" placeholder="Enter target values (e.g., 1,50,100,150)">
-        </div>
-
-        <!-- Add the new window value input field -->
-        <div class="form-group">
-            <label for="target_x_diff">Window Value:</label>
-            <input type="text" class="form-control" name="target_x_diff" id="target_x_diff" placeholder="Enter window value" value="2">
-        </div>
-
-        <!-- Add the new interpolation points input field -->
-        <div class="form-group">
-            <label for="num_interp_points">Interpolation Points (higher = more accurate but slower):</label>
-            <input type="text" class="form-control" name="num_interp_points" id="num_interp_points" placeholder="Enter number of interpolation points" value="500">
-            <small class="form-text text-muted">Default: 500 (usually 500 is good enough, we used to use 4000) </small>
-        </div>
-
-        <!-- Add the new data range filter fields -->
-        <div class="form-group">
-            <label><strong>Data Range Filter (optional):</strong></label>
-            <small class="form-text text-muted d-block mb-2">Filter data points to only include values within the specified range. Leave empty to include all data.</small>
-            <div class="row">
-                <div class="col">
-                    <label for="data_min_value">Minimum Value:</label>
-                    <input type="number" class="form-control" name="data_min_value" id="data_min_value" placeholder="Enter minimum value" step="any">
+            <!-- Advanced Options Section -->
+            <hr class="my-4">
+            <div class="form-group">
+                <h5>Advanced Options</h5>
+                <p class="text-muted">Choose between original values or converted values for plotting:</p>
+                
+                <!-- Data Mode Status Indicator -->
+                {% if using_conductance %}
+                <div class="alert alert-info">
+                    <strong>Current Mode:</strong> Using precise conductance values for plotting.
                 </div>
-                <div class="col">
-                    <label for="data_max_value">Maximum Value:</label>
-                    <input type="number" class="form-control" name="data_max_value" id="data_max_value" placeholder="Enter maximum value" step="any">
+                {% elif using_linear_conversion %}
+                <div class="alert alert-info">
+                    <strong>Current Mode:</strong> Using linear conversion values ({{ linear_input_min }}-{{ linear_input_max }} → {{ linear_output_min }}-{{ linear_output_max }}) for plotting.
                 </div>
-            </div>
-        </div>
-
-        <!-- Add the new negative value filter option -->
-        <div class="form-group">
-            <label for="filter_negative_values">Filter out negative values:</label>
-            <input type="checkbox" name="filter_negative_values" id="filter_negative_values" value="True">
-            <small class="form-text text-muted d-block">Check this option to exclude all negative values from the analysis.</small>
-        </div>
-
-        <!-- Add bitmap mask functionality -->
-        <div class="form-group">
-            <label><strong>Bitmap Mask Options:</strong></label>
-            <small class="form-text text-muted d-block mb-2">Generate or apply bitmap masks based on data filtering (filtered out coordinates = 0, valid coordinates = 1).</small>
-            
-            <!-- Option to generate a bitmap mask -->
-            <div class="custom-control custom-checkbox mb-2">
-                <input type="checkbox" class="custom-control-input" id="generate_bitmap_mask" name="generate_bitmap_mask" value="True" onchange="toggleBitmapMaskName()">
-                <label class="custom-control-label" for="generate_bitmap_mask">Generate and save bitmap mask from current filter settings</label>
-            </div>
-            
-            <!-- Mask name input (only shown when generate checkbox is checked) -->
-            <div id="bitmap_mask_name_section" style="display:none;">
-                <label for="bitmap_mask_name">Bitmap Mask Name:</label>
-                <input type="text" class="form-control" name="bitmap_mask_name" id="bitmap_mask_name" placeholder="Enter a name for the bitmap mask">
-                <small class="form-text text-muted">This mask will be saved and can be reused later.</small>
-            </div>
-            
-            <!-- Option to apply an existing bitmap mask -->
-            <div class="mt-3">
-                <label for="apply_bitmap_mask">Apply existing bitmap mask:</label>
-                <select class="form-control" name="apply_bitmap_mask" id="apply_bitmap_mask">
-                    <option value="">None - don't apply any mask</option>
-                    <!-- Options will be populated dynamically -->
-                </select>
-                <small class="form-text text-muted d-block">Select an existing bitmap mask to apply during analysis. Only data points with value 1 in the mask will be included.</small>
-            </div>
-        </div>
-
-        <!-- BER Display Options section -->
-        <div class="form-group">
-            <label><strong>BER Display Options:</strong></label>
-            <div class="custom-control custom-radio">
-                <input type="radio" id="option_top_ios" name="ber_display_option" class="custom-control-input" value="top_ios" checked>
-                <label class="custom-control-label" for="option_top_ios">Tables with best BER</label>
-            </div>
-            <div class="custom-control custom-radio">
-                <input type="radio" id="option_ber_range" name="ber_display_option" class="custom-control-input" value="ber_range">
-                <label class="custom-control-label" for="option_ber_range">Filter by BER Range</label>
-            </div>
-        </div>
-
-        <!-- Top IOs count input field -->
-        <div class="form-group" id="top_ios_section">
-            <label for="top_ios_count">Number of tables with best BER:</label>
-            <input type="number" class="form-control" name="top_ios_count" id="top_ios_count" placeholder="Enter number of tables with best BER" min="1">
-            <small class="form-text text-muted">If left empty, all selected tables will be included.</small>
-        </div>
-
-        <!-- BER range filter fields -->
-        <div class="form-group" id="ber_range_section" style="display: none;">
-            <label for="ber_range_filter">Filter by BER Range:</label>
-            <div class="row">
-                <div class="col">
-                    <input type="number" class="form-control" name="ber_lower_limit" id="ber_lower_limit" placeholder="Lower limit (ppm)" min="0">
+                {% else %}
+                <div class="alert alert-light border">
+                    <strong>Current Mode:</strong> Using original values for plotting.
                 </div>
-                <div class="col">
-                    <input type="number" class="form-control" name="ber_upper_limit" id="ber_upper_limit" placeholder="Upper limit (ppm)" min="0">
+                {% endif %}
+                
+                <!-- Conversion Options -->
+                <div class="mb-3">
+                    <a href="/set-conductance-values/{{ database }}/{{ table_name }}" class="btn btn-primary">Use precise conversion</a>
+                    <a href="/linear-conversion/{{ database }}/{{ table_name }}" class="btn btn-primary ml-2">Use custom linear conversion</a>
+                    {% if using_conductance or using_linear_conversion %}
+                    <a href="/reset-conductance/{{ database }}/{{ table_name }}" class="btn btn-secondary ml-2">Reset to Original Values</a>
+                    {% endif %}
                 </div>
+                
+                <!-- Conductance Comparison Table -->
+                {% if using_conductance and conductance_comparison %}
+                <div class="mt-4">
+                    <h6>Conductance Values Comparison</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Original Value</th>
+                                    <th>Conductance Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in conductance_comparison %}
+                                <tr>
+                                    <td>{{ item.original }}</td>
+                                    <td>{{ item.conductance }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Linear Conversion Comparison Table -->
+                {% if using_linear_conversion and linear_conversion_comparison %}
+                <div class="mt-4">
+                    <h6>Linear Conversion Values Comparison</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Original Value</th>
+                                    <th>Converted Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in linear_conversion_comparison %}
+                                <tr>
+                                    <td>{{ item.original }}</td>
+                                    <td>{{ item.converted }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Submit</button>
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
     </form>
 </div>
 
 <script>
     function initializeForm() {
-        // Reset the entire form first
-        document.getElementById('plotForm').reset();
+        // Don't reset the form here - let restoreFormData handle it
+        // Only set default values if no saved data exists
         
         // Force select the default option "Predefined State Pattern" and trigger change event
         var statePatternType = document.getElementById('state_pattern_type');
         statePatternType.value = 'predefined';
         
-        // Reset all form fields to their default states
+        // Set default values for fields (these will be overridden by restoreFormData if saved data exists)
         var fields1D = document.getElementById('1D-fields');
         var fieldsPredefined = document.getElementById('predefined-fields');
         var numberOfStates = document.getElementById('number_of_states');
         var outlierAnalysis = document.getElementById('outlier_analysis_flag');
         
-        // Reset custom inputs
+        // Set default custom input displays
         document.getElementById('custom_selected_groups_1D').style.display = 'none';
-        document.getElementById('custom_selected_groups_1D').value = '';
         document.getElementById('custom_pass_range_1D').style.display = 'none';
-        document.getElementById('custom_pass_range_1D').value = '';
         document.getElementById('custom_selected_groups_predefined').style.display = 'none';
-        document.getElementById('custom_selected_groups_predefined').value = '';
         document.getElementById('custom_pass_range_predefined').style.display = 'none';
-        document.getElementById('custom_pass_range_predefined').value = '';
         
-        // Reset dropdowns to their first options
+        // Set default dropdown values
         document.getElementById('selected_groups_1D').value = '0,1,2,3';
         document.getElementById('pass_range_1D').value = '';
         document.getElementById('selected_groups_predefined').value = '0,1,2,3';
         document.getElementById('pass_range_predefined').value = '';
         document.getElementById('state_pattern').selectedIndex = 0;
         
-        // Reset checkboxes
+        // Set default checkbox states
         outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
         document.getElementById('yanCullinan_flag').checked = false;
+        document.getElementById('enable_sigma_analysis').checked = false;
         
         // Clear any existing table division fields
         clearTableDivisionFields();
         
-        // Reset location dots options
+        // Set default location dots options
         document.getElementById('location_dots_flag').checked = false;
-        document.getElementById('location_dots_value').value = '';
         toggleLocationDotsInput();
         
-        // Reset the new color grouping keywords field
+        // Set default field values
         document.getElementById('color_group_keywords').value = '';
-        
-        // Reset the new data range filter fields
         document.getElementById('data_min_value').value = '';
         document.getElementById('data_max_value').value = '';
-        
-        // Reset the new negative value filter checkbox
         document.getElementById('filter_negative_values').checked = false;
         
-        // Reset bitmap mask options
+        // Set default bitmap mask options
         document.getElementById('generate_bitmap_mask').checked = false;
         document.getElementById('bitmap_mask_name').value = '';
         document.getElementById('apply_bitmap_mask').value = '';
         toggleBitmapMaskName();
         loadBitmapMasks(false); // Don't preserve selection during form reset
         
-        // Reset analysis type options
+        // Set default analysis type options
         document.getElementById('analysis_type').value = 'default';
         document.getElementById('analysis_type_container').style.display = 'none';
         
-        // Reset column selection options
+        // Set default column selection options
         document.getElementById('column_selection_type').value = 'all';
         document.getElementById('custom_column_selection').value = '';
         document.getElementById('custom_column_selection').style.display = 'none';
@@ -411,10 +511,22 @@
 
     // Handle both initial page load and back/forward navigation
     window.addEventListener('pageshow', function(event) {
+        console.log('pageshow event fired, persisted:', event.persisted);
+        
         // Always initialize the form, whether it's a fresh load or back-forward navigation
         initializeForm();
+        
+        // For back/forward navigation, restore form data immediately
+        if (event.persisted) {
+            console.log('Back/forward navigation detected, restoring form data...');
+            setTimeout(() => restoreFormData(), 100);
+        } else {
+            console.log('Fresh page load, checking for saved form data...');
+            setTimeout(() => restoreFormData(), 100);
+        }
+        
         // Load available bitmap masks after form initialization (preserve selection for back/forward navigation)
-        setTimeout(() => loadBitmapMasks(true), 100);
+        setTimeout(() => loadBitmapMasks(true), 200);
         // Generate table division fields if needed after a short delay
         setTimeout(() => {
             const statePatternType = document.getElementById('state_pattern_type').value;
@@ -422,16 +534,33 @@
             if (statePatternType === '1D' && numberOfStates === '4') {
                 generateTableDivisionFields();
             }
-        }, 200);
+        }, 300);
     });
 
-    // Prevent form data persistence
-    window.addEventListener('unload', function() {
-        // This helps prevent form data persistence in some browsers
+    // Save form data when leaving the page
+    window.addEventListener('beforeunload', function() {
+        console.log('beforeunload event fired, saving form data...');
+        saveFormData();
+    });
+
+    // Also save form data when the page is hidden (for mobile browsers)
+    window.addEventListener('pagehide', function() {
+        console.log('pagehide event fired, saving form data...');
+        saveFormData();
+    });
+
+    // Save form data when the form loses focus (additional safety)
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            console.log('Page visibility changed to hidden, saving form data...');
+            saveFormData();
+        }
     });
 
     window.onload = function() {
         initializeForm();
+        // Restore form data from localStorage
+        restoreFormData();
         // Load available bitmap masks after form initialization (preserve selection for fresh page load)
         setTimeout(() => loadBitmapMasks(true), 100);
         // Generate table division fields if needed after a short delay to ensure table names are loaded
@@ -442,11 +571,12 @@
                 generateTableDivisionFields();
             }
         }, 200);
-        
-
     };
 
     document.getElementById('plotForm').addEventListener('submit', function(event) {
+        // Save form data before submission
+        saveFormData();
+        
         // Validate per-table custom division values (only for 1D pattern type)
         const statePatternType = document.getElementById('state_pattern_type').value;
         const numberOfStates = document.getElementById('number_of_states').value;
@@ -1078,6 +1208,257 @@
             document.getElementById('location_dots_value').value = '';
         }
     }
+
+    // Function to toggle the More Options section
+    function toggleMoreOptions() {
+        console.log('toggleMoreOptions function called');
+        var moreSection = document.getElementById('moreOptionsSection');
+        var toggleButton = document.getElementById('toggleMoreOptions');
+        
+        console.log('moreSection:', moreSection);
+        console.log('toggleButton:', toggleButton);
+        
+        if (moreSection.style.display === 'none') {
+            moreSection.style.display = 'block';
+            toggleButton.innerHTML = 'Less Options ▲';
+            console.log('More options section shown');
+        } else {
+            moreSection.style.display = 'none';
+            toggleButton.innerHTML = 'More Options ▼';
+            console.log('More options section hidden');
+        }
+    }
+
+    // Add event listener when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, setting up More Options button');
+        var toggleButton = document.getElementById('toggleMoreOptions');
+        if (toggleButton) {
+            console.log('Found toggle button, adding event listener');
+            toggleButton.addEventListener('click', function() {
+                console.log('Button clicked via event listener');
+                toggleMoreOptions();
+            });
+        } else {
+            console.error('Toggle button not found!');
+        }
+    });
+
+    // Function to save all form data to localStorage
+    function saveFormData() {
+        try {
+            const formData = {};
+            const form = document.getElementById('plotForm');
+            
+            if (!form) {
+                console.warn('Form not found, cannot save data');
+                return;
+            }
+            
+            // Save all form inputs
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                if (input.name && input.name.trim() !== '') {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        formData[input.name] = input.checked;
+                    } else {
+                        formData[input.name] = input.value;
+                    }
+                }
+            });
+            
+            // Save the form data with a unique key based on database and table
+            const database = document.querySelector('input[name="database"]')?.value || 'unknown';
+            const tableName = document.querySelector('input[name="table_name"]')?.value || 'unknown';
+            const storageKey = `formData_${database}_${tableName}`;
+            
+            // Only save if we have some actual data
+            if (Object.keys(formData).length > 0) {
+                localStorage.setItem(storageKey, JSON.stringify(formData));
+                console.log('Form data saved to localStorage:', storageKey, 'Data:', formData);
+            } else {
+                console.log('No form data to save');
+            }
+        } catch (error) {
+            console.error('Error saving form data:', error);
+        }
+    }
+
+    // Function to restore all form data from localStorage
+    function restoreFormData() {
+        try {
+            const database = document.querySelector('input[name="database"]')?.value || 'unknown';
+            const tableName = document.querySelector('input[name="table_name"]')?.value || 'unknown';
+            const storageKey = `formData_${database}_${tableName}`;
+            
+            console.log('Attempting to restore form data from:', storageKey);
+            
+            const savedData = localStorage.getItem(storageKey);
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+                console.log('Found saved form data:', storageKey, 'Data:', formData);
+                
+                // Restore all form inputs
+                const form = document.getElementById('plotForm');
+                if (!form) {
+                    console.warn('Form not found, cannot restore data');
+                    return;
+                }
+                
+                const inputs = form.querySelectorAll('input, select, textarea');
+                let restoredCount = 0;
+                
+                inputs.forEach(input => {
+                    if (input.name && formData.hasOwnProperty(input.name)) {
+                        try {
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                input.checked = formData[input.name];
+                            } else {
+                                input.value = formData[input.name];
+                            }
+                            restoredCount++;
+                        } catch (fieldError) {
+                            console.warn(`Error restoring field ${input.name}:`, fieldError);
+                        }
+                    }
+                });
+                
+                console.log(`Restored ${restoredCount} form fields`);
+                
+                // Trigger necessary change events to update dependent fields
+                setTimeout(() => {
+                    try {
+                        const statePatternType = document.getElementById('state_pattern_type');
+                        if (statePatternType) {
+                            toggleStatePatternType();
+                        }
+                        
+                        const statePattern = document.getElementById('state_pattern');
+                        if (statePattern) {
+                            toggleColumnSelection();
+                        }
+                        
+                        const analysisType = document.getElementById('analysis_type');
+                        if (analysisType) {
+                            toggleColumnSelection();
+                        }
+                        
+                        const columnSelectionType = document.getElementById('column_selection_type');
+                        if (columnSelectionType) {
+                            toggleCustomColumnInput();
+                        }
+                        
+                        const locationDotsFlag = document.getElementById('location_dots_flag');
+                        if (locationDotsFlag) {
+                            toggleLocationDotsInput();
+                        }
+                        
+                        const generateBitmapMask = document.getElementById('generate_bitmap_mask');
+                        if (generateBitmapMask) {
+                            toggleBitmapMaskName();
+                        }
+                        
+                        // Check custom division if needed
+                        checkCustomDivision();
+                        
+                        console.log('Form data restored successfully and dependent fields updated');
+                    } catch (updateError) {
+                        console.error('Error updating dependent fields:', updateError);
+                    }
+                }, 100);
+                
+            } else {
+                console.log('No saved form data found for:', storageKey);
+            }
+        } catch (error) {
+            console.error('Error restoring form data:', error);
+        }
+    }
+
+    // Add form change listeners to auto-save data
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('plotForm');
+        if (form) {
+            // Save form data whenever any input changes
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                // Save on change event
+                input.addEventListener('change', function() {
+                    console.log(`Field ${input.name} changed, saving form data...`);
+                    clearTimeout(window.formSaveTimeout);
+                    window.formSaveTimeout = setTimeout(saveFormData, 300);
+                });
+                
+                // Save on input event (for real-time saving)
+                input.addEventListener('input', function() {
+                    clearTimeout(window.formSaveTimeout);
+                    window.formSaveTimeout = setTimeout(saveFormData, 1000);
+                });
+                
+                // For checkboxes and radio buttons, also listen to click events
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.addEventListener('click', function() {
+                        console.log(`Field ${input.name} clicked, saving form data...`);
+                        clearTimeout(window.formSaveTimeout);
+                        window.formSaveTimeout = setTimeout(saveFormData, 100);
+                    });
+                }
+            });
+            
+            console.log('Form auto-save listeners attached to', inputs.length, 'fields');
+        }
+    });
+
+    // Function to clear saved form data (call this after successful form submission)
+    function clearSavedFormData() {
+        try {
+            const database = document.querySelector('input[name="database"]').value;
+            const tableName = document.querySelector('input[name="table_name"]').value;
+            const storageKey = `formData_${database}_${tableName}`;
+            
+            localStorage.removeItem(storageKey);
+            console.log('Cleared saved form data:', storageKey);
+        } catch (error) {
+            console.error('Error clearing saved form data:', error);
+        }
+    }
+
+    // Add a note about form persistence
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add a small note about form persistence
+        const form = document.getElementById('plotForm');
+        if (form) {
+            // Note: Auto-save functionality is active but no UI message is displayed
+        }
+    });
+
+    // Debug function to check localStorage contents
+    window.debugFormData = function() {
+        try {
+            const database = document.querySelector('input[name="database"]')?.value || 'unknown';
+            const tableName = document.querySelector('input[name="table_name"]')?.value || 'unknown';
+            const storageKey = `formData_${database}_${tableName}`;
+            
+            console.log('=== FORM DATA DEBUG ===');
+            console.log('Storage key:', storageKey);
+            console.log('Database:', database);
+            console.log('Table:', tableName);
+            
+            const savedData = localStorage.getItem(storageKey);
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+                console.log('Saved data found:', formData);
+                console.log('Number of saved fields:', Object.keys(formData).length);
+            } else {
+                console.log('No saved data found');
+            }
+            
+            console.log('All localStorage keys:', Object.keys(localStorage).filter(key => key.startsWith('formData_')));
+            console.log('=== END DEBUG ===');
+        } catch (error) {
+            console.error('Debug error:', error);
+        }
+    };
     
 
 </script>

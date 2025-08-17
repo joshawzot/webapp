@@ -85,3 +85,14 @@
 [I 2025-07-28 22:31:12.919 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
 [W 2025-07-28 22:31:13.441 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.62ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
 [I 2025-07-28 22:33:16.934 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:f5c334fbf63649b687aebcd0f92acdac
+[W 2025-08-04 10:31:01.810 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 39.44ms referer=http://192.168.68.215:3000/
+[W 2025-08-04 10:31:01.954 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.50ms referer=http://192.168.68.215:3000/
+[W 2025-08-04 10:31:02.097 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 3.64ms referer=http://192.168.68.215:3000/
+[W 2025-08-04 10:31:04.358 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-04 10:31:04.507 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.99ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-04 10:33:06.626 ServerApp] Saving file at /agate_analysis_template.ipynb
+[W 2025-08-04 10:33:06.628 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-05 03:34:05.413 ServerApp] WebSocket ping timeout after 119861 ms.
+[I 2025-08-05 03:34:10.427 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
+[I 2025-08-05 18:40:22.499 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
+[I 2025-08-05 18:40:28.634 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1

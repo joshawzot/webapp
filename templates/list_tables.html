@@ -1,6 +1,53 @@
 {% extends "base.html" %}
 
 {% block content %}
+
+<!-- Template: list_tables.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> list_tables.html
+</div>
+
+<style>
+.storage-info-box {
+    border-left: 4px solid #007bff;
+    background-color: #f8f9fa;
+}
+.storage-info-box.archive {
+    border-left-color: #17a2b8;
+    background-color: #e7f3ff;
+}
+.storage-info-box.primary {
+    border-left-color: #28a745;
+    background-color: #e8f5e8;
+}
+.storage-info-box.temp-archive {
+    border-left-color: #ffc107;
+    background-color: #fff8e1;
+}
+.storage-info-box.symlink-archive {
+    border-left-color: #17a2b8;
+    background-color: #e1f7fd;
+}
+.storage-icon {
+    font-size: 1.1em;
+    margin-right: 5px;
+}
+
+/* Force dropdown to appear below button */
+.dropdown .dropdown-menu {
+    position: absolute !important;
+    top: 100% !important;
+    bottom: auto !important;
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* Prevent dropdown from flipping upward */
+.dropdown.dropup .dropdown-menu {
+    top: 100% !important;
+    bottom: auto !important;
+}
+</style>
 <div class="container">
     <!-- Add a Return to Home Page button -->
     <a href="/" class="btn btn-primary mb-3">Return to Home Page</a>
@@ -22,6 +69,21 @@
     <!-- Drag and Drop File Upload Area -->
     <div class="border p-3 mb-4">
         <h3>Upload Files:</h3>
+        <div class="mb-2">
+            <small class="text-muted">
+                <strong>Supported file types:</strong> 
+                <span class="badge badge-info">.csv</span> 
+                <span class="badge badge-info">.npy</span>
+                | Multiple files can be uploaded at once
+            </small>
+        </div>
+        <div class="mb-3 p-2" style="background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #17a2b8;">
+            <small class="text-muted">
+                <strong><i class="fa fa-info-circle"></i> Requirements:</strong><br>
+                • <strong>Dimensions:</strong> Any 2-dimensional matrix (rectangular: rows × columns) supported<br>
+                • <strong>File naming:</strong> Use descriptive names (becomes table name in database)
+            </small>
+        </div>
         <form id="uploadForm" action="/upload-file" method="post" enctype="multipart/form-data" class="mb-3">
             <input type="hidden" name="db_name" value="{{ database }}">
             <div class="form-group">
@@ -29,6 +91,7 @@
                 <div id="drop_area" class="drag-drop-area">
                     <p>Drag and drop files here</p>
                     <p>or click to select files</p>
+                    <p><small class="text-muted">Only .csv and .npy files accepted</small></p>
                 </div>
             </div>
             <div id="file_list" class="file-list">
@@ -48,138 +111,148 @@
         <!-- First row with table count and select buttons -->
         <div class="row custom-row mb-3">
             <div class="col">
-                <p>Schema: {{ database }}</p>
-                <button id = "openModal">View Preprocessed Graphs</button>
+                <div class="mb-3">
+                    <h5>Schema: {{ database }}</h5>
+                    <div class="alert alert-{{ storage_info.color }} storage-info-box {% if storage_info.is_symlink %}symlink-archive{% elif storage_info.location == 'backup_restored_temp' %}temp-archive{% elif storage_info.location == 'secondary' %}archive{% else %}primary{% endif %}" style="padding: 10px 15px; margin-bottom: 15px; border-radius: 6px;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong><span class="storage-icon">💾</span>Device:</strong> {{ storage_info.device }}<br>
+                                <strong><span class="storage-icon">📂</span>Path:</strong> <code>{{ storage_info.path }}</code>
+                            </div>
+                            <div class="col-md-6">
+                                <!-- Empty column to maintain layout balance -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="graphViewer">
                     <img id="selectedGraph" style="max-width: 100%; display: none;">
                 </div>
                 {% include 'choose_plot.html' %}
-                <p id="tableCount">Number of tables: {{ tables|length }}</p>
-                <p id="selectedCount">Number of tables selected: 0</p>
-                <!-- First group: "Select Filtered", "Deselect Filtered", "Copy Selected" -->
-                <button class="btn btn-primary" id="selectAll">Select Filtered</button>
-                <button class="btn btn-secondary" id="deselectAll">Deselect Filtered</button>
-                <button class="btn btn-info" id="showSelected">Copy selected table names to the clipboard</button>
-            </div>
-        </div>
-
-        <!-- Second row with plot buttons -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <!-- Second group: "Plot Selected", "Scatter Plot Selected" -->
-                <button class="btn btn-secondary" id="plotSelected">Plot Selected</button>
-                <button class="btn btn-primary" id="scatterPlotSelected">Scatter Plot Selected</button>
-            </div>
-        </div>
-
-        <!-- Third row with download buttons -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <!-- Third group: "Download Selected as CSV", "Download Selected as NPY", "Download as metadata" -->
-                <button class="btn btn-success" id="downloadSelected">Download Selected as CSV</button>
-                <button class="btn btn-primary" id="downloadSelectedNpy">Download Selected as NPY</button>
-                <button class="btn btn-warning" id="downloadSelectedMetadata">Download as metadata</button>
-            </div>
-        </div>
-
-        <!-- Fourth row with delete and copy buttons -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <!-- Fourth group: "Delete Selected", "Copy Selected to Another Folder" -->
-                <button class="btn btn-danger" onclick="deleteSelectedRecords('{{ database }}')">Delete Selected</button>
-                <button class="btn btn-info" id="copySelected">Copy Selected to Another Folder</button>
-            </div>
-        </div>
-
-        <!-- Fifth row with combine buttons -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <!-- Fifth group: "Concatenate Selected (...)", "Reshape and Combine Selected", "Simple Combine", "Simple Combine Columns", "Advanced Combine" -->
-                <button class="btn btn-warning" id="concatenateSelected">Concatenate Selected (...)</button>
-                <button class="btn btn-success" id="mergeSelected">Reshape and Combine Selected</button>
-                <button class="btn btn-secondary" id="simpleCombine">Simple Combine</button>
-                <button class="btn btn-info" id="combineSingleColumns">Simple Combine Columns</button>
-                <button class="btn btn-primary" id="advancedCombine">Advanced Combine</button>
-            </div>
-        </div>
-
-        <!-- Sixth row with analysis buttons -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <!-- Sixth group: "Analyze Row Averages", "Search Value in Range" -->
-                <button class="btn btn-dark" id="analyzeRowAverages">Analyze Row Averages</button>
-                <button class="btn btn-info" id="searchValueInRange">Search Value in Range</button>
             </div>
         </div>
 
         <!-- Filter fields with autocomplete suggestions -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-2">
             <div class="col">
-                <p></p>
                 <input type="text" id="tableFilter" class="form-control" list="tableFilterSuggestions" placeholder="Filter table names on the fly">
                 <datalist id="tableFilterSuggestions"></datalist>
             </div>
         </div>
         <!-- First set of filter fields with "AND" logic -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-2">
             <div class="col">
-                <p></p>
                 <input type="text" id="andFilters" class="form-control" list="andFiltersSuggestions" placeholder="Enter comma-separated substrings for AND filtering">
                 <datalist id="andFiltersSuggestions"></datalist>
             </div>
         </div>
 
         <!-- New row of OR filter fields with "OR" logic -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-2">
             <div class="col">
-                <p></p>
                 <input type="text" id="orFilters" class="form-control" list="orFiltersSuggestions" placeholder="Enter comma-separated substrings for OR filtering">
                 <datalist id="orFiltersSuggestions"></datalist>
             </div>
         </div>
 
         <!-- New row for AND NOT filter fields -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-2">
             <div class="col">
-                <p></p>
                 <input type="text" id="andNotFilters" class="form-control" list="andNotFiltersSuggestions" placeholder="Enter comma-separated substrings for AND NOT filtering">
                 <datalist id="andNotFiltersSuggestions"></datalist>
             </div>
         </div>
 
         <!-- New row for OR NOT filter fields -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-2">
             <div class="col">
-                <p></p>
                 <input type="text" id="orNotFilters" class="form-control" list="orNotFiltersSuggestions" placeholder="Enter comma-separated substrings for OR NOT filtering">
                 <datalist id="orNotFiltersSuggestions"></datalist>
             </div>
         </div>
 
         <!-- New row for special "IO" OR filter fields -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-2">
             <div class="col">
-                <p></p>
                 <input type="text" id="ioOrFilters" class="form-control" list="ioOrFiltersSuggestions" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
                 <datalist id="ioOrFiltersSuggestions"></datalist>
             </div>
         </div>
 
         <!-- New row for exact table name matching -->
-        <div class="row custom-row">
+        <div class="row custom-row mb-3">
             <div class="col">
-                <p></p>
                 <input type="text" id="exactTableNames" class="form-control" list="exactTableNamesSuggestions" placeholder="Enter comma-separated exact table names to match">
                 <datalist id="exactTableNamesSuggestions"></datalist>
+            </div>
+        </div>
+
+        <!-- Table count information row -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <p id="tableCount" class="mb-2">Number of tables: {{ tables|length }}</p>
+                <p id="selectedCount" class="mb-3">Number of tables selected: 0</p>
+            </div>
+        </div>
+
+        <!-- Action buttons row - moved below search fields -->
+        <div class="row custom-row mb-3">
+            <div class="col">
+                <!-- Keep essential buttons -->
+                <button class="btn btn-primary" id="selectAll">Select Filtered</button>
+                <button class="btn btn-secondary" id="deselectAll">Deselect Filtered</button>
+                <button class="btn btn-secondary" id="plotSelected">Plot Selected</button>
+                
+                <!-- Single dropdown menu for all other actions -->
+                <div class="dropdown d-inline-block" data-flip="false">
+                    <button class="btn btn-info dropdown-toggle" type="button" id="actionsDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-flip="false">
+                        More Actions
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="actionsDropdown" style="position: absolute; top: 100%; left: 0; transform: none !important; will-change: auto !important;">
+                        <!-- Download Actions -->
+                        <h6 class="dropdown-header">Download Actions</h6>
+                        <a class="dropdown-item" href="#" id="downloadSelected">Download Selected as CSV</a>
+                        <a class="dropdown-item" href="#" id="downloadSelectedNpy">Download Selected as NPY</a>
+                        <a class="dropdown-item" href="#" id="downloadSelectedMetadata">Download as metadata</a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <!-- Table Operations -->
+                        <h6 class="dropdown-header">Table Operations</h6>
+                        <a class="dropdown-item" href="#" id="concatenateSelected">Concatenate Selected (...)</a>
+                        <a class="dropdown-item" href="#" id="mergeSelected">Reshape and Combine Selected</a>
+                        <a class="dropdown-item" href="#" id="simpleCombine">Simple Combine</a>
+                        <a class="dropdown-item" href="#" id="combineSingleColumns">Simple Combine Columns</a>
+                        <a class="dropdown-item" href="#" id="advancedCombine">Advanced Combine</a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <!-- Analysis & Utilities -->
+                        <h6 class="dropdown-header">Analysis & Utilities</h6>
+                        <a class="dropdown-item" href="#" id="openModal">View Preprocessed Graphs</a>
+                        <a class="dropdown-item" href="#" id="scatterPlotSelected">Scatter Plot Selected</a>
+                        <a class="dropdown-item" href="#" id="analyzeRowAverages">Analyze Row or Column averages</a>
+                        <a class="dropdown-item" href="#" id="searchValueInRange">Search Value in Range</a>
+                        <a class="dropdown-item" href="#" id="showSelected">Copy selected table names to the clipboard</a>
+                        <a class="dropdown-item" href="#" id="copySelected">Copy Selected to Another Folder</a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <!-- Delete Actions -->
+                        <h6 class="dropdown-header">Delete Actions</h6>
+                        <a class="dropdown-item text-danger" href="#" onclick="deleteSelectedRecords('{{ database }}')">Delete Selected</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <ul id="table-list" class="list-group no-bullets">
         {% for table in tables %}
-            <li data-table-name="{{ table['table_name'] }}" class="table-item">
+            <li data-table-name="{{ table['table_name'] }}" data-dimensions="{{ table['dimensions'] }}" class="table-item">
                 <input type="checkbox" id="select-table-{{ loop.index }}" class="table-checkbox" data-table-name="{{ table['table_name'] }}">
-                <button class="btn btn-primary btn-sm" onclick="window.location.href='{{ url_for('view_table', database=database, table_name=table['table_name']) }}'">View</button>
+                <button class="btn btn-primary btn-sm" onclick="window.location.href='{{ url_for('view_table', database=database, table_name=table['table_name']) }}'">View valuemap</button>
+                <button class="btn btn-info btn-sm ms-1" onclick="window.location.href='{{ url_for('view_colormap', database=database, table_name=table['table_name']) }}'">View colormap</button>
                 <span class="table-name" contenteditable="true" data-original-name="{{ table['table_name'] }}">{{ table['table_name'] }}</span>
                 <span id="table-name-{{ loop.index }}" class="table-name">({{ table['dimensions'] }})</span>
             </li>
@@ -325,13 +398,49 @@
     // Global function to update the count of selected tables
     function updateSelectedCount() {
         const selectedCount = Object.values(selectionState).filter(Boolean).length;
+        console.log('updateSelectedCount called - selectionState:', selectionState, 'count:', selectedCount);
         document.getElementById('selectedCount').textContent = 'Number of tables selected: ' + selectedCount;
+        
+        // Save selection state to localStorage
+        try {
+            localStorage.setItem('tableSelectionState_{{ database }}', JSON.stringify(selectionState));
+        } catch (e) {
+            console.error('Error saving selection state to localStorage:', e);
+        }
     }
 
     // Global function to update the table count
     function updateTableCount() {
         const totalTables = document.querySelectorAll('#table-list .table-item:not(.hidden)').length;
         document.getElementById('tableCount').textContent = 'Number of tables: ' + totalTables;
+    }
+
+    // Function to force correct checkbox states (override browser form restoration)
+    function forceCorrectCheckboxStates() {
+        console.log('Forcing correct checkbox states based on saved selection state');
+        const allCheckboxes = document.querySelectorAll('.table-checkbox');
+        allCheckboxes.forEach(function(checkbox) {
+            const tableName = checkbox.getAttribute('data-table-name');
+            const tableItem = checkbox.closest('.table-item');
+            const isHidden = tableItem.classList.contains('hidden');
+            
+            if (isHidden) {
+                // For hidden tables, uncheck the checkbox to avoid visual confusion
+                // but keep the selection state intact
+                if (checkbox.checked) {
+                    console.log(`Unchecking hidden table ${tableName} (keeping selection state)`);
+                    checkbox.checked = false;
+                }
+            } else {
+                // For visible tables, set checkbox based on selection state
+                const shouldBeChecked = selectionState[tableName] || false;
+                if (checkbox.checked !== shouldBeChecked) {
+                    console.log(`Correcting checkbox for ${tableName}: was ${checkbox.checked}, should be ${shouldBeChecked}`);
+                    checkbox.checked = shouldBeChecked;
+                }
+            }
+        });
+        console.log('Checkbox states forced to match saved selection state (hidden tables unchecked)');
     }
 
     // Function to delete selected tables - moved outside of DOMContentLoaded for global access
@@ -387,18 +496,42 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize the selection state object
-        selectionState = {};
+        console.log('DOMContentLoaded event fired');
+        
+        // Try to restore selection state from localStorage
+        const savedState = localStorage.getItem('tableSelectionState_{{ database }}');
+        if (savedState) {
+            try {
+                selectionState = JSON.parse(savedState);
+                console.log('Restored selection state from localStorage:', selectionState);
+            } catch (e) {
+                console.error('Error parsing saved selection state:', e);
+                selectionState = {};
+            }
+        } else {
+            // Initialize the selection state object
+            selectionState = {};
+        }
 
         // Cache the table items after the DOM content is loaded
         tableItems = Array.from(document.querySelectorAll('#table-list .table-item'));
+        console.log('Found table items:', tableItems.length);
 
-        // Update the selected count on page load
-        updateSelectedCount();
-
-        // Update the table count on page load
+        // Update the table count on page load (this can be done early)
         updateTableCount();
 
+        // Initialize dropdown functionality
+        $('#actionsDropdown').dropdown();
+        
+        // Force dropdown to stay below button
+        $('#actionsDropdown').on('show.bs.dropdown', function () {
+            $(this).next('.dropdown-menu').css({
+                'top': '100%',
+                'bottom': 'auto',
+                'transform': 'none'
+            });
+        });
+        
         // Initialize filter history and autocomplete
         initializeFilterHistory();
 
@@ -479,13 +612,15 @@
                 // Show or hide the item based on the combined filters
                 if (passesAllFilters) {
                     item.classList.remove('hidden');
+                    // Update the checkbox state based on selectionState only for visible items
+                    const checkbox = item.querySelector('.table-checkbox');
+                    checkbox.checked = selectionState[tableName] || false;
                 } else {
                     item.classList.add('hidden');
+                    // Uncheck hidden items to avoid visual confusion (but keep selection state)
+                    const checkbox = item.querySelector('.table-checkbox');
+                    checkbox.checked = false;
                 }
-
-                // Update the checkbox state based on selectionState
-                const checkbox = item.querySelector('.table-checkbox');
-                checkbox.checked = selectionState[tableName] || false;
             });
 
             // Update the table count based on visible tables
@@ -496,12 +631,19 @@
         const checkboxes = document.querySelectorAll('.table-checkbox');
         console.log("Found checkboxes:", checkboxes.length);
 
-        checkboxes.forEach(function(checkbox) {
-            const tableName = checkbox.getAttribute('data-table-name');
-            console.log("Initializing checkbox for table:", tableName);
+        if (checkboxes.length === 0) {
+            console.error("No checkboxes found! Check HTML structure.");
+        }
 
-            // Initialize the selection state based on the initial state of the checkbox
-            selectionState[tableName] = checkbox.checked;
+        checkboxes.forEach(function(checkbox, index) {
+            const tableName = checkbox.getAttribute('data-table-name');
+            console.log(`Initializing checkbox ${index + 1} for table:`, tableName);
+
+            // Don't initialize from checkbox state since it might be corrupted by browser
+            // The localStorage state is the source of truth
+            if (!(tableName in selectionState)) {
+                selectionState[tableName] = false; // Default to unselected for new tables
+            }
 
             // Listen for changes to update selection state and count
             checkbox.addEventListener('change', function() {
@@ -512,7 +654,7 @@
             });
         });
 
-        // Attach debounced filter function to input events
+        // Attach debounced filter function to input events BEFORE applying filters
         const debouncedFilterTables = debounce(filterTables, 300);
 
         document.getElementById('tableFilter').addEventListener('input', debouncedFilterTables);
@@ -523,8 +665,30 @@
         document.getElementById('ioOrFilters').addEventListener('input', debouncedFilterTables);
         document.getElementById('exactTableNames').addEventListener('input', debouncedFilterTables);
 
-        // Call filterTables once on page load to initialize the display
-        filterTables();
+        // Apply filters AFTER a short delay to allow browser form restoration
+        setTimeout(function() {
+            // Debug: Log current filter values
+            const filterInputs = {
+                tableFilter: document.getElementById('tableFilter').value,
+                andFilters: document.getElementById('andFilters').value,
+                orFilters: document.getElementById('orFilters').value,
+                andNotFilters: document.getElementById('andNotFilters').value,
+                orNotFilters: document.getElementById('orNotFilters').value,
+                ioOrFilters: document.getElementById('ioOrFilters').value,
+                exactTableNames: document.getElementById('exactTableNames').value
+            };
+            console.log('Filter values after restoration delay:', filterInputs);
+            
+            console.log('Applying filters after browser form restoration delay');
+            filterTables();
+            
+            // THEN force correct checkbox states (after filtering is applied)
+            forceCorrectCheckboxStates();
+            
+            // Update the selected count AFTER checkboxes are initialized
+            updateSelectedCount();
+            console.log('Initial selection state:', selectionState);
+        }, 100); // Small delay to allow browser form restoration
 
         // Ensure the selectAll and deselectAll buttons work with the updated selectionState
         document.getElementById('selectAll').addEventListener('click', function() {
@@ -885,6 +1049,7 @@
                                     <option value="1296x64_1state">1296x64_1state</option>
                                     <option value="248x248_16states">248x248_16states</option>
                                     <option value="248x248_2states">248x248_2states</option>
+                                    <option value="248x248_64states">248x248_64states</option>
                                     <option value="62x62_2states">62x62_2states</option>
                                     <option value="248x1_1state">248x1_1state</option>
                                     <option value="248x256_1state">248x256_1state</option>
@@ -892,6 +1057,7 @@
                                     <option value="65536x78_ecc">65536x78_ecc</option>
                                     <option value="256x32_pr0">256x32_pr0</option>
                                     <option value="256x32_pr1">256x32_pr1</option>
+                                    <option value="test_chin">test_chin</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -1628,45 +1794,104 @@
         }
     });
 
-            // Add the event listener for the "Analyze Row Averages" button
+            // Add the event listener for the "Analyze Row or Column averages" button
         document.getElementById('analyzeRowAverages').addEventListener('click', function() {
             const tableNames = getSelectedVisibleTableNames();
             const database = '{{ database }}';
 
             if (tableNames.length > 0) {
-                // Prompt user for the range
-                const rangeInput = prompt('Enter the range for row averages (e.g., 30~40 or 25-35):');
+                // Show modal for analysis options
+                const modalHtml = `
+                <div id="analysisOptionsModal" class="modal" style="display: block;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Analyze Row or Column Averages</h5>
+                            <button type="button" class="close" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group mb-3">
+                                <label for="analysisType">Analysis Type:</label>
+                                <select id="analysisType" class="form-control">
+                                    <option value="row">Row Averages</option>
+                                    <option value="column">Column Averages</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="rangeInput">Value Range (e.g., 30~40 or 25-35):</label>
+                                <input type="text" id="rangeInput" class="form-control" placeholder="Enter range like 30~40" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="cancelAnalysis">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="startAnalysis">Start Analysis</button>
+                        </div>
+                    </div>
+                </div>
+                `;
                 
-                if (!rangeInput) {
-                    return; // User cancelled
-                }
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
                 
-                // Parse the range
-                const rangeSeparators = /[~\-]/;
-                const rangeParts = rangeInput.split(rangeSeparators);
+                const modal = document.getElementById('analysisOptionsModal');
                 
-                if (rangeParts.length !== 2) {
-                    alert('Please enter a valid range (e.g., 30~40 or 25-35)');
-                    return;
-                }
+                // Set up close button handlers
+                const closeButtons = modal.querySelectorAll('.close, #cancelAnalysis');
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        modal.remove();
+                    });
+                });
                 
-                const minValue = parseFloat(rangeParts[0].trim());
-                const maxValue = parseFloat(rangeParts[1].trim());
-                
-                if (isNaN(minValue) || isNaN(maxValue)) {
-                    alert('Please enter valid numbers for the range');
-                    return;
-                }
-                
-                if (minValue >= maxValue) {
-                    alert('Minimum value should be less than maximum value');
-                    return;
-                }
+                // Handle start analysis button
+                document.getElementById('startAnalysis').addEventListener('click', function() {
+                    const analysisType = document.getElementById('analysisType').value;
+                    const rangeInput = document.getElementById('rangeInput').value.trim();
+                    
+                    if (!rangeInput) {
+                        alert('Please enter a value range');
+                        return;
+                    }
+                    
+                    // Parse the range
+                    const rangeSeparators = /[~\-]/;
+                    const rangeParts = rangeInput.split(rangeSeparators);
+                    
+                    if (rangeParts.length !== 2) {
+                        alert('Please enter a valid range (e.g., 30~40 or 25-35)');
+                        return;
+                    }
+                    
+                    const minValue = parseFloat(rangeParts[0].trim());
+                    const maxValue = parseFloat(rangeParts[1].trim());
+                    
+                    if (isNaN(minValue) || isNaN(maxValue)) {
+                        alert('Please enter valid numbers for the range');
+                        return;
+                    }
+                    
+                    if (minValue >= maxValue) {
+                        alert('Minimum value should be less than maximum value');
+                        return;
+                    }
+                    
+                    // Close modal and start analysis
+                    modal.remove();
+                    performAnalysis(tableNames, database, analysisType, minValue, maxValue);
+                });
+            } else {
+                alert('Please select at least one table to analyze.');
+            }
+        });
+        
+        // Function to perform the actual analysis
+        function performAnalysis(tableNames, database, analysisType, minValue, maxValue) {
 
                 // Show the loading overlay
                 document.getElementById('loadingOverlay').style.display = 'flex';
 
-                // Send a POST request to analyze row averages
+                // Send a POST request to analyze row or column averages
                 fetch('/analyze-row-averages', {
                     method: 'POST',
                     headers: {
@@ -1677,6 +1902,7 @@
                         tableNames: tableNames,
                         minValue: minValue,
                         maxValue: maxValue,
+                        analysisType: analysisType,
                     }),
                 })
                 .then(response => {
@@ -1694,13 +1920,7 @@
                 })
                 .then(result => {
                     console.log('Search completed:', result);
-                    // Close SSE connection and hide the loading overlay
-                    try {
-                        if (progressSource) progressSource.close();
-                        if (progressTimeout) clearInterval(progressTimeout);
-                    } catch (e) {
-                        console.log('Error closing connections:', e);
-                    }
+                    // Hide the loading overlay
                     document.getElementById('loadingOverlay').style.display = 'none';
 
                     if (result.success) {
@@ -1729,17 +1949,19 @@
                             </head>
                             <body>
                                 <div class="header">
-                                    <h1>Row Average Analysis Report</h1>
+                                    <h1>${analysisType === 'row' ? 'Row' : 'Column'} Average Analysis Report</h1>
                                     <p><strong>Database:</strong> ${database}</p>
+                                    <p><strong>Analysis Type:</strong> ${analysisType === 'row' ? 'Row Averages' : 'Column Averages'}</p>
                                     <p><strong>Range:</strong> ${minValue} ~ ${maxValue}</p>
                                     <p><strong>Total Tables Analyzed:</strong> ${result.report.length}</p>
                                 </div>
                                 <div class="summary-section">
-                                    <h2>Summary of Out-of-Range Rows</h2>
+                                    <h2>Summary of Out-of-Range ${analysisType === 'row' ? 'Rows' : 'Columns'}</h2>
                                     ${(() => {
                                         const summaryData = result.report.filter(table => table.bad_rows_count > 0);
                                         if (summaryData.length === 0) {
-                                            return '<p class="no-bad-rows">✓ All tables have rows within the specified range!</p>';
+                                            const itemType = analysisType === 'row' ? 'rows' : 'columns';
+                                            return '<p class="no-bad-rows">✓ All tables have ' + itemType + ' within the specified range!</p>';
                                         }
                                         
                                         return `
@@ -1747,9 +1969,9 @@
                                                 <h3>Quick Overview:</h3>
                                                 ${summaryData.map(table => `
                                                     <div class="summary-table">
-                                                        <h4>${table.table_name} (${table.bad_rows_count} rows out of range)</h4>
+                                                        <h4>${table.table_name} (${table.bad_rows_count} ${analysisType === 'row' ? 'rows' : 'columns'} out of range)</h4>
                                                         <p class="row-summary">
-                                                            <strong>Rows:</strong> ${table.bad_rows.map(row => row.row_index).join(', ')}
+                                                            <strong>${analysisType === 'row' ? 'Rows' : 'Columns'}:</strong> ${table.bad_rows.map(row => row.row_index).join(', ')}
                                                         </p>
                                                     </div>
                                                 `).join('')}
@@ -1765,18 +1987,18 @@
                                         <div class="stats">
                                             <p><strong>Total Rows:</strong> ${tableReport.total_rows}</p>
                                             <p><strong>Total Columns:</strong> ${tableReport.total_columns}</p>
-                                            <p><strong>Rows Outside Range:</strong> ${tableReport.bad_rows_count}</p>
-                                            <p><strong>Percentage:</strong> ${((tableReport.bad_rows_count / tableReport.total_rows) * 100).toFixed(2)}%</p>
+                                            <p><strong>${analysisType === 'row' ? 'Rows' : 'Columns'} Outside Range:</strong> ${tableReport.bad_rows_count}</p>
+                                            <p><strong>Percentage:</strong> ${((tableReport.bad_rows_count / (analysisType === 'row' ? tableReport.total_rows : tableReport.total_columns)) * 100).toFixed(2)}%</p>
                                         </div>
                                         <div class="bad-rows">
                                             ${tableReport.bad_rows_count === 0 ? 
-                                                '<p class="no-bad-rows">✓ All rows have averages within the specified range!</p>' : 
-                                                `<h4>Rows with averages outside range (${minValue} ~ ${maxValue}):</h4>
-                                                 ${tableReport.bad_rows.map(row => `
-                                                    <div class="row-info">
-                                                        <strong>Row ${row.row_index}:</strong> Average = ${row.average.toFixed(4)}
-                                                    </div>
-                                                 `).join('')}`
+                                                ('<p class="no-bad-rows">✓ All ' + (analysisType === 'row' ? 'rows' : 'columns') + ' have averages within the specified range!</p>') : 
+                                                ('<h4>' + (analysisType === 'row' ? 'Rows' : 'Columns') + ' with averages outside range (' + minValue + ' ~ ' + maxValue + '):</h4>' +
+                                                 tableReport.bad_rows.map(row => 
+                                                    '<div class="row-info">' +
+                                                        '<strong>' + (analysisType === 'row' ? 'Row' : 'Column') + ' ' + row.row_index + ':</strong> Average = ' + row.average.toFixed(4) +
+                                                    '</div>'
+                                                 ).join(''))
                                             }
                                         </div>
                                     </div>
@@ -1795,10 +2017,7 @@
                     document.getElementById('loadingOverlay').style.display = 'none';
                     alert('An error occurred while analyzing row averages.');
                 });
-            } else {
-                alert('Please select at least one table to analyze.');
-            }
-        });
+        }
 
         // Fallback polling function for when SSE fails
         function startFallbackPolling(sessionId, progressInfo) {
@@ -1836,17 +2055,20 @@
                             clearInterval(pollingInterval);
                         } else if (progress.status === 'not_found') {
                             console.log('Session not found during polling:', sessionId);
-                            progressInfo.innerHTML = `<span style="color: red;">Session not found. Search may have completed or failed.<br>Session ID: ${sessionId}</span>`;
+                            progressInfo.innerHTML = `<span style="color: red;">Session lost - search interrupted.<br>Session ID: ${sessionId}</span>`;
                             clearInterval(pollingInterval);
+                            
+                            // Hide loading overlay and show helpful message
+                            setTimeout(() => {
+                                document.getElementById('loadingOverlay').style.display = 'none';
+                                alert('Search session was lost during processing. This can happen if:\n• The server restarted\n• The search took too long\n• Network connectivity issues\n\nPlease try again with:\n• Fewer tables (try 1-2 instead of 4)\n• Higher threshold (try 10+ instead of 1)\n• Smaller coordinate range');
+                            }, 2000);
                             
                             // Try to get debug info
                             fetch('/debug-sessions')
                                 .then(r => r.json())
                                 .then(debug => {
                                     console.log('Debug info when session not found:', debug);
-                                    if (progressInfo) {
-                                        progressInfo.innerHTML += `<br><small>Active sessions: ${debug.active_sessions}</small>`;
-                                    }
                                 })
                                 .catch(e => console.log('Could not get debug info:', e));
                         } else if (progress.status === 'starting' || progress.status === 'connecting' || progress.status === 'connected') {
@@ -1887,13 +2109,15 @@
                     "1296x64_1state",
                     "248x248_16states", 
                     "248x248_2states",
+                    "248x248_64states",
                     "62x62_2states",
                     "248x1_1state",
                     "248x256_1state",
                     "82944x78_ecc_fuxi",
                     "65536x78_ecc",
                     "256x32_pr0",
-                    "256x32_pr1"
+                    "256x32_pr1",
+                    "test_chin"
                 ];
 
                 const modalHtml = `
@@ -1911,8 +2135,15 @@
                                     <label for="patternFilter">Pattern File:</label>
                                     <input type="text" id="patternFilter" class="form-control" placeholder="Type to filter pattern files..." style="margin-bottom: 5px;">
                                     <select id="patternSelect" class="form-control" size="8">
-                                        ${patternFiles.map(pattern => `<option value="${pattern}">${pattern}</option>`).join('')}
+                                        ${patternFiles.map(pattern => {
+                                            const dims = parsePatternFileDimensions(pattern);
+                                            const dimensionText = dims ? ` (${dims.rows}x${dims.cols})` : ' (unknown dims)';
+                                            return `<option value="${pattern}">${pattern}${dimensionText}</option>`;
+                                        }).join('')}
                                     </select>
+                                    <div id="patternDimensionInfo" style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 3px; font-size: 12px; color: #666;">
+                                        Select a pattern file to see dimension compatibility
+                                    </div>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -1932,10 +2163,41 @@
                 const selectBtn = document.getElementById('selectPatternBtn');
                 const cancelBtn = document.getElementById('cancelPatternBtn');
                 const closeBtn = modal.querySelector('.close');
+                const dimensionInfo = document.getElementById('patternDimensionInfo');
                 
                 function closeModal(result = null) {
                     modal.remove();
                     resolve(result);
+                }
+                
+                // Function to update dimension compatibility info
+                function updateDimensionInfo() {
+                    const selectedPattern = patternSelect.value;
+                    if (!selectedPattern) {
+                        dimensionInfo.innerHTML = 'Select a pattern file to see dimension compatibility';
+                        dimensionInfo.style.backgroundColor = '#f8f9fa';
+                        dimensionInfo.style.color = '#666';
+                        return;
+                    }
+                    
+                    const selectedTableDimensions = getSelectedTableDimensions();
+                    const validation = validatePatternTableDimensions(selectedPattern, selectedTableDimensions);
+                    
+                    if (validation.valid) {
+                        if (validation.patternDimensions) {
+                            dimensionInfo.innerHTML = `✅ <strong>Compatible!</strong> Pattern dimensions (${validation.patternDimensions.rows}x${validation.patternDimensions.cols}) match your selected tables.`;
+                            dimensionInfo.style.backgroundColor = '#d4edda';
+                            dimensionInfo.style.color = '#155724';
+                        } else {
+                            dimensionInfo.innerHTML = '✅ No pattern selected - unrestricted search will be performed.';
+                            dimensionInfo.style.backgroundColor = '#e2e3e5';
+                            dimensionInfo.style.color = '#495057';
+                        }
+                    } else {
+                        dimensionInfo.innerHTML = `❌ <strong>Incompatible!</strong> ${validation.error}`;
+                        dimensionInfo.style.backgroundColor = '#f8d7da';
+                        dimensionInfo.style.color = '#721c24';
+                    }
                 }
                 
                 // Filter functionality
@@ -1949,6 +2211,12 @@
                     });
                 });
                 
+                // Update dimension info when pattern selection changes
+                patternSelect.addEventListener('change', updateDimensionInfo);
+                
+                // Initialize dimension info
+                updateDimensionInfo();
+                
                 // Event listeners
                 selectBtn.addEventListener('click', () => {
                     const selectedPattern = patternSelect.value;
@@ -1956,6 +2224,16 @@
                         alert('Please select a pattern file from the list');
                         return;
                     }
+                    
+                    // Validate dimensions before allowing selection
+                    const selectedTableDimensions = getSelectedTableDimensions();
+                    const validation = validatePatternTableDimensions(selectedPattern, selectedTableDimensions);
+                    
+                    if (!validation.valid) {
+                        alert(`Cannot select this pattern file:\n\n${validation.error}\n\nPlease choose a compatible pattern or select different tables.`);
+                        return;
+                    }
+                    
                     closeModal(selectedPattern);
                 });
                 
@@ -1963,6 +2241,15 @@
                 patternSelect.addEventListener('dblclick', () => {
                     const selectedPattern = patternSelect.value;
                     if (selectedPattern) {
+                        // Validate dimensions before allowing selection
+                        const selectedTableDimensions = getSelectedTableDimensions();
+                        const validation = validatePatternTableDimensions(selectedPattern, selectedTableDimensions);
+                        
+                        if (!validation.valid) {
+                            alert(`Cannot select this pattern file:\n\n${validation.error}\n\nPlease choose a compatible pattern or select different tables.`);
+                            return;
+                        }
+                        
                         closeModal(selectedPattern);
                     }
                 });
@@ -1988,73 +2275,373 @@
             });
         }
 
-        // Chunked search processing functions
-        async function processTablesInChunks(tableNames, database, minRow, maxRow, minCol, maxCol, searchVal, chunkSize, patternFile, threshold) {
-            const chunks = [];
-            for (let i = 0; i < tableNames.length; i += chunkSize) {
-                chunks.push(tableNames.slice(i, i + chunkSize));
+        // Function to update level crossing options based on selected pattern
+        async function updateLevelCrossingOptions(patternName) {
+            const levelCrossingButtons = document.getElementById('levelCrossingButtons');
+            
+            if (!patternName) {
+                levelCrossingButtons.innerHTML = '<div class="text-muted">Select a pattern first</div>';
+                return;
             }
             
-            console.log(`Split ${tableNames.length} tables into ${chunks.length} chunks`);
+            // Show loading state
+            levelCrossingButtons.innerHTML = '<div class="text-muted">Loading levels for ' + patternName + '...</div>';
             
+            try {
+                console.log('Fetching pattern levels for:', patternName);
+                const response = await fetch(`/get-pattern-levels/${patternName}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const levels = data.unique_levels;
+                    console.log('Pattern levels:', levels);
+                    
+                    if (levels.length === 0) {
+                        levelCrossingButtons.innerHTML = '<div class="text-muted">No valid levels found in pattern</div>';
+                        return;
+                    }
+                    
+                    // Generate level crossing buttons
+                    const sortedLevels = levels.sort((a, b) => a - b);
+                    const buttonsHtml = sortedLevels.map(level => 
+                        `<div class="level-button" data-level="${level}">L${level}</div>`
+                    ).join('');
+                    
+                    levelCrossingButtons.innerHTML = buttonsHtml;
+                    
+                    // Add click event listeners to buttons
+                    levelCrossingButtons.querySelectorAll('.level-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            this.classList.toggle('selected');
+                            console.log('Level button clicked:', this.dataset.level, 'Selected:', this.classList.contains('selected'));
+                        });
+                    });
+                    
+                    console.log(`Updated level crossing buttons for pattern ${patternName} with ${sortedLevels.length} levels: ${sortedLevels}`);
+                } else {
+                    console.error('Failed to get pattern levels:', data.error);
+                    levelCrossingButtons.innerHTML = `<div class="text-danger">Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                console.error('Error fetching pattern levels:', error);
+                levelCrossingButtons.innerHTML = '<div class="text-danger">Network error loading pattern levels</div>';
+            }
+        }
+        
+        // Function to get selected level crossing values
+        function getSelectedLevels() {
+            const selectedButtons = document.querySelectorAll('#levelCrossingButtons .level-button.selected');
+            const selectedLevels = Array.from(selectedButtons).map(button => `L${button.dataset.level}`);
+            return selectedLevels;
+        }
+        
+        // Function to generate level crossing options based on available levels (kept for compatibility)
+        function generateLevelCrossingOptions(levels) {
+            const options = [];
+            const sortedLevels = levels.sort((a, b) => a - b);
+            
+            // Add individual level options - search within specific levels
+            sortedLevels.forEach(level => {
+                options.push({
+                    value: `L${level}`,
+                    label: `L${level} (Search at level ${level} coordinates)`
+                });
+            });
+            
+            return options;
+        }
+
+        // Global state for managing chunked searches
+        let currentChunkedSearch = null;
+        let searchAborted = false;
+        
+        // Enhanced chunked search processing
+        async function processTablesInChunks(tableNames, database, minRow, maxRow, minCol, maxCol, searchValueData, chunkSize, patternFile, threshold, selectedLevels) {
+            console.log(`🚀 Starting chunked search: ${tableNames.length} tables, chunk size: ${chunkSize}`);
+            
+            // Reset abort flag
+            searchAborted = false;
+            
+            // Create chunks with better logic
+            const chunks = createOptimalChunks(tableNames, chunkSize);
+            console.log(`📊 Created ${chunks.length} chunks:`, chunks.map(c => c.length));
+            
+            // Initialize tracking
             let allResults = [];
             let totalMatches = 0;
+            let totalProcessedTables = 0;
+            let failedChunks = 0;
+            const startTime = Date.now();
             
-            for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-                const chunk = chunks[chunkIndex];
-                const chunkSessionId = Date.now() + '_chunk' + chunkIndex + '_' + Math.random().toString(36).substr(2, 6);
-                
-                // Update chunk progress
-                const chunkProgress = document.getElementById('chunkProgress');
-                if (chunkProgress) {
-                    chunkProgress.innerHTML = `
-                        <div>Processing chunk ${chunkIndex + 1}/${chunks.length}</div>
-                        <div>Tables ${chunkIndex * chunkSize + 1} to ${Math.min((chunkIndex + 1) * chunkSize, tableNames.length)} of ${tableNames.length}</div>
-                        <div>Current chunk: ${chunk.length} tables</div>
-                    `;
-                }
-                
-                try {
-                    console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length} with ${chunk.length} tables`);
-                    const chunkResult = await processSingleRequest(chunk, database, minRow, maxRow, minCol, maxCol, searchVal, chunkSessionId, true, patternFile, threshold);
+            // Store current search state
+            currentChunkedSearch = {
+                totalTables: tableNames.length,
+                chunks: chunks,
+                startTime: startTime,
+                abortController: new AbortController()
+            };
+            
+            try {
+                for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+                    // Check if search was aborted
+                    if (searchAborted || currentChunkedSearch.abortController.signal.aborted) {
+                        console.log('🛑 Search aborted by user');
+                        break;
+                    }
                     
-                    if (chunkResult && chunkResult.success) {
-                        if (chunkResult.report) {
+                    const chunk = chunks[chunkIndex];
+                    const chunkSessionId = `search_${Date.now()}_chunk${chunkIndex}_${Math.random().toString(36).substr(2, 6)}`;
+                    
+                    // Update progress with better formatting
+                    updateChunkProgress(chunkIndex, chunks.length, chunk.length, totalProcessedTables, tableNames.length, totalMatches, startTime, failedChunks);
+                    
+                    // Process chunk with robust error handling
+                    const chunkResult = await processChunkWithRetries(chunk, database, minRow, maxRow, minCol, maxCol, searchValueData, chunkSessionId, patternFile, threshold, selectedLevels, chunkIndex + 1, chunks.length);
+                    
+                    if (chunkResult.success) {
+                        if (chunkResult.report && Array.isArray(chunkResult.report)) {
                             allResults = allResults.concat(chunkResult.report);
                         }
                         totalMatches += chunkResult.total_matches || 0;
-                        console.log(`Chunk ${chunkIndex + 1} completed: ${chunkResult.total_matches || 0} matches`);
+                        totalProcessedTables += chunk.length;
+                        console.log(`✅ Chunk ${chunkIndex + 1}/${chunks.length} completed: ${chunkResult.total_matches || 0} matches`);
                     } else {
-                        console.error(`Chunk ${chunkIndex + 1} failed:`, chunkResult);
-                        // Continue with other chunks even if one fails
+                        failedChunks++;
+                        console.error(`❌ Chunk ${chunkIndex + 1}/${chunks.length} failed:`, chunkResult.error);
+                        
+                        // Add error placeholders for failed tables
+                        chunk.forEach(tableName => {
+                            allResults.push({
+                                table_name: tableName,
+                                dimensions: 'Unknown',
+                                total_rows: 0,
+                                total_columns: 0,
+                                matches_count: 0,
+                                matches: [],
+                                error: chunkResult.error || 'Chunk processing failed'
+                            });
+                        });
+                        totalProcessedTables += chunk.length;
                     }
-                } catch (error) {
-                    console.error(`Chunk ${chunkIndex + 1} error:`, error);
-                    // Continue with other chunks even if one fails
+                    
+                    // Progressive delay to avoid server overload
+                    if (chunkIndex < chunks.length - 1) {
+                        const delayMs = Math.min(1000, 200 + (chunkIndex * 50)); // Progressive delay 200ms to 1s
+                        await new Promise(resolve => setTimeout(resolve, delayMs));
+                    }
                 }
                 
-                // Small delay between chunks to avoid overwhelming the server
-                if (chunkIndex < chunks.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                // Final cleanup and results
+                document.getElementById('loadingOverlay').style.display = 'none';
+                
+                const endTime = Date.now();
+                const totalTimeSeconds = Math.round((endTime - startTime) / 1000);
+                
+                console.log(`🏁 Chunked search completed: ${totalProcessedTables}/${tableNames.length} tables processed, ${totalMatches} total matches, ${failedChunks} failed chunks, ${totalTimeSeconds}s`);
+                
+                // Aggregate pattern counts from all results
+                const aggregatedPatternCounts = aggregatePatternCounts(allResults);
+                
+                const finalResult = {
+                    success: true,
+                    report: allResults,
+                    total_matches: totalMatches,
+                    pattern_value_counts: aggregatedPatternCounts,
+                    chunked: true,
+                    total_chunks: chunks.length,
+                    failed_chunks: failedChunks,
+                    processing_time: totalTimeSeconds,
+                    search_params: {
+                        database: database,
+                        value_range: searchValueData,
+                        coordinate_range: `${minRow}-${maxRow}, ${minCol}-${maxCol}`,
+                        pattern_file: patternFile,
+                        levels: selectedLevels
+                    }
+                };
+                
+                displaySearchResults(finalResult, searchValueData, minRow, maxRow, minCol, maxCol, database, threshold, true);
+                
+            } catch (error) {
+                console.error('💥 Fatal error in chunked search:', error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert(`Search failed with fatal error: ${error.message}\n\nPlease try with fewer tables or contact support.`);
+            } finally {
+                // Clean up
+                currentChunkedSearch = null;
+            }
+        }
+        
+        // Create optimal chunks based on table count and complexity
+        function createOptimalChunks(tableNames, baseChunkSize) {
+            const chunks = [];
+            let currentChunk = [];
+            
+            for (let i = 0; i < tableNames.length; i++) {
+                currentChunk.push(tableNames[i]);
+                
+                // Create chunk when reaching size limit or at end
+                if (currentChunk.length >= baseChunkSize || i === tableNames.length - 1) {
+                    if (currentChunk.length > 0) {
+                        chunks.push([...currentChunk]);
+                        currentChunk = [];
+                    }
                 }
             }
             
-            // Combine and display final results
-            document.getElementById('loadingOverlay').style.display = 'none';
-            
-            const finalResult = {
-                success: true,
-                report: allResults,
-                total_matches: totalMatches,
-                chunked: true,
-                total_chunks: chunks.length
-            };
-            
-            displaySearchResults(finalResult, searchVal, minRow, maxRow, minCol, maxCol, database, threshold);
+            return chunks;
         }
         
-        async function processSingleRequest(tableNames, database, minRow, maxRow, minCol, maxCol, searchVal, sessionId, isChunk = false, patternFile = null, threshold = 0) {
+        // Enhanced progress display
+        function updateChunkProgress(chunkIndex, totalChunks, currentChunkSize, processedTables, totalTables, totalMatches, startTime, failedChunks) {
+            const chunkProgress = document.getElementById('chunkProgress');
+            if (!chunkProgress) return;
+            
+            const overallProgress = ((chunkIndex) / totalChunks * 100).toFixed(1);
+            const tableProgress = ((processedTables) / totalTables * 100).toFixed(1);
+            const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+            const avgTimePerChunk = chunkIndex > 0 ? elapsedSeconds / chunkIndex : 0;
+            const estimatedRemainingSeconds = Math.round((totalChunks - chunkIndex) * avgTimePerChunk);
+            
+            chunkProgress.innerHTML = `
+                <div style="font-weight: bold; color: #007bff; margin-bottom: 8px;">🔄 Overall Progress: ${overallProgress}% (${chunkIndex}/${totalChunks} chunks)</div>
+                <div style="margin-bottom: 4px;">📊 Tables: ${processedTables}/${totalTables} processed (${tableProgress}%)</div>
+                <div style="margin-bottom: 4px;">🎯 Current: Processing chunk ${chunkIndex + 1} (${currentChunkSize} tables)</div>
+                <div style="margin-bottom: 4px;">✨ Results: ${totalMatches.toLocaleString()} matches found so far</div>
+                ${failedChunks > 0 ? `<div style="margin-bottom: 4px; color: #dc3545;">⚠️ Failed chunks: ${failedChunks}</div>` : ''}
+                <div style="color: #666; font-size: 12px;">⏱️ Elapsed: ${elapsedSeconds}s | Est. remaining: ${estimatedRemainingSeconds}s</div>
+                <div style="margin-top: 8px;">
+                    <button onclick="abortChunkedSearch()" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer;">🛑 Abort Search</button>
+                </div>
+            `;
+        }
+        
+        // Process a single chunk with comprehensive retry logic
+        async function processChunkWithRetries(chunk, database, minRow, maxRow, minCol, maxCol, searchValueData, sessionId, patternFile, threshold, selectedLevels, chunkNum, totalChunks) {
+            const maxRetries = 3;
+            let lastError = null;
+            
+            for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
+                try {
+                    if (searchAborted) {
+                        return { success: false, error: 'Search aborted by user' };
+                    }
+                    
+                    if (retryCount > 0) {
+                        console.log(`🔄 Retrying chunk ${chunkNum}/${totalChunks} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+                        // Exponential backoff: 1s, 2s, 4s
+                        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount - 1)));
+                    }
+                    
+                    const uniqueSessionId = `${sessionId}_retry${retryCount}`;
+                    const result = await processSingleRequest(chunk, database, minRow, maxRow, minCol, maxCol, searchValueData, uniqueSessionId, true, patternFile, threshold, selectedLevels);
+                    
+                    if (result && result.success) {
+                        return result;
+                    } else {
+                        lastError = result ? result.error : 'Unknown error';
+                        console.warn(`⚠️ Chunk ${chunkNum} attempt ${retryCount + 1} failed:`, lastError);
+                    }
+                    
+                } catch (error) {
+                    lastError = error.message;
+                    console.error(`💥 Chunk ${chunkNum} attempt ${retryCount + 1} threw error:`, error);
+                    
+                    // Don't retry on abort errors
+                    if (error.name === 'AbortError') {
+                        return { success: false, error: 'Request aborted' };
+                    }
+                }
+                
+                // If this isn't the last retry, wait before next attempt
+                if (retryCount < maxRetries) {
+                    console.log(`⏳ Waiting before retry ${retryCount + 2}...`);
+                }
+            }
+            
+            return { success: false, error: lastError || 'All retry attempts failed' };
+        }
+        
+        // Aggregate pattern counts from multiple results
+        function aggregatePatternCounts(results) {
+            const counts = { L0: 0, L1: 0, L2: 0, L3: 0, other: 0 };
+            
+            results.forEach(tableResult => {
+                if (tableResult.matches && Array.isArray(tableResult.matches)) {
+                    tableResult.matches.forEach(match => {
+                        if (match.pattern_value !== undefined && match.pattern_value !== null) {
+                            const level = `L${match.pattern_value}`;
+                            if (counts.hasOwnProperty(level)) {
+                                counts[level]++;
+                            } else {
+                                counts.other++;
+                            }
+                        }
+                    });
+                }
+            });
+            
+            return counts;
+        }
+        
+        // Function to abort ongoing chunked search
+        function abortChunkedSearch() {
+            console.log('🛑 User requested search abort');
+            searchAborted = true;
+            
+            if (currentChunkedSearch && currentChunkedSearch.abortController) {
+                currentChunkedSearch.abortController.abort();
+            }
+            
+            // Clean up any progress intervals
+            const progressInfo = document.getElementById('progressInfo');
+            if (progressInfo) {
+                progressInfo.innerHTML = '<div style="color: red;">🛑 Search aborted by user</div>';
+            }
+            
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert('Search aborted by user. You can start a new search anytime.');
+        }
+        
+        // Enhanced session cleanup for multi-table operations
+        window.addEventListener('beforeunload', function() {
+            if (currentChunkedSearch) {
+                // Try to cleanup before page unload
+                abortChunkedSearch();
+            }
+        });
+        
+        // DEBUG: Test validation function - remove this after debugging
+        window.testValidation = function(patternName) {
+            console.log('=== TESTING VALIDATION ===');
+            console.log('Pattern:', patternName);
+            
+            const tableDims = getSelectedTableDimensions();
+            console.log('Table dimensions:', tableDims);
+            
+            const patternDims = parsePatternFileDimensions(patternName);
+            console.log('Pattern dimensions:', patternDims);
+            
+            const validation = validatePatternTableDimensions(patternName, tableDims);
+            console.log('Validation result:', validation);
+            
+            console.log('=== END TEST ===');
+            return validation;
+        };
+        
+        async function processSingleRequest(tableNames, database, minRow, maxRow, minCol, maxCol, searchValueData, sessionId, isChunk = false, patternFile = null, threshold = 0, selectedLevels = ['L0']) {
             return new Promise((resolve, reject) => {
+                // Input validation
+                if (!Array.isArray(tableNames) || tableNames.length === 0) {
+                    resolve({ success: false, error: 'No tables provided' });
+                    return;
+                }
+                
+                if (!database) {
+                    resolve({ success: false, error: 'No database specified' });
+                    return;
+                }
+                
                 const requestBody = {
                     database: database,
                     tableNames: tableNames,
@@ -2062,12 +2649,19 @@
                     maxRow: maxRow,
                     minCol: minCol,
                     maxCol: maxCol,
-                    searchValue: searchVal,
+                    searchValueRange: typeof searchValueData === 'object' ? searchValueData : {min: searchValueData, max: searchValueData},
                     sessionId: sessionId,
-                    patternFile: patternFile
+                    patternFile: patternFile,
+                    levelCrossing: selectedLevels
                 };
 
-                console.log('Sending request with session:', sessionId, 'Tables:', tableNames.length);
+                const requestType = isChunk ? '🧩 Chunk' : '🔍 Direct';
+                console.log(`${requestType} request:`, {
+                    session: sessionId,
+                    tables: tableNames.length,
+                    levels: selectedLevels,
+                    values: searchValueData
+                });
 
                 // Start progress tracking if more than 1 table and not a chunk
                 let progressInterval = null;
@@ -2096,8 +2690,15 @@
                                     progressInfo.innerHTML = `<span style="color: red;">Error: ${progress.error || progress.message}</span>`;
                                     clearInterval(progressInterval);
                                 } else if (progress.status === 'not_found') {
-                                    progressInfo.innerHTML = `<span style="color: orange;">Session not found. Search may have completed.</span>`;
+                                    console.log('Session not found - search may have completed or expired');
+                                    progressInfo.innerHTML = `<span style="color: red;">Session lost - search interrupted.</span>`;
                                     clearInterval(progressInterval);
+                                    
+                                    // Hide loading overlay after a delay
+                                    setTimeout(() => {
+                                        document.getElementById('loadingOverlay').style.display = 'none';
+                                        alert('Search session was lost. This can happen if:\n• The server restarted\n• The search took too long\n• The page was refreshed\n\nPlease try again with:\n• Fewer tables\n• Higher threshold\n• Smaller coordinate range');
+                                    }, 2000);
                                 } else {
                                     progressInfo.innerHTML = `<span style="color: blue;">Status: ${progress.status}</span>`;
                                 }
@@ -2119,9 +2720,24 @@
                     }, 1800000);
                 }
 
-                // Send request with timeout
+                // Enhanced timeout logic for chunks vs direct requests
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
+                let timeoutMinutes;
+                
+                if (isChunk) {
+                    // Chunks are smaller, so use shorter timeout
+                    timeoutMinutes = Math.max(5, Math.ceil(tableNames.length * 0.5)); // 30 seconds per table for chunks
+                } else {
+                    // Direct requests need longer timeout
+                    timeoutMinutes = Math.max(10, Math.ceil(tableNames.length / 2)); // 30 seconds per table for direct
+                }
+                
+                const timeoutId = setTimeout(() => {
+                    console.warn(`⏰ Request timeout after ${timeoutMinutes} minutes`);
+                    controller.abort();
+                }, timeoutMinutes * 60000);
+                
+                console.log(`⏱️ Set ${timeoutMinutes}min timeout for ${tableNames.length} tables (${isChunk ? 'chunk' : 'direct'})`);
                 
                 fetch('/search-value-in-range', {
                     method: 'POST',
@@ -2132,19 +2748,44 @@
                     signal: controller.signal
                 })
                 .then(response => {
-                    console.log('Response status:', response.status);
+                    console.log(`📡 Response status: ${response.status} for ${requestType}`);
                     clearTimeout(timeoutId);
+                    
                     if (!response.ok) {
-                        throw new Error('Server returned error ' + response.status);
+                        // Handle different HTTP errors
+                        if (response.status === 500) {
+                            throw new Error(`Server error (500) - likely database or processing issue`);
+                        } else if (response.status === 404) {
+                            throw new Error(`Endpoint not found (404) - check server configuration`);
+                        } else if (response.status === 413) {
+                            throw new Error(`Request too large (413) - try smaller chunks`);
+                        } else if (response.status >= 500) {
+                            throw new Error(`Server error (${response.status}) - server overloaded or crashed`);
+                        } else if (response.status >= 400) {
+                            throw new Error(`Client error (${response.status}) - invalid request`);
+                        } else {
+                            throw new Error(`HTTP error ${response.status}`);
+                        }
                     }
                     return response.json();
                 })
                 .then(result => {
-                    console.log('Search result:', result);
+                    console.log(`✅ ${requestType} result:`, {
+                        success: result.success,
+                        matches: result.total_matches || 0,
+                        tables: result.report ? result.report.length : 0
+                    });
                     clearTimeout(timeoutId);
+                    
                     if (progressInterval) {
                         clearInterval(progressInterval);
                         progressInterval = null;
+                    }
+                    
+                    // Validate result structure
+                    if (!result || typeof result !== 'object') {
+                        resolve({ success: false, error: 'Invalid response format from server' });
+                        return;
                     }
                     
                     if (isChunk) {
@@ -2153,40 +2794,68 @@
                     } else {
                         // For single requests, display results and hide loading
                         document.getElementById('loadingOverlay').style.display = 'none';
-                        displaySearchResults(result, searchVal, minRow, maxRow, minCol, maxCol, database, threshold);
+                        displaySearchResults(result, searchValueData, minRow, maxRow, minCol, maxCol, database, threshold, false);
                         resolve(result);
                     }
                 })
                 .catch(error => {
-                    console.error('Request error:', error);
+                    console.error(`❌ ${requestType} error:`, error);
                     clearTimeout(timeoutId);
+                    
                     if (progressInterval) {
                         clearInterval(progressInterval);
                         progressInterval = null;
                     }
                     
+                    // Standardize error messages
+                    let standardError = error.message;
+                    let errorDetails = '';
+                    
+                    if (error.message === 'Failed to fetch') {
+                        standardError = 'Network or server connection failed';
+                        errorDetails = isChunk ? 
+                            'Chunk processing failed due to network issues' :
+                            'Server timeout, network issue, or session expired. Try fewer tables or smaller ranges.';
+                    } else if (error.name === 'AbortError') {
+                        standardError = `Request timeout (${timeoutMinutes}min limit exceeded)`;
+                        errorDetails = isChunk ?
+                            `Chunk took too long to process` :
+                            `Request took too long. Try fewer tables or increase threshold.`;
+                    } else if (error.message.includes('500')) {
+                        standardError = 'Server processing error';
+                        errorDetails = isChunk ?
+                            'Chunk failed on server side' :
+                            'Database error or server overload. Try again or contact support.';
+                    }
+                    
+                    const errorResult = { 
+                        success: false, 
+                        error: standardError,
+                        details: errorDetails,
+                        requestType: isChunk ? 'chunk' : 'direct',
+                        tableCount: tableNames.length
+                    };
+                    
                     if (isChunk) {
-                        // For chunks, resolve with error info instead of showing alert
-                        resolve({ success: false, error: error.message });
+                        // For chunks, just return error info for retry logic
+                        resolve(errorResult);
                     } else {
+                        // For direct requests, show user-friendly error
                         document.getElementById('loadingOverlay').style.display = 'none';
                         
-                        let errorMessage = 'Request failed: ' + error.message;
-                        
-                        if (error.message === 'Failed to fetch') {
-                            errorMessage += '\n\nPossible causes:';
-                            errorMessage += '\n• Server timeout (try fewer tables)';
-                            errorMessage += '\n• Network connection issue';
-                        } else if (error.name === 'AbortError') {
-                            errorMessage += '\n\nThe request was cancelled or timed out (10 min limit).';
-                            errorMessage += '\nTry with fewer tables for faster processing.';
+                        let userMessage = `Search failed: ${standardError}`;
+                        if (errorDetails) {
+                            userMessage += `\n\n${errorDetails}`;
                         }
                         
-                        errorMessage += '\n\nSession: ' + sessionId;
-                        errorMessage += '\nTables: ' + tableNames.length;
+                        userMessage += `\n\nSearching ${tableNames.length} tables. Consider:`;
+                        userMessage += `\n• Using fewer tables`;
+                        userMessage += `\n• Increasing the threshold`;
+                        userMessage += `\n• Using smaller coordinate ranges`;
+                        userMessage += `\n\nSession: ${sessionId}`;
                         
-                        alert(errorMessage);
-                        reject(error);
+                        alert(userMessage);
+                        resolve(errorResult);
                     }
                 });
             });
@@ -2280,6 +2949,11 @@
                 
                 if (match.pattern_value !== undefined && match.pattern_value !== null) {
                     switch(match.pattern_value) {
+                        case 0:
+                            color = "#6c757d"; // Gray for L0
+                            strokeColor = "#495057";
+                            patternInfo = ` (L0)`;
+                            break;
                         case 1:
                             color = "#dc3545"; // Red
                             strokeColor = "darkred";
@@ -2320,14 +2994,16 @@
                 mapHtml += `
                             <!-- Legend -->
                             <g transform="translate(${plotWidth - 120}, 20)">
-                                <rect x="0" y="0" width="110" height="80" fill="white" stroke="#ccc" stroke-width="1" rx="5"/>
+                                <rect x="0" y="0" width="110" height="95" fill="white" stroke="#ccc" stroke-width="1" rx="5"/>
                                 <text x="55" y="15" text-anchor="middle" font-size="10" font-weight="bold" fill="#333">Pattern Legend</text>
-                                <circle cx="15" cy="30" r="3" fill="#dc3545" stroke="darkred" stroke-width="0.5"/>
-                                <text x="25" y="33" font-size="9" fill="#333">L1</text>
-                                <circle cx="15" cy="45" r="3" fill="#28a745" stroke="darkgreen" stroke-width="0.5"/>
-                                <text x="25" y="48" font-size="9" fill="#333">L2</text>
-                                <circle cx="15" cy="60" r="3" fill="#007bff" stroke="darkblue" stroke-width="0.5"/>
-                                <text x="25" y="63" font-size="9" fill="#333">L3</text>
+                                <circle cx="15" cy="30" r="3" fill="#6c757d" stroke="#495057" stroke-width="0.5"/>
+                                <text x="25" y="33" font-size="9" fill="#333">L0</text>
+                                <circle cx="15" cy="45" r="3" fill="#dc3545" stroke="darkred" stroke-width="0.5"/>
+                                <text x="25" y="48" font-size="9" fill="#333">L1</text>
+                                <circle cx="15" cy="60" r="3" fill="#28a745" stroke="darkgreen" stroke-width="0.5"/>
+                                <text x="25" y="63" font-size="9" fill="#333">L2</text>
+                                <circle cx="15" cy="75" r="3" fill="#007bff" stroke="darkblue" stroke-width="0.5"/>
+                                <text x="25" y="78" font-size="9" fill="#333">L3</text>
                             </g>
                 `;
             }
@@ -2342,7 +3018,7 @@
             return mapHtml;
         }
 
-                        function displaySearchResults(result, searchVal, minRow, maxRow, minCol, maxCol, database, threshold = 0) {
+                        function displaySearchResults(result, searchValue, minRow, maxRow, minCol, maxCol, database, threshold = 0, isLargeResult = false) {
                     console.log('Received search result:', result);
                     console.log('Pattern value counts:', result.pattern_value_counts);
                     
@@ -2355,104 +3031,395 @@
                 console.log('Creating report window...');
                 console.log(`Original tables: ${result.report ? result.report.length : 0}, Filtered tables: ${filteredReport.length}, Threshold: ${threshold}`);
                 
+                // Check if this is a very large result set that needs special handling
+                const isVeryLarge = totalMatches > 50000 || filteredMatches > 50000;
+                if (isVeryLarge) {
+                    console.log(`Large result detected: ${totalMatches} total matches, ${filteredMatches} filtered matches`);
+                }
+                
                 // Create a new window/tab to display the report
                 const reportWindow = window.open('', '_blank');
                 if (!reportWindow) {
-                    alert('Please allow popups for this site to view the report.\nTotal matches found: ' + totalMatches + '\nTables meeting threshold (' + threshold + '+): ' + filteredReport.length + (result.chunked ? '\n\nProcessed in ' + result.total_chunks + ' chunks' : ''));
+                    const valueText = typeof searchValue === 'object' ? `values ${searchValue.min} to ${searchValue.max}` : `value ${searchValue}`;
+                    alert(`POPUP BLOCKED: Please allow popups for this site to view the report.\n\nSearch Results Summary:\n• Searched for ${valueText}\n• Total matches found: ${totalMatches}\n• Tables meeting threshold (${threshold}+): ${filteredReport.length}${result.chunked ? `\n• Processed in ${result.total_chunks} chunks` : ''}\n\nTo see the full report:\n1. Allow popups for this site\n2. Run the search again`);
+                    
+                    // Try to save results for later viewing
+                    try {
+                        localStorage.setItem('lastSearchResults', JSON.stringify({
+                            result: result,
+                            searchValue: searchValue,
+                            minRow: minRow,
+                            maxRow: maxRow,
+                            minCol: minCol,
+                            maxCol: maxCol,
+                            database: database,
+                            threshold: threshold,
+                            timestamp: new Date().toISOString()
+                        }));
+                        console.log('Search results saved to localStorage for later viewing');
+                    } catch (e) {
+                        console.error('Could not save search results:', e);
+                    }
                     return;
                 }
                 
-                reportWindow.document.write(`
-                    <html>
-                    <head>
-                        <title>Value Search Report</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-                            .summary-section { background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #28a745; }
-                            .summary-stats { background-color: #fff; padding: 10px; border-radius: 3px; margin-bottom: 15px; }
-                            .summary-details { background-color: #fff; padding: 10px; border-radius: 3px; }
-                            .summary-table { margin-bottom: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 3px; }
-                            .summary-table h4 { margin: 0 0 5px 0; color: #d32f2f; }
-                            .coordinate-summary { margin: 5px 0; font-family: monospace; word-wrap: break-word; }
-                            .table-report { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
-                            .table-title { background-color: #28a745; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 5px 5px 0 0; }
-                            .stats { background-color: #e9ecef; padding: 10px; margin-bottom: 15px; border-radius: 3px; }
-                                                                 .matches { max-height: none; overflow-y: visible; }
-                                     .match-info { margin: 5px 0; padding: 5px; background-color: #d4edda; border-left: 4px solid #28a745; }
-                                     .no-matches { color: #6c757d; font-weight: bold; }
-                                     .chunked-notice { background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 15px; }
-                                     .visual-map { margin: 15px 0; }
-                                     .visual-map table { border-collapse: collapse; }
-                                     .visual-map th, .visual-map td { border: 1px solid #dee2e6; }
-                                     .visual-map .match-cell { background-color: #dc3545 !important; color: white; font-weight: bold; }
-                                     .visual-map .empty-cell { background-color: #e9ecef; }
-                                     .map-legend { margin-bottom: 10px; font-size: 12px; color: #666; }
-                                     .map-info { margin-top: 10px; font-size: 12px; color: #666; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <h1>Value Search Report</h1>
-                            <p><strong>Database:</strong> ${database}</p>
-                            <p><strong>Search Value:</strong> ${searchVal}</p>
-                            <p><strong>Row Range:</strong> ${minRow} ~ ${maxRow}</p>
-                            <p><strong>Column Range:</strong> ${minCol} ~ ${maxCol}</p>
-                            <p><strong>Total Tables Searched:</strong> ${result.report ? result.report.length : 0}</p>
-                            <p><strong>Match Threshold:</strong> ${threshold} minimum matches</p>
-                            <p><strong>Tables Meeting Threshold:</strong> ${filteredReport.length}</p>
-                             ${result.pattern_used ? `<p><strong>Pattern File:</strong> ${result.search_params.pattern_file} (${result.pattern_coordinates_count} coordinates)</p>` : ''}
-                             ${result.pattern_value_counts ? `<p><strong>Pattern Matches Distribution:</strong> <span style="color: #dc3545; font-weight: bold;">L1: ${result.pattern_value_counts.L1}</span>, <span style="color: #28a745; font-weight: bold;">L2: ${result.pattern_value_counts.L2}</span>, <span style="color: #007bff; font-weight: bold;">L3: ${result.pattern_value_counts.L3}</span>${result.pattern_value_counts.other > 0 ? `, <span style="color: #ffc107; font-weight: bold;">Other: ${result.pattern_value_counts.other}</span>` : ''}</p>` : ''}
-                        </div>
-                        ${filteredReport ? filteredReport.map(tableReport => `
-                            <div class="table-report">
-                                <div class="table-title">
-                                    <h3>${tableReport.table_name} (${tableReport.dimensions || 'Unknown'})</h3>
-                                </div>
-                                ${tableReport.error ? `<div style="color: red; margin: 10px 0;"><strong>Error:</strong> ${tableReport.error}</div>` : ''}
-                                                                                                                                                 <div class="matches">
-                             ${(tableReport.matches_count || 0) === 0 ? 
-                                 '<p class="no-matches">✗ No matches found in this table within the specified range!</p>' : 
-                                                                                                    `<div class="coordinates-section" style="margin-bottom: 20px;">
-                                                       <div style="font-size: 11px; color: #666; margin-bottom: 5px;">
-                                                           <strong>Format:</strong> Data(row,col) [L#] Pattern(row,col)=value - where L# indicates pattern layer, Pattern shows relative coordinates within the trimmed pattern, and =value shows the actual pattern file value
-                                                       </div>
-                                                       <div class="coordinates-list" style="padding: 10px; background-color: #f8f9fa; border-radius: 3px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; border-left: 4px solid #28a745;">
-                                                           ${(tableReport.matches || []).map(match => {
-                                                               const coord = `(${match.row}, ${match.col})`;
-                                                               if (match.pattern_value !== undefined && match.pattern_value !== null) {
-                                                                   const colors = {1: '#dc3545', 2: '#28a745', 3: '#007bff'};
-                                                                   const color = colors[match.pattern_value] || '#ffc107';
-                                                                   const patternInfo = `L${match.pattern_value}`;
-                                                                   const patternRelCoord = match.pattern_rel_row !== undefined && match.pattern_rel_col !== undefined 
-                                                                       ? `Pattern(${match.pattern_rel_row}, ${match.pattern_rel_col})`
-                                                                       : `Pattern(${match.row}, ${match.col})`;
-                                                                   const patternValue = `=${match.pattern_value}`;
-                                                                   return `<span style="color: ${color}; font-weight: bold;">Data${coord} [${patternInfo}] ${patternRelCoord}${patternValue}</span>`;
-                                                               }
-                                                               return coord;
-                                                           }).join(', ')}
-                                                       </div>
-                                                     </div>
-                                                     ${generateVisualMap(tableReport.matches || [], minRow, maxRow, minCol, maxCol, tableReport.total_rows, tableReport.total_columns)}`
-                             }
-                         </div>
+                // For very large results, generate a simplified report
+                if (isVeryLarge) {
+                    reportWindow.document.write(`
+                        <html>
+                        <head>
+                            <title>Large Search Results Summary</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                                .large-notice { background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 20px; }
+                                .table-summary { margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 3px; border-left: 4px solid #28a745; }
+                                .stats { background-color: #e9ecef; padding: 10px; margin-bottom: 15px; border-radius: 3px; }
+                                .download-section { background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>🔍 Large Search Results Summary</h1>
+                                <p><strong>Database:</strong> ${database}</p>
+                                <p><strong>Search Value:</strong> ${typeof searchValue === 'object' ? `${searchValue.min} ~ ${searchValue.max}` : searchValue}</p>
+                                <p><strong>Row Range:</strong> ${minRow} ~ ${maxRow}</p>
+                                <p><strong>Column Range:</strong> ${minCol} ~ ${maxCol}</p>
+                                <p><strong>Total Tables Searched:</strong> ${result.report ? result.report.length : 0}</p>
+                                <p><strong>Match Threshold:</strong> ${threshold} minimum matches</p>
+                                <p><strong>Tables Meeting Threshold:</strong> ${filteredReport.length}</p>
+                                ${result.pattern_used ? `<p><strong>Pattern File:</strong> ${result.search_params.pattern_file} (${result.pattern_coordinates_count} coordinates)</p>` : ''}
+                                ${result.pattern_value_counts ? `<p><strong>Pattern Matches Distribution:</strong> <span style="color: #6c757d; font-weight: bold;">L0: ${result.pattern_value_counts.L0 || 0}</span>, <span style="color: #dc3545; font-weight: bold;">L1: ${result.pattern_value_counts.L1 || 0}</span>, <span style="color: #28a745; font-weight: bold;">L2: ${result.pattern_value_counts.L2 || 0}</span>, <span style="color: #007bff; font-weight: bold;">L3: ${result.pattern_value_counts.L3 || 0}</span>${result.pattern_value_counts.other > 0 ? `, <span style="color: #ffc107; font-weight: bold;">Other: ${result.pattern_value_counts.other}</span>` : ''}</p>` : ''}
                             </div>
-                        `).join('') : '<p>No detailed report data available</p>'}
-                    </body>
-                    </html>
-                `);
+                            
+                            <div class="large-notice">
+                                <h3>⚡ Large Result Set Detected</h3>
+                                <p><strong>Total Matches Found:</strong> ${totalMatches.toLocaleString()}</p>
+                                <p><strong>Filtered Matches:</strong> ${filteredMatches.toLocaleString()}</p>
+                                <p>Due to the large number of matches, detailed coordinate listings and visual maps have been omitted to prevent browser performance issues.</p>
+                                <p><strong>💡 Suggestion:</strong> Use a higher threshold (e.g., 50+ matches) to focus on tables with the most significant results.</p>
+                            </div>
+                            
+                            <div class="download-section">
+                                <h3>📊 Summary by Table</h3>
+                                ${filteredReport.map(tableReport => `
+                                    <div class="table-summary">
+                                        <h4>${tableReport.table_name} (${tableReport.dimensions || 'Unknown'})</h4>
+                                        ${tableReport.error ? `<div style="color: red;"><strong>Error:</strong> ${tableReport.error}</div>` : `
+                                            <div class="stats">
+                                                <strong>Matches Found:</strong> ${(tableReport.matches_count || 0).toLocaleString()}<br>
+                                                <strong>Match Density:</strong> ${((tableReport.matches_count || 0) / (tableReport.total_rows * tableReport.total_columns) * 100).toFixed(2)}% of table<br>
+                                                <strong>Table Size:</strong> ${tableReport.total_rows} × ${tableReport.total_columns} = ${(tableReport.total_rows * tableReport.total_columns).toLocaleString()} cells
+                                            </div>
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+                                <h3>🎯 Next Steps</h3>
+                                <ul>
+                                    <li><strong>Refine your search:</strong> Use a higher threshold to focus on high-match tables</li>
+                                    <li><strong>Select specific tables:</strong> Search individual tables from the high-match list above</li>
+                                    <li><strong>Narrow your criteria:</strong> Use specific levels instead of all levels</li>
+                                    <li><strong>Export data:</strong> Use the download functions for further analysis</li>
+                                </ul>
+                            </div>
+                            
+                            ${result.chunked ? `<div style="margin-top: 20px; color: #666; font-size: 12px;">
+                                <p>📊 Processing completed in ${result.total_chunks} chunks for optimal performance.</p>
+                            </div>` : ''}
+                        </body>
+                        </html>
+                    `);
+                } else {
+                    // Regular detailed report for smaller result sets
+                    reportWindow.document.write(`
+                        <html>
+                        <head>
+                            <title>Value Search Report</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                                .summary-section { background-color: #e8f5e8; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #28a745; }
+                                .summary-stats { background-color: #fff; padding: 10px; border-radius: 3px; margin-bottom: 15px; }
+                                .summary-details { background-color: #fff; padding: 10px; border-radius: 3px; }
+                                .summary-table { margin-bottom: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 3px; }
+                                .summary-table h4 { margin: 0 0 5px 0; color: #d32f2f; }
+                                .coordinate-summary { margin: 5px 0; font-family: monospace; word-wrap: break-word; }
+                                .table-report { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+                                .table-title { background-color: #28a745; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 5px 5px 0 0; }
+                                .stats { background-color: #e9ecef; padding: 10px; margin-bottom: 15px; border-radius: 3px; }
+                                .matches { max-height: none; overflow-y: visible; }
+                                .match-info { margin: 5px 0; padding: 5px; background-color: #d4edda; border-left: 4px solid #28a745; }
+                                .no-matches { color: #6c757d; font-weight: bold; }
+                                .chunked-notice { background-color: #fff3cd; padding: 10px; border-radius: 5px; border-left: 4px solid #ffc107; margin-bottom: 15px; }
+                                .visual-map { margin: 15px 0; }
+                                .visual-map table { border-collapse: collapse; }
+                                .visual-map th, .visual-map td { border: 1px solid #dee2e6; }
+                                .visual-map .match-cell { background-color: #dc3545 !important; color: white; font-weight: bold; }
+                                .visual-map .empty-cell { background-color: #e9ecef; }
+                                .map-legend { margin-bottom: 10px; font-size: 12px; color: #666; }
+                                .map-info { margin-top: 10px; font-size: 12px; color: #666; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <h1>Value Search Report</h1>
+                                <p><strong>Database:</strong> ${database}</p>
+                                <p><strong>Search Value:</strong> ${typeof searchValue === 'object' ? `${searchValue.min} ~ ${searchValue.max}` : searchValue}</p>
+                                <p><strong>Row Range:</strong> ${minRow} ~ ${maxRow}</p>
+                                <p><strong>Column Range:</strong> ${minCol} ~ ${maxCol}</p>
+                                <p><strong>Total Tables Searched:</strong> ${result.report ? result.report.length : 0}</p>
+                                <p><strong>Match Threshold:</strong> ${threshold} minimum matches</p>
+                                <p><strong>Tables Meeting Threshold:</strong> ${filteredReport.length}</p>
+                                 ${result.pattern_used ? `<p><strong>Pattern File:</strong> ${result.search_params.pattern_file} (${result.pattern_coordinates_count} coordinates)</p>` : ''}
+                                 ${result.pattern_value_counts ? `<p><strong>Pattern Matches Distribution:</strong> <span style="color: #6c757d; font-weight: bold;">L0: ${result.pattern_value_counts.L0 || 0}</span>, <span style="color: #dc3545; font-weight: bold;">L1: ${result.pattern_value_counts.L1 || 0}</span>, <span style="color: #28a745; font-weight: bold;">L2: ${result.pattern_value_counts.L2 || 0}</span>, <span style="color: #007bff; font-weight: bold;">L3: ${result.pattern_value_counts.L3 || 0}</span>${result.pattern_value_counts.other > 0 ? `, <span style="color: #ffc107; font-weight: bold;">Other: ${result.pattern_value_counts.other}</span>` : ''}</p>` : ''}
+                            </div>
+                            ${filteredReport ? filteredReport.map(tableReport => `
+                                <div class="table-report">
+                                    <div class="table-title">
+                                        <h3>${tableReport.table_name} (${tableReport.dimensions || 'Unknown'})</h3>
+                                    </div>
+                                    ${tableReport.error ? `<div style="color: red; margin: 10px 0;"><strong>Error:</strong> ${tableReport.error}</div>` : ''}
+                                    <div class="matches">
+                                 ${(tableReport.matches_count || 0) === 0 ? 
+                                     '<p class="no-matches">✗ No matches found in this table within the specified range!</p>' : 
+                                                                                                        `<div class="coordinates-section" style="margin-bottom: 20px;">
+                                                           <div style="font-size: 11px; color: #666; margin-bottom: 5px;">
+                                                               <strong>Format:</strong> Data(row,col) [L#] Pattern(row,col)=value - where L# indicates pattern layer, Pattern shows relative coordinates within the trimmed pattern, and =value shows the actual pattern file value
+                                                           </div>
+                                                           <div class="coordinates-list" style="padding: 10px; background-color: #f8f9fa; border-radius: 3px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; border-left: 4px solid #28a745;">
+                                                               ${(tableReport.matches || []).slice(0, 1000).map(match => {
+                                                                   const coord = `(${match.row}, ${match.col})`;
+                                                                   if (match.pattern_value !== undefined && match.pattern_value !== null) {
+                                                                       const colors = {0: '#6c757d', 1: '#dc3545', 2: '#28a745', 3: '#007bff'};
+                                                                       const color = colors[match.pattern_value] || '#ffc107';
+                                                                       const patternInfo = `L${match.pattern_value}`;
+                                                                       const patternRelCoord = match.pattern_rel_row !== undefined && match.pattern_rel_col !== undefined 
+                                                                           ? `Pattern(${match.pattern_rel_row}, ${match.pattern_rel_col})`
+                                                                           : `Pattern(${match.row}, ${match.col})`;
+                                                                       const patternValue = `=${match.pattern_value}`;
+                                                                       return `<span style="color: ${color}; font-weight: bold;">Data${coord} [${patternInfo}] ${patternRelCoord}${patternValue}</span>`;
+                                                                   }
+                                                                   return coord;
+                                                               }).join(', ')}
+                                                               ${(tableReport.matches || []).length > 1000 ? `<br><br><em style="color: #666;">... and ${((tableReport.matches || []).length - 1000).toLocaleString()} more matches (showing first 1000 for performance)</em>` : ''}
+                                                           </div>
+                                                         </div>
+                                                         ${(tableReport.matches || []).length <= 1000 ? generateVisualMap(tableReport.matches || [], minRow, maxRow, minCol, maxCol, tableReport.total_rows, tableReport.total_columns) : '<p style="color: #666; font-style: italic;">Visual map omitted for large match sets (1000+ matches)</p>'}`
+                                 }
+                             </div>
+                                </div>
+                            `).join('') : '<p>No detailed report data available</p>'}
+                        </body>
+                        </html>
+                    `);
+                }
                 reportWindow.document.close();
                 
                 // Also show a success message
-                let successMessage = 'Search completed successfully!\\nTotal matches: ' + totalMatches + '\\nTables meeting threshold (' + threshold + '+): ' + filteredReport.length + '\\nReport opened in new tab.';
+                const valueText = typeof searchValue === 'object' ? `values ${searchValue.min} to ${searchValue.max}` : `value ${searchValue}`;
+                let successMessage = `Search completed successfully!\nSearched for ${valueText}\nTotal matches: ${totalMatches}\nTables meeting threshold (${threshold}+): ${filteredReport.length}\nReport opened in new tab.`;
                 if (result.chunked) {
-                    successMessage += '\\n\\n📊 Large dataset was processed in ' + result.total_chunks + ' chunks for optimal performance.';
+                    successMessage += `\n\n📊 Large dataset was processed in ${result.total_chunks} chunks for optimal performance.`;
                 }
                 alert(successMessage);
             } else {
                 alert('Search failed: ' + result.message);
             }
+        }
+
+        // Function to extract dimensions from a dimension string (e.g., "248x248" -> {rows: 248, cols: 248})
+        function parseDimensions(dimensionStr) {
+            if (!dimensionStr || typeof dimensionStr !== 'string') {
+                return null;
+            }
+            const parts = dimensionStr.split('x');
+            if (parts.length !== 2) {
+                return null;
+            }
+            const rows = parseInt(parts[0]);
+            const cols = parseInt(parts[1]);
+            if (isNaN(rows) || isNaN(cols)) {
+                return null;
+            }
+            return { rows: rows, cols: cols };
+        }
+        
+        // Function to extract dimensions from pattern file name (e.g., "248x248_checkerboard_4states" -> {rows: 248, cols: 248})
+        function parsePatternFileDimensions(patternFileName) {
+            if (!patternFileName || typeof patternFileName !== 'string') {
+                return null;
+            }
+            
+            // Pattern files typically start with dimensions like "248x248_", "1296x64_", etc.
+            const match = patternFileName.match(/^(\d+)x(\d+)/);
+            
+            if (!match) {
+                return null;
+            }
+            
+            const rows = parseInt(match[1]);
+            const cols = parseInt(match[2]);
+            if (isNaN(rows) || isNaN(cols)) {
+                return null;
+            }
+            
+            return { rows: rows, cols: cols };
+        }
+
+        // Function to get dimensions of selected tables (including hidden ones)
+        function getSelectedTableDimensions() {
+            const selectedTableNames = getAllSelectedTableNames(); // Use all selected, not just visible
+            const dimensions = [];
+            
+            selectedTableNames.forEach(tableName => {
+                const tableItem = document.querySelector(`.table-item[data-table-name="${tableName}"]`);
+                
+                if (tableItem) {
+                    const dimensionStr = tableItem.getAttribute('data-dimensions');
+                    const parsedDimensions = parseDimensions(dimensionStr);
+                    
+                    if (parsedDimensions) {
+                        dimensions.push({
+                            tableName: tableName,
+                            dimensionStr: dimensionStr,
+                            rows: parsedDimensions.rows,
+                            cols: parsedDimensions.cols
+                        });
+                    }
+                }
+            });
+            
+            return dimensions;
+        }
+
+        // Function to validate pattern file dimensions against table dimensions
+        function validatePatternTableDimensions(patternFileName, tableDimensions) {
+            if (!patternFileName) {
+                return { valid: true }; // No pattern selected is valid
+            }
+            
+            if (!tableDimensions || tableDimensions.length === 0) {
+                return { 
+                    valid: false, 
+                    error: 'No tables selected for dimension comparison' 
+                };
+            }
+            
+            const patternDimensions = parsePatternFileDimensions(patternFileName);
+            if (!patternDimensions) {
+                return { 
+                    valid: false, 
+                    error: `Unable to parse dimensions from pattern file: ${patternFileName}` 
+                };
+            }
+            
+            // Check if all selected tables have the same dimensions
+            const firstTableDims = tableDimensions[0];
+            const allSameDimensions = tableDimensions.every(table => 
+                table.rows === firstTableDims.rows && table.cols === firstTableDims.cols
+            );
+            
+            if (!allSameDimensions) {
+                const uniqueDimensions = [...new Set(tableDimensions.map(t => `${t.rows}x${t.cols}`))];
+                return {
+                    valid: false,
+                    error: `Selected tables have different dimensions: ${uniqueDimensions.join(', ')}. Please select tables with the same dimensions.`
+                };
+            }
+            
+            // Check if pattern dimensions match table dimensions
+            const tableDims = firstTableDims;
+            if (patternDimensions.rows !== tableDims.rows || patternDimensions.cols !== tableDims.cols) {
+                return {
+                    valid: false,
+                    error: `Pattern file dimensions (${patternDimensions.rows}x${patternDimensions.cols}) do not match table dimensions (${tableDims.rows}x${tableDims.cols}). Please select a compatible pattern file or different tables.`,
+                    patternDimensions: patternDimensions,
+                    tableDimensions: tableDims
+                };
+            }
+            
+            return { 
+                valid: true,
+                patternDimensions: patternDimensions,
+                tableDimensions: tableDims
+            };
+        }
+
+        // Function to validate that all selected tables have the same dimensions
+        function validateTableDimensions() {
+            const dimensions = getSelectedTableDimensions();
+            
+            if (dimensions.length === 0) {
+                return { valid: false, error: 'No tables selected' };
+            }
+            
+            if (dimensions.length === 1) {
+                return { valid: true, dimensions: dimensions[0] };
+            }
+            
+            // Check if all tables have the same dimensions
+            const firstDimension = dimensions[0];
+            const mismatchedTables = [];
+            
+            for (let i = 1; i < dimensions.length; i++) {
+                const currentDimension = dimensions[i];
+                if (currentDimension.rows !== firstDimension.rows || currentDimension.cols !== firstDimension.cols) {
+                    mismatchedTables.push(`${currentDimension.tableName} (${currentDimension.dimensionStr})`);
+                }
+            }
+            
+            if (mismatchedTables.length > 0) {
+                return {
+                    valid: false,
+                    error: `Tables have different dimensions!\n\nExpected: ${firstDimension.dimensionStr}\nMismatched tables:\n${mismatchedTables.join('\n')}\n\nPlease select tables with the same dimensions.`
+                };
+            }
+            
+            return { valid: true, dimensions: firstDimension };
+        }
+
+        // Function to auto-fill coordinate fields based on table dimensions
+        function autoFillCoordinateFields(dimensions) {
+            if (!dimensions) {
+                console.error('autoFillCoordinateFields: No dimensions provided');
+                return;
+            }
+            
+            console.log('autoFillCoordinateFields called with dimensions:', dimensions);
+            
+            // Check if elements exist
+            const minRowInput = document.getElementById('minRowInput');
+            const maxRowInput = document.getElementById('maxRowInput');
+            const minColInput = document.getElementById('minColInput');
+            const maxColInput = document.getElementById('maxColInput');
+            
+            if (!minRowInput || !maxRowInput || !minColInput || !maxColInput) {
+                console.error('autoFillCoordinateFields: One or more input elements not found');
+                console.log('Found elements:', {
+                    minRowInput: !!minRowInput,
+                    maxRowInput: !!maxRowInput, 
+                    minColInput: !!minColInput,
+                    maxColInput: !!maxColInput
+                });
+                return;
+            }
+            
+            // Auto-fill with 0 to max-1 (since coordinates are 0-based)
+            minRowInput.value = 0;
+            maxRowInput.value = dimensions.rows - 1;
+            minColInput.value = 0;
+            maxColInput.value = dimensions.cols - 1;
+            
+            console.log(`Auto-filled coordinates for ${dimensions.dimensionStr}: rows 0-${dimensions.rows-1}, cols 0-${dimensions.cols-1}`);
+            console.log('Field values set to:', {
+                minRow: minRowInput.value,
+                maxRow: maxRowInput.value,
+                minCol: minColInput.value,
+                maxCol: maxColInput.value
+            });
         }
 
         // Add the event listener for the "Search Value in Range" button
@@ -2467,105 +3434,411 @@
                     return;
                 }
 
+                // Validate table dimensions before showing modal
+                const dimensionValidation = validateTableDimensions();
+                if (!dimensionValidation.valid) {
+                    alert(dimensionValidation.error);
+                    return;
+                }
+
                 console.log('Tables selected:', tableNames.length);
+                console.log('Validated dimensions:', dimensionValidation.dimensions.dimensionStr);
 
-                // Get user inputs with validation
-                const rowRange = prompt('Enter row range (0-based, e.g., 0~2047):');
-                if (!rowRange) return;
-                
-                const colRange = prompt('Enter column range (0-based, e.g., 0~31):');
-                if (!colRange) return;
-                
-                const searchValue = prompt('Enter value to search for:');
-                if (searchValue === null) return;
-
-                // Show pattern selection modal
-                const selectedPattern = await showPatternSelectionModal();
-                if (!selectedPattern) return;
-
-                // Get threshold value
-                const thresholdInput = prompt('Enter minimum threshold (only tables with this many or more matches will be included in report):');
-                if (thresholdInput === null) return;
-                
-                const threshold = parseInt(thresholdInput);
-                if (isNaN(threshold) || threshold < 0) {
-                    alert('Please enter a valid non-negative number for threshold');
-                    return;
-                }
-
-                console.log('Selected pattern:', selectedPattern);
-                console.log('Threshold:', threshold);
-
-                // Parse ranges
-                const rowParts = rowRange.split(/[~-]/);
-                const colParts = colRange.split(/[~-]/);
-                
-                if (rowParts.length !== 2 || colParts.length !== 2) {
-                    alert('Invalid range format. Use: 0~10 or 0-10');
-                    return;
-                }
-
-                const minRow = parseInt(rowParts[0]);
-                const maxRow = parseInt(rowParts[1]);
-                const minCol = parseInt(colParts[0]);
-                const maxCol = parseInt(colParts[1]);
-                const searchVal = parseFloat(searchValue);
-
-                if (isNaN(minRow) || isNaN(maxRow) || isNaN(minCol) || isNaN(maxCol) || isNaN(searchVal)) {
-                    alert('Please enter valid numbers');
-                    return;
-                }
-
-                if (minRow >= maxRow || minCol >= maxCol || minRow < 0 || minCol < 0) {
-                    alert('Invalid ranges');
-                    return;
-                }
-
-                console.log('Validation passed, starting search...');
-
-                // Show loading with progress info
-                document.getElementById('loadingOverlay').style.display = 'flex';
-                const loadingText = document.querySelector('#loadingOverlay div:last-child');
-                if (loadingText) {
-                    loadingText.innerHTML = `
-                        <div>Searching ${tableNames.length} tables for value ${searchVal}...</div>
-                        <div>Row range: ${minRow}-${maxRow}, Column range: ${minCol}-${maxCol}</div>
-                        <div>Pattern: ${selectedPattern} (only non-zero coordinates)</div>
-                        <div>Threshold: ${threshold} minimum matches (report will only show tables meeting this threshold)</div>
-                        <div>This may take a while for large datasets.</div>
-                        <div id="progressInfo" style="margin-top: 10px; padding: 10px; background-color: rgba(255,255,255,0.9); border-radius: 5px;">
-                            Initializing search...
+                // Show modal for search range options
+                const modalHtml = `
+                <div id="searchRangeModal" class="modal" style="display: block;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Search Value Range in Coordinate Range (${dimensionValidation.dimensions.dimensionStr})</h5>
+                            <button type="button" class="close" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
                         </div>
-                    `;
-                }
-
-                // Determine if we need to chunk the request
-                const CHUNK_SIZE = 800; // Safe chunk size for large requests
-                const shouldChunk = tableNames.length > CHUNK_SIZE;
+                        <div class="modal-body">
+                            <div class="alert alert-info mb-3">
+                                <strong>📏 Auto-filled coordinates:</strong> Based on table dimensions ${dimensionValidation.dimensions.dimensionStr}, 
+                                coordinate ranges have been set to cover the full table (0-based indexing).
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="minRowInput">Min Row (0-based):</label>
+                                        <input type="number" id="minRowInput" class="form-control" placeholder="0" min="0" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="maxRowInput">Max Row (0-based):</label>
+                                        <input type="number" id="maxRowInput" class="form-control" placeholder="${dimensionValidation.dimensions.rows - 1}" min="0" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="minColInput">Min Column (0-based):</label>
+                                        <input type="number" id="minColInput" class="form-control" placeholder="0" min="0" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="maxColInput">Max Column (0-based):</label>
+                                        <input type="number" id="maxColInput" class="form-control" placeholder="${dimensionValidation.dimensions.cols - 1}" min="0" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Mode Selection -->
+                            <div class="form-group mb-3">
+                                <label for="searchModeSelect">Search Mode:</label>
+                                <select id="searchModeSelect" class="form-control">
+                                    <option value="specific">Specific Value</option>
+                                    <option value="range">Value Range</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Specific Value Fields -->
+                            <div id="specificValueSection">
+                                <div class="form-group mb-3">
+                                    <label for="specificValueInput">Search Value:</label>
+                                    <input type="number" id="specificValueInput" class="form-control" placeholder="1.0" step="any" />
+                                </div>
+                            </div>
+                            
+                            <!-- Range Value Fields -->
+                            <div id="rangeValueSection" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="minValueInput">Min Search Value:</label>
+                                            <input type="number" id="minValueInput" class="form-control" placeholder="0.0" step="any" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="maxValueInput">Max Search Value:</label>
+                                            <input type="number" id="maxValueInput" class="form-control" placeholder="1.0" step="any" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="patternSelect">Pattern File:</label>
+                                <select id="patternSelect" class="form-control">
+                                    <option value="">Loading patterns...</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="levelCrossingButtons">Level Crossing Type:</label>
+                                <div id="levelCrossingButtons" class="level-button-container">
+                                    <div class="text-muted">Loading level crossing options...</div>
+                                </div>
+                                <small class="form-text text-muted">Click buttons to select/deselect levels. Multiple selections allowed.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="thresholdInput">Minimum Threshold:</label>
+                                <input type="number" id="thresholdInput" class="form-control" placeholder="Only tables with this many or more matches will be included" min="0" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="cancelSearch">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="startSearch">Start Search</button>
+                        </div>
+                    </div>
+                </div>
+                `;
                 
-                if (shouldChunk) {
-                    console.log(`Large request detected (${tableNames.length} tables). Using chunked approach with ${CHUNK_SIZE} tables per chunk.`);
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                const modal = document.getElementById('searchRangeModal');
+                
+                // Load pattern files (predefined list)
+                const availablePatterns = [
+                    "1296x64_rowbar_4states",
+                    "2048x32_rowbar_4states", 
+                    "2048x32_random",
+                    "3x4_4states_debug",
+                    "248x248_checkerboard_4states",
+                    "1296x64_Adrien_random_4states",
+                    "248x248_1state",
+                    "1296x64_1state",
+                    "248x248_16states",
+                    "248x248_2states",
+                    "248x248_64states",
+                    "62x62_2states",
+                    "248x1_1state",
+                    "248x256_1state",
+                    "82944x78_ecc_fuxi",
+                    "65536x78_ecc",
+                    "256x32_pr0",
+                    "256x32_pr1",
+                    "test_chin"
+                ];
+                
+                const patternSelect = document.getElementById('patternSelect');
+                patternSelect.innerHTML = availablePatterns.map(pattern => 
+                    `<option value="${pattern}">${pattern}</option>`
+                ).join('');
+                
+                // Set up search mode toggle
+                const searchModeSelect = document.getElementById('searchModeSelect');
+                const specificValueSection = document.getElementById('specificValueSection');
+                const rangeValueSection = document.getElementById('rangeValueSection');
+                
+                searchModeSelect.addEventListener('change', function() {
+                    if (this.value === 'specific') {
+                        specificValueSection.style.display = 'block';
+                        rangeValueSection.style.display = 'none';
+                    } else {
+                        specificValueSection.style.display = 'none';
+                        rangeValueSection.style.display = 'block';
+                    }
+                });
+                
+                // Set up pattern change listener to update level crossing options
+                patternSelect.addEventListener('change', async function() {
+                    const selectedPattern = this.value;
+                    await updateLevelCrossingOptions(selectedPattern);
+                });
+                
+                // Initialize level crossing options for the first pattern
+                if (availablePatterns.length > 0) {
+                    await updateLevelCrossingOptions(availablePatterns[0]);
+                }
+                
+                // Auto-fill coordinate fields based on selected table dimensions after a small delay
+                // to ensure modal elements are fully rendered
+                setTimeout(() => {
+                    autoFillCoordinateFields(dimensionValidation.dimensions);
+                }, 100);
+                
+                // Set up close button handlers
+                const closeButtons = modal.querySelectorAll('.close, #cancelSearch');
+                closeButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        modal.remove();
+                    });
+                });
+                
+                // Handle start search button
+                document.getElementById('startSearch').addEventListener('click', async function() {
+                    const minRowInput = document.getElementById('minRowInput').value.trim();
+                    const maxRowInput = document.getElementById('maxRowInput').value.trim();
+                    const minColInput = document.getElementById('minColInput').value.trim();
+                    const maxColInput = document.getElementById('maxColInput').value.trim();
+                    const searchMode = document.getElementById('searchModeSelect').value;
+                    const selectedPattern = document.getElementById('patternSelect').value;
+                    const selectedLevels = getSelectedLevels();
+                    const thresholdInput = document.getElementById('thresholdInput').value.trim();
                     
-                    // Update progress info to show chunking
-                    const progressInfo = document.getElementById('progressInfo');
-                    if (progressInfo) {
-                        progressInfo.innerHTML = `
-                            <div style="color: blue;">🔄 Processing ${tableNames.length} tables in chunks...</div>
-                            <div>Using ${Math.ceil(tableNames.length / CHUNK_SIZE)} chunks of ${CHUNK_SIZE} tables each</div>
-                            <div>Threshold: ${threshold} matches minimum</div>
-                            <div id="chunkProgress">Preparing chunks...</div>
-                        `;
+                    // Validate coordinate inputs
+                    if (!minRowInput) {
+                        alert('Please enter a minimum row value');
+                        return;
+                    }
+                    if (!maxRowInput) {
+                        alert('Please enter a maximum row value');
+                        return;
+                    }
+                    if (!minColInput) {
+                        alert('Please enter a minimum column value');
+                        return;
+                    }
+                    if (!maxColInput) {
+                        alert('Please enter a maximum column value');
+                        return;
                     }
                     
-                    // Process in chunks
-                    await processTablesInChunks(tableNames, database, minRow, maxRow, minCol, maxCol, searchVal, CHUNK_SIZE, selectedPattern, threshold);
-                } else {
-                    // Single request for smaller table counts
-                    const sessionId = Date.now() + 'search_' + Math.random().toString(36).substr(2, 9);
-                    await processSingleRequest(tableNames, database, minRow, maxRow, minCol, maxCol, searchVal, sessionId, false, selectedPattern, threshold);
-                }
+                    // Validate search value inputs based on mode
+                    let minSearchVal, maxSearchVal;
+                    if (searchMode === 'specific') {
+                        const specificValueInput = document.getElementById('specificValueInput').value.trim();
+                        if (!specificValueInput) {
+                            alert('Please enter a search value');
+                            return;
+                        }
+                        const specificValue = parseFloat(specificValueInput);
+                        if (isNaN(specificValue)) {
+                            alert('Please enter a valid search value');
+                            return;
+                        }
+                        minSearchVal = specificValue;
+                        maxSearchVal = specificValue;
+                    } else {
+                        const minValueInput = document.getElementById('minValueInput').value.trim();
+                        const maxValueInput = document.getElementById('maxValueInput').value.trim();
+                        if (!minValueInput) {
+                            alert('Please enter a minimum search value');
+                            return;
+                        }
+                        if (!maxValueInput) {
+                            alert('Please enter a maximum search value');
+                            return;
+                        }
+                        minSearchVal = parseFloat(minValueInput);
+                        maxSearchVal = parseFloat(maxValueInput);
+                        if (isNaN(minSearchVal) || isNaN(maxSearchVal)) {
+                            alert('Please enter valid search values');
+                            return;
+                        }
+                        if (minSearchVal >= maxSearchVal) {
+                            alert('Invalid search value range - max value must be greater than min value');
+                            return;
+                        }
+                    }
+                    
+                    if (!selectedPattern) {
+                        alert('Please select a pattern file');
+                        return;
+                    }
+                    
+                    // Validate pattern file dimensions against selected table dimensions
+                    console.log('🔍 VALIDATION CHECK - Pattern:', selectedPattern);
+                    
+                    const selectedTableDimensions = getSelectedTableDimensions();
+                    console.log('🔍 VALIDATION CHECK - Table dimensions found:', selectedTableDimensions.length);
+                    
+                    if (selectedTableDimensions.length > 0) {
+                        console.log('🔍 VALIDATION CHECK - First table dimension:', selectedTableDimensions[0]);
+                    }
+                    
+                    const patternValidation = validatePatternTableDimensions(selectedPattern, selectedTableDimensions);
+                    console.log('🔍 VALIDATION CHECK - Result:', patternValidation);
+                    
+                    if (!patternValidation.valid) {
+                        console.log('🚨 VALIDATION FAILED - Showing alert');
+                        alert(`❌ Dimension Mismatch\n\n${patternValidation.error}\n\n💡 Suggestions:\n• Select tables that match the pattern dimensions\n• Choose a different pattern file\n• Use "Search Value in Range" without pattern for unrestricted search`);
+                        return;
+                    } else {
+                        console.log('✅ VALIDATION PASSED - Continuing with search');
+                        if (patternValidation.patternDimensions && patternValidation.tableDimensions) {
+                            console.log(`✅ Pattern-Table dimension validation passed: ${patternValidation.patternDimensions.rows}x${patternValidation.patternDimensions.cols}`);
+                        }
+                    }
+                    
+                    if (selectedLevels.length === 0) {
+                        alert('Please select at least one level crossing type');
+                        return;
+                    }
+                    if (!thresholdInput) {
+                        alert('Please enter a threshold value');
+                        return;
+                    }
+                    
+                    const threshold = parseInt(thresholdInput);
+                    if (isNaN(threshold) || threshold < 0) {
+                        alert('Please enter a valid non-negative number for threshold');
+                        return;
+                    }
 
+                    // Parse coordinate values
+                    const minRow = parseInt(minRowInput);
+                    const maxRow = parseInt(maxRowInput);
+                    const minCol = parseInt(minColInput);
+                    const maxCol = parseInt(maxColInput);
 
+                    if (isNaN(minRow) || isNaN(maxRow) || isNaN(minCol) || isNaN(maxCol)) {
+                        alert('Please enter valid coordinate numbers');
+                        return;
+                    }
+
+                    if (minRow >= maxRow || minCol >= maxCol || minRow < 0 || minCol < 0) {
+                        alert('Invalid row/column ranges - max must be greater than min and values must be non-negative');
+                        return;
+                    }
+
+                    console.log('Selected pattern:', selectedPattern);
+                    console.log('Selected levels:', selectedLevels);
+                    console.log('Threshold:', threshold);
+                    
+                    // Close the modal
+                    modal.remove();
+
+                    try {
+                        console.log('Validation passed, starting search...');
+
+                        // Show loading with progress info
+                        document.getElementById('loadingOverlay').style.display = 'flex';
+                        const loadingText = document.querySelector('#loadingOverlay div:last-child');
+                        const searchValueText = searchMode === 'specific' ? `value ${minSearchVal}` : `values ${minSearchVal} to ${maxSearchVal}`;
+                        if (loadingText) {
+                            loadingText.innerHTML = `
+                                <div>Searching ${tableNames.length} tables for ${searchValueText}...</div>
+                                <div>Row range: ${minRow}-${maxRow}, Column range: ${minCol}-${maxCol}</div>
+                                <div>Pattern: ${selectedPattern} | Levels: ${selectedLevels.join(', ')}</div>
+                                <div>Threshold: ${threshold} minimum matches (report will only show tables meeting this threshold)</div>
+                                <div>This may take a while for large datasets.</div>
+                                <div id="progressInfo" style="margin-top: 10px; padding: 10px; background-color: rgba(255,255,255,0.9); border-radius: 5px;">
+                                    Initializing search...
+                                </div>
+                            `;
+                        }
+
+                        // Prepare search value data
+                        const searchValueData = searchMode === 'specific' ? minSearchVal : {min: minSearchVal, max: maxSearchVal};
+                        
+                        // Enhanced chunking logic based on multiple factors
+                        const tableCount = tableNames.length;
+                        const levelCount = selectedLevels.length;
+                        const isLargeRange = (maxRow - minRow) * (maxCol - minCol) > 100000; // Large coordinate range
+                        const isLargeValueRange = typeof searchValueData === 'object' && (searchValueData.max - searchValueData.min) > 1000; // Large value range
+                        
+                        // Determine if chunking is needed
+                        let shouldChunk = false;
+                        let CHUNK_SIZE = 1;
+                        
+                        if (tableCount <= 2) {
+                            // Very small: no chunking needed
+                            shouldChunk = false;
+                        } else if (tableCount <= 4 && levelCount <= 2 && !isLargeRange) {
+                            // Small: may not need chunking
+                            shouldChunk = false;
+                        } else {
+                            // Needs chunking
+                            shouldChunk = true;
+                            
+                            // Calculate optimal chunk size based on complexity
+                            let baseChunkSize = Math.max(1, Math.floor(15 / levelCount)); // Base on level complexity
+                            
+                            if (isLargeRange) baseChunkSize = Math.max(1, Math.floor(baseChunkSize / 2)); // Reduce for large ranges
+                            if (isLargeValueRange) baseChunkSize = Math.max(1, Math.floor(baseChunkSize / 2)); // Reduce for large value ranges
+                            if (tableCount > 50) baseChunkSize = Math.max(1, Math.floor(baseChunkSize / 2)); // Reduce for many tables
+                            
+                            CHUNK_SIZE = Math.min(8, Math.max(1, baseChunkSize)); // Keep between 1-8
+                        }
+                        
+                        console.log(`🎯 Search analysis: ${tableCount} tables, ${levelCount} levels`);
+                        console.log(`📊 Complexity: Range=${isLargeRange ? 'Large' : 'Normal'}, ValueRange=${isLargeValueRange ? 'Large' : 'Normal'}`);
+                        console.log(`🔄 Strategy: ${shouldChunk ? `Chunked (${CHUNK_SIZE} per chunk, ${Math.ceil(tableCount / CHUNK_SIZE)} total chunks)` : 'Direct processing'}`);
+                        
+                        if (shouldChunk) {
+                            console.log(`Large request detected (${tableNames.length} tables). Using chunked approach with ${CHUNK_SIZE} tables per chunk.`);
+                            
+                            // Update progress info to show chunking
+                            const progressInfo = document.getElementById('progressInfo');
+                            if (progressInfo) {
+                                progressInfo.innerHTML = `
+                                    <div style="color: blue;">🔄 Processing ${tableNames.length} tables in chunks...</div>
+                                    <div>Using ${Math.ceil(tableNames.length / CHUNK_SIZE)} chunks of ${CHUNK_SIZE} tables each</div>
+                                    <div>Threshold: ${threshold} matches minimum</div>
+                                    <div id="chunkProgress">Preparing chunks...</div>
+                                `;
+                            }
+                            
+                            // Process in chunks
+                            await processTablesInChunks(tableNames, database, minRow, maxRow, minCol, maxCol, searchValueData, CHUNK_SIZE, selectedPattern, threshold, selectedLevels);
+                        } else {
+                            // Single request for smaller table counts
+                            const sessionId = Date.now() + 'search_' + Math.random().toString(36).substr(2, 9);
+                            await processSingleRequest(tableNames, database, minRow, maxRow, minCol, maxCol, searchValueData, sessionId, false, selectedPattern, threshold, selectedLevels);
+                        }
+                    } catch (searchError) {
+                        console.error('Search error:', searchError);
+                        alert('Search error: ' + searchError.message);
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                    }
+                });
 
             } catch (e) {
                 console.error('JavaScript error:', e);
@@ -2739,6 +4012,42 @@
         color: #0c5460;
         padding: 12px;
         border-radius: 4px;
+    }
+
+    /* Level crossing button styles */
+    .level-button-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 5px;
+    }
+
+    .level-button {
+        padding: 8px 16px;
+        border: 2px solid #6c757d;
+        background-color: #f8f9fa;
+        color: #495057;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .level-button:hover {
+        background-color: #e9ecef;
+        border-color: #495057;
+    }
+
+    .level-button.selected {
+        background-color: #007bff;
+        border-color: #0056b3;
+        color: white;
+    }
+
+    .level-button.selected:hover {
+        background-color: #0056b3;
+        border-color: #004085;
     }
 </style>
 

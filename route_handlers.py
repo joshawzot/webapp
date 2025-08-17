@@ -11,7 +11,8 @@
 from collections import defaultdict
 from run import app, cache, redis_client
 from db_operations import *
-from tools_for_plots import get_full_table_data, plot_individual_points_map  # Add plot_individual_points_map to the import
+from db_operations import get_schema_storage_type
+from tools_for_plots import get_full_table_data, plot_individual_points_map, plot_colormap  # Add plot_individual_points_map and plot_colormap to the import
 from flask_caching import Cache
 from conductance_calculator import run_flint_conductance_calculator, convert_table_to_conductance, get_unique_original_values_and_conductance, get_unique_original_values_and_linear_conversion, update_linear_conversion_params
 from sqlalchemy import text
@@ -291,6 +292,77 @@ def save_txt_content(database, table_name):
     except mysql.connector.Error as err:
         return str(err), 400
 
+@app.route('/restore-schema', methods=['POST'])
+def restore_schema():
+    """Restore an archived schema to primary storage"""
+    try:
+        data = request.get_json()
+        database = data.get('database')
+        
+        if not database:
+            return jsonify({'success': False, 'error': 'No database specified'})
+        
+        # Path to the backup file
+        backup_file = f"/local/mysql_migration_backups/{database}.sql"
+        
+        # Check if backup file exists
+        if not os.path.exists(backup_file):
+            return jsonify({'success': False, 'error': f'Backup file not found: {backup_file}'})
+        
+        # Restore the schema using mysql command
+        import subprocess
+        try:
+            result = subprocess.run(
+                ['sudo', 'mysql', '-u', 'root'],
+                input=open(backup_file, 'r').read(),
+                text=True,
+                capture_output=True,
+                timeout=300  # 5 minute timeout
+            )
+            
+            if result.returncode == 0:
+                return jsonify({'success': True, 'message': f'Schema {database} restored successfully'})
+            else:
+                return jsonify({'success': False, 'error': f'MySQL error: {result.stderr}'})
+                
+        except subprocess.TimeoutExpired:
+            return jsonify({'success': False, 'error': 'Restore operation timed out'})
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Restore failed: {str(e)}'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Error: {str(e)}'})
+
+@app.route('/create-symlink', methods=['POST'])
+def create_symlink():
+    """Create symlink for archived schema that isn't linked"""
+    try:
+        schema_name = request.json.get('schema_name')
+        if not schema_name:
+            return jsonify({'success': False, 'error': 'Schema name required'})
+        
+        from symlink_aware_storage import symlink_storage
+        
+        success = symlink_storage.create_symlink_for_archived_schema(schema_name)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Direct access link created for {schema_name}',
+                'redirect': f'/list-tables?database={schema_name}'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to create symlink'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
 @app.route('/list-tables', methods=['POST', 'GET'])
 def list_tables():
     # Get the username from the session
@@ -307,6 +379,52 @@ def list_tables():
     if database:
         record_folder_visit(database, username)
 
+    # Use new storage detection logic
+    try:
+        from db_operations import extract_timestamp_from_schema_name
+        
+        # Get storage information using new detection logic
+        print(f"WEBAPP DEBUG: Checking storage for database: {database}")
+        storage_type_info = get_schema_storage_type(database)
+        print(f"WEBAPP DEBUG: storage_type_info = {storage_type_info}")
+        schema_timestamp = extract_timestamp_from_schema_name(database)
+        print(f"WEBAPP DEBUG: schema_timestamp = {schema_timestamp}")
+        
+        # Schema is accessible - prepare storage display info
+        storage_info = {
+            'location': storage_type_info['type'],
+            'device': storage_type_info['device'],
+            'path': storage_type_info['path'],
+            'type': storage_type_info['display'],
+            'color': storage_type_info['color'],
+            'access_method': storage_type_info['access_method'],
+            'is_symlink': storage_type_info['is_symlink'],
+            'age': None,
+            'timestamp': None
+        }
+        
+        # Calculate age if timestamp exists
+        if schema_timestamp:
+            from datetime import datetime
+            age_days = (datetime.now() - schema_timestamp).days
+            storage_info['age'] = f"{age_days} days old"
+            storage_info['timestamp'] = schema_timestamp.strftime('%Y-%m-%d %H:%M')
+    except Exception as e:
+        print(f"Error getting storage info: {e}")
+        # Fallback to default primary storage
+        storage_info = {
+            'location': 'primary',
+            'device': "/dev/nvme2n1p1 (Primary Drive)",
+            'path': "/var/lib/mysql",
+            'type': "🟢 Primary Storage", 
+            'color': "success",
+            'access_method': 'direct_primary',
+            'is_symlink': False,
+            'age': None,
+            'timestamp': None
+        }
+
+    # Now fetch tables since schema is accessible (not archived)
     tables = fetch_tables(database)  # Retrieve table data from the database
     table_names = ','.join(table['table_name'] for table in tables)
     print("table_names:", table_names)
@@ -324,7 +442,8 @@ def list_tables():
     else:
         images = []
 
-    return render_template('list_tables.html', tables=tables, table_names=table_names, database=database, plot_function=plot_function, images = images, hash_hex = hash_hex)
+    return render_template('list_tables.html', tables=tables, table_names=table_names, database=database, 
+                         storage_info=storage_info, plot_function=plot_function, images = images, hash_hex = hash_hex)
 
 @app.route('/view-table/<database>/<table_name>', methods=['GET'])
 def view_table(database, table_name):
@@ -350,6 +469,30 @@ def view_table(database, table_name):
             return render_template('table.html', results=results, column_names=column_names)
     except mysql.connector.Error as err:
         return str(err)
+
+@app.route('/view-colormap/<database>/<table_name>', methods=['GET'])
+def view_colormap(database, table_name):
+    """View the colormap visualization of a specific table."""
+    try:
+        if 'username' not in session:
+            return "User not logged in", 403
+
+        # Get the table data
+        data_matrix, data_matrix_size = get_full_table_data(table_name, database)
+        
+        # Generate colormap using the existing function
+        colormap_image = plot_colormap(data_matrix, title=f"Colormap for {table_name}")
+        
+        # Render a simple template to display the colormap
+        return render_template('colormap.html', 
+                             colormap_image=colormap_image,
+                             table_name=table_name,
+                             database=database,
+                             dimensions=f"{data_matrix_size[0]}x{data_matrix_size[1]}")
+        
+    except Exception as e:
+        print(f"Error generating colormap: {e}")
+        return f"Error generating colormap: {str(e)}", 500
 
 # Define a dictionary to map plot function names to their corresponding functions
 generate_plot_functions = {
@@ -435,7 +578,8 @@ def render_plot(database, table_name, plot_function):
                  filtered_std_values,  # Real standard deviation values
                  filtered_ber_results,  # Real BER results from CDF analysis
                  selected_groups,
-                 location_dots_map) = plot_function_impl(input_table_names, database, form_data)
+                 location_dots_map,
+                 filtered_group_data) = plot_function_impl(input_table_names, database, form_data)  # Add group data for points count
                 
                 # Create real statistical data for CSV downloads from actual analysis
                 print(f"Creating real statistical data for tables: {table_names}")
@@ -505,18 +649,39 @@ def render_plot(database, table_name, plot_function):
                         'group_names': ber_group_names
                     }
                     
+                    # Extract points count data from filtered_group_data
+                    points_count_list = []
+                    if filtered_group_data and selected_groups:
+                        for table_group_data in filtered_group_data:
+                            table_points = []
+                            for group_idx in selected_groups:
+                                state_idx = selected_groups.index(group_idx) if group_idx in selected_groups else -1
+                                if state_idx >= 0 and state_idx < len(table_group_data):
+                                    points = np.array(table_group_data[state_idx]).flatten()
+                                    table_points.append(len(points))
+                                else:
+                                    table_points.append(0)
+                            points_count_list.append(table_points)
+                    
+                    points_data = {
+                        'points_count': points_count_list,
+                        'group_names': group_names
+                    }
+                    
                     print(f"Created real data successfully:")
                     print(f"Tables: {table_names}")
                     print(f"Groups: {group_names}")
                     print(f"Real avg data: {len(filtered_avg_values)} tables x {len(filtered_avg_values[0]) if filtered_avg_values else 0} states")
                     print(f"Real std data: {len(filtered_std_values)} tables x {len(filtered_std_values[0]) if filtered_std_values else 0} states")
                     print(f"Real BER data: {len(ber_values_list)} tables")
+                    print(f"Real points data: {len(points_count_list)} tables x {len(points_count_list[0]) if points_count_list else 0} states")
                     
                 else:
                     # No tables or no data, create empty data
                     avg_values_data = {'avg_values': [], 'group_names': []}
                     std_values_data = {'std_values': [], 'group_names': []}
                     ber_values_data = {'ber_values': [], 'group_names': []}
+                    points_data = {'points_count': [], 'group_names': []}
             else:
                 plot_data = plot_function_impl(table_name.split(','), database, form_data)
                 sorted_table_names = sorted_table_names_100ppm = \
@@ -612,13 +777,15 @@ def render_plot(database, table_name, plot_function):
                                      avg_values_data=avg_values_data,
                                      std_values_data=std_values_data,
                                      ber_values_data=ber_values_data,
+                                     points_data=points_data,
                                      location_dots_map=location_dots_map,
                                      using_linear_conversion=using_linear_conversion,
                                      using_conductance=using_conductance,
                                      linear_input_min=linear_input_min,
                                      linear_input_max=linear_input_max,
                                      linear_output_min=linear_output_min,
-                                     linear_output_max=linear_output_max)
+                                     linear_output_max=linear_output_max,
+                                     enable_sigma_analysis=form_data.get('enable_sigma_analysis', False))
             else:
                 # Get current linear conversion parameters to pass to template
                 using_linear_conversion = form_data.get('using_linear_conversion', False)
@@ -975,7 +1142,30 @@ def view_plot(database, table_name, plot_function):
             plot_function = plot_function_choice
             if plot_function in generate_plot_functions:
                 if plot_function == "generate_plot":
-                    return render_template('input_form_generate_plot.html', database=database, table_name=table_name, plot_function=plot_function)
+                    # Get session variables for Advanced Options
+                    using_conductance = session.get('using_conductance', False)
+                    using_linear_conversion = session.get('using_linear_conversion', False)
+                    conductance_comparison = session.get('conductance_comparison', None)
+                    linear_conversion_comparison = session.get('linear_conversion_comparison', None)
+                    
+                    # Get linear conversion parameters if they exist
+                    linear_input_min = session.get('linear_input_min', None)
+                    linear_input_max = session.get('linear_input_max', None)
+                    linear_output_min = session.get('linear_output_min', None)
+                    linear_output_max = session.get('linear_output_max', None)
+                    
+                    return render_template('input_form_generate_plot.html', 
+                                         database=database, 
+                                         table_name=table_name, 
+                                         plot_function=plot_function,
+                                         using_conductance=using_conductance,
+                                         using_linear_conversion=using_linear_conversion,
+                                         conductance_comparison=conductance_comparison,
+                                         linear_conversion_comparison=linear_conversion_comparison,
+                                         linear_input_min=linear_input_min,
+                                         linear_input_max=linear_input_max,
+                                         linear_output_min=linear_output_min,
+                                         linear_output_max=linear_output_max)
             else:
                 return f"Invalid plot function selection", 400
         
@@ -1029,17 +1219,36 @@ def view_plot(database, table_name, plot_function):
             linear_input_min = LINEAR_CONVERSION["input_min"]
             linear_input_max = LINEAR_CONVERSION["input_max"]
         
-        return render_template('choose_plot_function_form.html', 
-                              database=database, 
-                              table_name=table_name,
-                              using_conductance=using_conductance,
-                              conductance_comparison=conductance_comparison,
-                              using_linear_conversion=using_linear_conversion,
-                              linear_conversion_comparison=linear_conversion_comparison,
-                              linear_input_min=linear_input_min,
-                              linear_input_max=linear_input_max,
-                              linear_output_min=linear_output_min,
-                              linear_output_max=linear_output_max)
+        # Check if we need to redirect to generate_plot or if we're already there
+        if plot_function != 'generate_plot':
+            # Redirect to generate_plot if not already there
+            return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
+        else:
+            # We're already at generate_plot, so render the input form directly
+            # Get session variables for Advanced Options
+            using_conductance = session.get('using_conductance', False)
+            using_linear_conversion = session.get('using_linear_conversion', False)
+            conductance_comparison = session.get('conductance_comparison', None)
+            linear_conversion_comparison = session.get('linear_conversion_comparison', None)
+            
+            # Get linear conversion parameters if they exist
+            linear_input_min = session.get('linear_input_min', None)
+            linear_input_max = session.get('linear_input_max', None)
+            linear_output_min = session.get('linear_output_min', None)
+            linear_output_max = session.get('linear_output_max', None)
+            
+            return render_template('input_form_generate_plot.html', 
+                                 database=database, 
+                                 table_name=table_name, 
+                                 plot_function=plot_function,
+                                 using_conductance=using_conductance,
+                                 using_linear_conversion=using_linear_conversion,
+                                 conductance_comparison=conductance_comparison,
+                                 linear_conversion_comparison=linear_conversion_comparison,
+                                 linear_input_min=linear_input_min,
+                                 linear_input_max=linear_input_max,
+                                 linear_output_min=linear_output_min,
+                                 linear_output_max=linear_output_max)
 
 @app.route('/set-conductance-values/<database>/<table_name>')
 def set_conductance_values(database, table_name):
@@ -1095,13 +1304,13 @@ def calculate_conductance(database, table_name):
         # Add a flash message for user feedback
         flash('Precise conversion enabled. Precise Conductance values will be used for plotting.', 'success')
         
-        # Redirect back to the Choose Plot Function page
-        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        # Redirect back to the input form page
+        return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
         
     except Exception as e:
         print(f"Error calculating conductance: {str(e)}")
         flash(f"Error calculating conductance: {str(e)}", 'danger')
-        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
 
 @app.route('/upload-file', methods=['POST'])
 def upload_file():   #auto upload
@@ -1194,7 +1403,7 @@ def delete_records(database):
         
         # Use a long-running connection for potentially large operations
         try:
-            from db_operations import create_long_running_connection
+            from db_operations import get_schema_storage_type, create_long_running_connection
             connection = create_long_running_connection(database)
 
             cursor = connection.cursor()
@@ -1540,6 +1749,8 @@ def get_pattern_file(pattern_name):
     # Define relative paths
     relative_pattern_files = {
         "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
+        "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
+        "2048x32_random": "State_pattern_files/2048x32_random.npy",
         "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
         "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
@@ -1547,19 +1758,22 @@ def get_pattern_file(pattern_name):
         "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "State_pattern_files/248x248_16states.npy",
         "248x248_2states": "State_pattern_files/248x248_2states.npy",
+        "248x248_64states": "State_pattern_files/248x248_64states.npy",
         "62x62_2states": "State_pattern_files/62x62_2states.npy",
         "248x1_1state": "State_pattern_files/248x1_1state.npy",
+        "248x256_1state": "State_pattern_files/248x256_1state.npy",
         "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
         "65536x78_ecc": "State_pattern_files/65536x78_ecc.npy",
-        "248x256_1state": "State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
-        "2048x32_random": "State_pattern_files/2048x32_random.npy",
+        "test_chin": "State_pattern_files/ecc_new.npy",
     }
     
     # Define absolute paths
     absolute_pattern_files = {
         "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
+        "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+        "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
         "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
         "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
         "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
@@ -1567,14 +1781,15 @@ def get_pattern_file(pattern_name):
         "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
         "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
         "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
+        "248x248_64states": "/home/admin2/webapp_2/State_pattern_files/248x248_64states.npy",
         "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
         "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
+        "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
         "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
         "65536x78_ecc": "/home/admin2/webapp_2/State_pattern_files/65536x78_ecc.npy",
-        "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
         "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
-        "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
+        "test_chin" : "/home/admin2/webapp_2/State_pattern_files/ecc_new.npy",
     }
     
     # Choose the appropriate pattern files based on configuration
@@ -1627,7 +1842,7 @@ def merge_tables_process():
     import numpy as np
     import pandas as pd
     import traceback
-    from db_operations import create_long_running_connection, create_long_running_engine
+    from db_operations import get_schema_storage_type, create_long_running_connection, create_long_running_engine
 
     try:
         # Use a long-running connection
@@ -2039,7 +2254,7 @@ def copy_tables():
 
     # Connect to databases - use long running connections for large tables
     try:
-        from db_operations import create_long_running_connection, get_table_names
+        from db_operations import get_schema_storage_type, create_long_running_connection, get_table_names
         source_conn = create_long_running_connection(source_db)
         target_conn = create_long_running_connection(target_db)
         
@@ -2489,7 +2704,7 @@ def concatenate_tables():
 
     try:
         # Use our new long-running connection instead of the regular one
-        from db_operations import create_long_running_connection, create_long_running_engine
+        from db_operations import get_schema_storage_type, create_long_running_connection, create_long_running_engine
         connection = create_long_running_connection(database)
         cursor = connection.cursor()
 
@@ -2787,7 +3002,7 @@ def process_large_column_concatenation(database, table_names, new_table_name,
     import pandas as pd
     import numpy as np
     import traceback
-    from db_operations import create_long_running_connection, create_long_running_engine
+    from db_operations import get_schema_storage_type, create_long_running_connection, create_long_running_engine
     
     try:
         # Create database connection and engine
@@ -3511,7 +3726,8 @@ def get_form_data_generate_plot(form):
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
             'analysis_type',  # Added analysis type field for column-by-column analysis
             'column_selection_type', 'custom_column_selection', 'yanCullinan_flag',  # Added column selection fields
-            'location_dots_flag', 'location_dots_value'  # Added location dots fields
+            'location_dots_flag', 'location_dots_value',  # Added location dots fields
+            'enable_sigma_analysis'  # Added sigma analysis control field
         ]
     }
 
@@ -3552,6 +3768,7 @@ def get_form_data_generate_plot(form):
     form_data['filter_negative_values'] = form_data.get('filter_negative_values', 'False') == 'True'
     form_data['generate_bitmap_mask'] = form_data.get('generate_bitmap_mask', 'False') == 'True'
     form_data['location_dots_flag'] = form_data.get('location_dots_flag', 'False') == 'True'
+    form_data['enable_sigma_analysis'] = form_data.get('enable_sigma_analysis', 'False') == 'True'
     
     # Process location dots value
     location_dots_value_str = form_data.get('location_dots_value', '')
@@ -5138,8 +5355,8 @@ def reset_conductance(database, table_name):
     # Add a flash message for user feedback
     flash('Reset to original values successful. Original data will be used for plotting.', 'success')
     
-    # Redirect back to the Choose Plot Function page
-    return redirect(f'/view-plot/{database}/{table_name}/choose')
+    # Redirect back to the input form page
+    return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
 
 @app.route('/linear-conversion/<database>/<table_name>')
 def linear_conversion(database, table_name):
@@ -5181,7 +5398,7 @@ def linear_conversion(database, table_name):
     except Exception as e:
         print(f"Error showing linear conversion form: {str(e)}")
         flash(f"Error showing linear conversion form: {str(e)}", 'danger')
-        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
 
 @app.route('/apply-custom-linear-conversion/<database>/<table_name>', methods=['POST'])
 def apply_custom_linear_conversion(database, table_name):
@@ -5259,13 +5476,13 @@ def apply_custom_linear_conversion(database, table_name):
             input_range_str = "0-63"
         flash(f'Linear conversion enabled. Values will be mapped from {input_range_str} to {output_min}-{output_max} range for plotting.', 'success')
         
-        # Redirect back to the Choose Plot Function page
-        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        # Redirect back to the input form page
+        return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
         
     except Exception as e:
         print(f"Error applying custom linear conversion: {str(e)}")
         flash(f"Error applying custom linear conversion: {str(e)}", 'danger')
-        return redirect(f'/view-plot/{database}/{table_name}/choose')
+        return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
 
 @app.route('/top-schemas-by-size')
 def top_schemas_by_size():
@@ -5277,7 +5494,7 @@ def top_schemas_by_size():
             return redirect(url_for('login'))
             
         # Get schema sizes
-        from db_operations import get_schema_sizes
+        from db_operations import get_schema_storage_type, get_schema_sizes
         schema_sizes = get_schema_sizes()
         
         # Use all schemas instead of limiting to top 100
@@ -5499,7 +5716,7 @@ def split_wide_table_concatenation(database, table_names, base_table_name, max_c
     import pandas as pd
     import numpy as np
     import traceback
-    from db_operations import create_long_running_connection, create_long_running_engine
+    from db_operations import get_schema_storage_type, create_long_running_connection, create_long_running_engine
     
     try:
         # Create database connection and engine
@@ -6675,7 +6892,7 @@ def process_advanced_combine():
 
 @app.route('/analyze-row-averages', methods=['POST'])
 def analyze_row_averages():
-    """Analyze selected tables to find rows with averages outside the specified range."""
+    """Analyze selected tables to find rows or columns with averages outside the specified range."""
     connection = None
     cursor = None
     
@@ -6685,8 +6902,9 @@ def analyze_row_averages():
         table_names = data.get('tableNames', [])
         min_value = float(data.get('minValue'))
         max_value = float(data.get('maxValue'))
+        analysis_type = data.get('analysisType', 'row')  # Default to 'row' for backward compatibility
         
-        print(f"Analyzing row averages for database: {database}, tables: {table_names}, range: {min_value}-{max_value}")
+        print(f"Analyzing {analysis_type} averages for database: {database}, tables: {table_names}, range: {min_value}-{max_value}")
         
         if not database or not table_names:
             return jsonify({'success': False, 'message': 'Database and table names are required'})
@@ -6697,32 +6915,16 @@ def analyze_row_averages():
         # Create database connection
         try:
             print(f"Attempting to connect to database: {database}")
-            safe_update_progress(session_id, {
-                'status': 'connecting',
-                'current_table_name': 'Connecting to database...'
-            })
             
             connection = create_connection(database)
             cursor = connection.cursor()
             print(f"Successfully connected to database: {database}")
-            
-            safe_update_progress(session_id, {
-                'status': 'connected',
-                'current_table_name': 'Database connected, starting search...'
-            })
             
         except Exception as db_error:
             error_msg = f"Database connection failed: {str(db_error)}"
             print(f"Failed to connect to database {database}: {db_error}")
             import traceback
             traceback.print_exc()
-            
-            safe_update_progress(session_id, {
-                'status': 'error',
-                'error': error_msg,
-                'completed': True,
-                'current_table_name': f"ERROR: {error_msg}"
-            })
             raise Exception(error_msg)
         
         report = []
@@ -6789,19 +6991,28 @@ def analyze_row_averages():
                     print(f"Error creating numpy array for table {table_name}: {np_error}")
                     raise
                 
-                # Calculate row averages
-                row_averages = np.mean(data_array, axis=1)
+                # Calculate averages based on analysis type
+                if analysis_type == 'column':
+                    # Calculate column averages (axis=0 means across rows, giving column averages)
+                    averages = np.mean(data_array, axis=0)
+                    analysis_dimension = 'columns'
+                    total_items = total_columns
+                else:
+                    # Calculate row averages (axis=1 means across columns, giving row averages)
+                    averages = np.mean(data_array, axis=1)
+                    analysis_dimension = 'rows'
+                    total_items = total_rows
                 
-                # Find rows with averages outside the specified range
-                bad_rows = []
-                for i, avg in enumerate(row_averages):
+                # Find items with averages outside the specified range
+                bad_rows = []  # Keep the same variable name for backward compatibility with frontend
+                for i, avg in enumerate(averages):
                     if avg < min_value or avg > max_value:
                         bad_rows.append({
                             'row_index': i + 1,  # 1-based indexing for user display
                             'average': float(avg)
                         })
                 
-                print(f"Table {table_name}: Found {len(bad_rows)} rows outside range")
+                print(f"Table {table_name}: Found {len(bad_rows)} {analysis_dimension} outside range")
                 
                 report.append({
                     'table_name': table_name,
@@ -7029,17 +7240,40 @@ def search_value_in_range():
             max_row = int(data.get('maxRow'))
             min_col = int(data.get('minCol'))
             max_col = int(data.get('maxCol'))
-            search_value = float(data.get('searchValue'))
+            
+            # Handle both old searchValue and new searchValueRange formats
+            search_value_range = data.get('searchValueRange')
+            if search_value_range:
+                min_search_value = float(search_value_range.get('min'))
+                max_search_value = float(search_value_range.get('max'))
+            else:
+                # Fallback to old single value format for backward compatibility
+                search_value = float(data.get('searchValue'))
+                min_search_value = search_value
+                max_search_value = search_value
+            
+            # Determine if it's a specific value search (min == max)
+            is_specific_value = min_search_value == max_search_value
+            
             session_id = data.get('sessionId', str(int(time.time())))
             pattern_file = data.get('patternFile')  # New parameter
+            level_crossing = data.get('levelCrossing', 'LN_to_L0')  # New parameter
+            
+            # Handle multiple level crossings (array) or single level crossing (string)
+            if isinstance(level_crossing, list):
+                level_crossings = level_crossing
+            else:
+                level_crossings = [level_crossing]
             
             print(f"Extracted parameters:")
             print(f"  Database: {database}")
             print(f"  Tables count: {len(table_names)}")
             print(f"  Row range: {min_row}-{max_row}")
             print(f"  Col range: {min_col}-{max_col}")
-            print(f"  Search value: {search_value}")
+            search_type = "specific value" if is_specific_value else "value range"
+            print(f"  Search {search_type}: {min_search_value}" + ("" if is_specific_value else f"-{max_search_value}"))
             print(f"  Pattern file: {pattern_file}")
+            print(f"  Level crossing: {level_crossings}")
             print(f"  Session ID: {session_id}")
             
         except (ValueError, TypeError) as param_error:
@@ -7055,6 +7289,11 @@ def search_value_in_range():
         
         if min_row >= max_row or min_col >= max_col:
             error_msg = 'Invalid range: minimum values must be less than maximum values'
+            print(f"Validation failed: {error_msg}")
+            return jsonify({'success': False, 'message': error_msg}), 400
+            
+        if not is_specific_value and min_search_value >= max_search_value:
+            error_msg = 'Invalid search value range: minimum search value must be less than maximum search value'
             print(f"Validation failed: {error_msg}")
             return jsonify({'success': False, 'message': error_msg}), 400
             
@@ -7084,10 +7323,10 @@ def search_value_in_range():
                 if len(pattern_array.shape) == 1:
                     # 1D pattern - treat as single column
                     trimmed_pattern = pattern_array[pattern_min_row:pattern_max_row]
-                    # Find non-zero coordinates with pattern values
+                    # Find all coordinates with pattern values (including L0)
                     pattern_coordinates = []
                     for row_idx in range(len(trimmed_pattern)):
-                        if trimmed_pattern[row_idx] != 0:
+                        if not np.isnan(trimmed_pattern[row_idx]):  # Include all non-NaN values including 0
                             data_row = pattern_min_row + row_idx
                             data_col = pattern_min_col
                             pattern_value = int(trimmed_pattern[row_idx])
@@ -7096,18 +7335,18 @@ def search_value_in_range():
                 else:
                     # 2D pattern
                     trimmed_pattern = pattern_array[pattern_min_row:pattern_max_row, pattern_min_col:pattern_max_col]
-                    # Find non-zero coordinates with pattern values
+                    # Find all coordinates with pattern values (including L0)
                     pattern_coordinates = []
                     for row_idx in range(trimmed_pattern.shape[0]):
                         for col_idx in range(trimmed_pattern.shape[1]):
-                            if trimmed_pattern[row_idx, col_idx] != 0:
+                            if not np.isnan(trimmed_pattern[row_idx, col_idx]):  # Include all non-NaN values including 0
                                 data_row = pattern_min_row + row_idx
                                 data_col = pattern_min_col + col_idx
                                 pattern_value = int(trimmed_pattern[row_idx, col_idx])
                                 # Store: (data_row, data_col, pattern_value, pattern_rel_row, pattern_rel_col)
                                 pattern_coordinates.append((data_row, data_col, pattern_value, row_idx, col_idx))
                 
-                print(f"Found {len(pattern_coordinates)} non-zero coordinates in pattern")
+                print(f"Found {len(pattern_coordinates)} coordinates in pattern")
                 
                 # Debug: Count pattern values to verify distribution
                 pattern_value_counts = {}
@@ -7116,7 +7355,7 @@ def search_value_in_range():
                 print(f"Pattern value distribution: {pattern_value_counts}")
                 
                 if len(pattern_coordinates) == 0:
-                    error_msg = 'Pattern file has no non-zero values in the specified range'
+                    error_msg = 'Pattern file has no valid values in the specified range'
                     print(error_msg)
                     return jsonify({'success': False, 'message': error_msg}), 400
                 
@@ -7127,7 +7366,7 @@ def search_value_in_range():
                 traceback.print_exc()
                 return jsonify({'success': False, 'message': error_msg}), 400
         
-        print(f"Validation passed. Starting search for value {search_value} in database: {database}")
+        print(f"Validation passed. Starting search for value range {min_search_value}-{max_search_value} in database: {database}")
         print(f"Tables: {len(table_names)} tables")
         print(f"Row range: {min_row}-{max_row}, Column range: {min_col}-{max_col}")
         if pattern_coordinates:
@@ -7148,7 +7387,7 @@ def search_value_in_range():
                 'timestamp': time.time(),
                 'search_params': {
                     'database': database,
-                    'value': search_value,
+                    'value_range': {'min': min_search_value, 'max': max_search_value},
                     'min_row': min_row,
                     'max_row': max_row,
                     'min_col': min_col,
@@ -7158,7 +7397,7 @@ def search_value_in_range():
         
         print(f"Starting search with session ID: {session_id}")
         print(f"Initialized progress tracking for {len(table_names)} tables")
-        print(f"Search parameters: value={search_value}, rows={min_row}-{max_row}, cols={min_col}-{max_col}")
+        print(f"Search parameters: value_range={min_search_value}-{max_search_value}, rows={min_row}-{max_row}, cols={min_col}-{max_col}")
         print(f"First 5 tables: {table_names[:5]}")
         
         # Verify session was created
@@ -7258,17 +7497,41 @@ def search_value_in_range():
                         try:
                             cell_value = data_array[row_idx, col_idx]
                             
-                            # Check if the value matches (with some tolerance for floating point comparison)
-                            if abs(cell_value - search_value) < 1e-10:
-                                matches.append({
+                            # Check for level crossing based on the selected type
+                            match_found = False
+                            match_info = {}
+                            
+                            # Check if pattern value matches any of the selected levels
+                            for level_crossing_item in level_crossings:
+                                if level_crossing_item.startswith('L') and level_crossing_item[1:].isdigit():
+                                    # New logic: LN format (e.g., L0, L1, L2, L3)
+                                    # Search only at coordinates where pattern has the specified level
+                                    target_level = int(level_crossing_item[1:])
+                                    if pattern_value == target_level and min_search_value <= cell_value <= max_search_value:
+                                        match_found = True
+                                        match_info['level'] = target_level
+                                        match_info['matched_level_crossing'] = level_crossing_item
+                                        # Extra debug for L0 matches
+                                        if target_level == 0:
+                                            print(f"L0 MATCH FOUND: data({row_idx}, {col_idx}) cell_value={cell_value} pattern_value={pattern_value}")
+                                        break
+                            
+                            # No fallback - only match if the pattern level was explicitly selected
+                            
+                            if match_found:
+                                match_data = {
                                     'row': row_idx,  # Keep 0-indexed for display consistency
                                     'col': col_idx,  # Keep 0-indexed for display consistency
                                     'value': float(cell_value),
                                     'pattern_value': pattern_value,  # Add pattern value for color coding
                                     'pattern_rel_row': pattern_rel_row,  # Relative row in trimmed pattern
-                                    'pattern_rel_col': pattern_rel_col   # Relative col in trimmed pattern
-                                })
-                                print(f"Match found at data({row_idx}, {col_idx}) pattern_rel({pattern_rel_row}, {pattern_rel_col}) with pattern value {pattern_value} (cell_value={cell_value})")
+                                    'pattern_rel_col': pattern_rel_col,   # Relative col in trimmed pattern
+                                    'level_crossing': level_crossing
+                                }
+                                match_data.update(match_info)
+                                matches.append(match_data)
+                                matched_crossing = match_info.get('matched_level_crossing', level_crossings[0] if level_crossings else 'unknown')
+                                print(f"Level crossing match found at data({row_idx}, {col_idx}) pattern_rel({pattern_rel_row}, {pattern_rel_col}) with pattern value {pattern_value} (cell_value={cell_value}) crossing_type={matched_crossing}")
                         except (IndexError, TypeError, ValueError):
                             # Skip invalid cells
                             pass
@@ -7296,8 +7559,8 @@ def search_value_in_range():
                             try:
                                 cell_value = data_array[row_idx, col_idx]
                                 
-                                # Check if the value matches (with some tolerance for floating point comparison)
-                                if abs(cell_value - search_value) < 1e-10:
+                                # Check if the value is within the search range
+                                if min_search_value <= cell_value <= max_search_value:
                                     matches.append({
                                         'row': row_idx,  # Keep 0-indexed for display consistency
                                         'col': col_idx,  # Keep 0-indexed for display consistency
@@ -7324,7 +7587,7 @@ def search_value_in_range():
                             
                 print(f"Table {table_name}: Search complete - {cells_searched} cells searched")
                 
-                print(f"Table {table_name}: Found {len(matches)} matches for value {search_value}")
+                print(f"Table {table_name}: Found {len(matches)} matches for value range {min_search_value}-{max_search_value}")
                 
                 # Debug: Count pattern values in matches for this table
                 if pattern_coordinates and matches:
@@ -7388,12 +7651,14 @@ def search_value_in_range():
         total_matches = sum(table['matches_count'] for table in report)
         
         # Calculate pattern value counts across all tables
-        pattern_value_counts = {'L1': 0, 'L2': 0, 'L3': 0, 'other': 0}
+        pattern_value_counts = {'L0': 0, 'L1': 0, 'L2': 0, 'L3': 0, 'other': 0}
         if pattern_coordinates:
             for table in report:
                 for match in table.get('matches', []):
                     pattern_value = match.get('pattern_value')
-                    if pattern_value == 1:
+                    if pattern_value == 0:
+                        pattern_value_counts['L0'] += 1
+                    elif pattern_value == 1:
                         pattern_value_counts['L1'] += 1
                     elif pattern_value == 2:
                         pattern_value_counts['L2'] += 1
@@ -7403,7 +7668,7 @@ def search_value_in_range():
                         pattern_value_counts['other'] += 1
         
         print(f"Search complete. Processed {len(report)} tables, found {total_matches} total matches")
-        print(f"Pattern value distribution: L1={pattern_value_counts['L1']}, L2={pattern_value_counts['L2']}, L3={pattern_value_counts['L3']}, other={pattern_value_counts['other']}")
+        print(f"Pattern value distribution: L0={pattern_value_counts['L0']}, L1={pattern_value_counts['L1']}, L2={pattern_value_counts['L2']}, L3={pattern_value_counts['L3']}, other={pattern_value_counts['other']}")
         
         # Mark search as completed
         safe_update_progress(session_id, {
@@ -7416,9 +7681,9 @@ def search_value_in_range():
         
         print(f"Search completed successfully for session {session_id}")
         
-        # Schedule cleanup after 5 minutes to allow clients to finish reading
+        # Schedule cleanup after 30 minutes to allow clients to finish reading large results
         def cleanup_session():
-            time.sleep(300)  # 5 minutes
+            time.sleep(1800)  # 30 minutes for large searches
             safe_delete_progress(session_id)
             print(f"Cleaned up session {session_id} after completion")
         
@@ -7431,7 +7696,7 @@ def search_value_in_range():
             'report': report,
             'total_tables': len(table_names),
             'search_params': {
-                'value': search_value,
+                'value_range': {'min': min_search_value, 'max': max_search_value},
                 'row_range': {'min': min_row, 'max': max_row},
                 'col_range': {'min': min_col, 'max': max_col},
                 'pattern_file': pattern_file
@@ -7477,3 +7742,81 @@ def search_value_in_range():
         if session_id:
             result['session_id'] = session_id
         return jsonify(result), 500
+
+@app.route('/get-pattern-levels/<pattern_name>', methods=['GET'])
+def get_pattern_levels(pattern_name):
+    """
+    Analyze a pattern file and return its unique level values.
+    Used to dynamically populate level crossing options.
+    """
+    try:
+        print(f"Analyzing pattern file: {pattern_name}")
+        
+        # Get the pattern file path
+        pattern_file_path = get_pattern_file(pattern_name)
+        if not pattern_file_path or not os.path.exists(pattern_file_path):
+            return jsonify({
+                'success': False, 
+                'error': f'Pattern file not found: {pattern_name}'
+            }), 404
+        
+        # Load the pattern array
+        pattern_array = np.load(pattern_file_path, allow_pickle=True)
+        print(f"Loaded pattern array shape: {pattern_array.shape}")
+        
+        # Get unique values, excluding only NaN
+        unique_values = np.unique(pattern_array)
+        unique_values = unique_values[~np.isnan(unique_values)]  # Remove NaN values
+        unique_values = sorted([int(val) for val in unique_values if not np.isnan(val)])  # Include all levels including 0
+        
+        print(f"Found unique levels in {pattern_name}: {unique_values}")
+        
+        # Create level mappings
+        level_mappings = {}
+        for val in unique_values:
+            level_mappings[f"L{val}"] = val
+        
+        return jsonify({
+            'success': True,
+            'pattern_name': pattern_name,
+            'unique_levels': unique_values,
+            'level_mappings': level_mappings,
+            'pattern_shape': pattern_array.shape
+        })
+        
+    except Exception as e:
+        print(f"Error analyzing pattern file {pattern_name}: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error analyzing pattern file: {str(e)}'
+        }), 500
+
+def check_adjacent_pattern_level(pattern_array, rel_row, rel_col, target_level):
+    """
+    Check if any adjacent cells in the pattern have the specified level value.
+    Used for level crossing detection.
+    """
+    try:
+        if pattern_array is None:
+            return False
+            
+        max_row, max_col = pattern_array.shape
+        
+        # Check 8-directional neighbors (including diagonals)
+        directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+        
+        for dr, dc in directions:
+            new_row = rel_row + dr
+            new_col = rel_col + dc
+            
+            # Check bounds
+            if 0 <= new_row < max_row and 0 <= new_col < max_col:
+                if pattern_array[new_row, new_col] == target_level:
+                    return True
+                    
+        return False
+    except Exception as e:
+        print(f"Error in check_adjacent_pattern_level: {e}")
+        return False

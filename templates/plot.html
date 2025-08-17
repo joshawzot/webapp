@@ -2,6 +2,11 @@
 
 {% block content %}
 
+<!-- Template: plot.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> plot.html
+</div>
+
 <div class="container-fluid">
     <!-- <h1 class="mt-4 mb-4">Plot Results</h1> -->
     
@@ -110,9 +115,6 @@
     <div class="row">
         <div class="col">
             <button class="btn btn-success" id="downloadPPTX">Download all as PPTX</button>
-            <button class="btn btn-info ms-2" id="downloadAvgCSV">Download Average Table CSV</button>
-            <button class="btn btn-warning ms-2" id="downloadStdCSV">Download Standard Deviation Table CSV</button>
-            <button class="btn btn-danger ms-2" id="downloadBerCSV">Download BER PPM Table CSV</button>
         </div>
     </div>
 
@@ -127,11 +129,19 @@
                     <!-- Data Points Table -->
                     <!-- <h3>Total Data Points in Each State</h3> -->
                     <img src="data:image/png;base64,{{ plot }}" alt="Data Points Table" class="img-fluid" id="plot-img-{{ loop.index }}">
+                    <button class="btn btn-primary mt-2 download-plot-btn" data-index="{{ loop.index }}">Download Plot</button>
+                {% elif loop.last %}
+                    <!-- This should be the Comprehensive Metrics Table (Summary Table) -->
+                    <img src="data:image/png;base64,{{ plot }}" alt="Comprehensive Metrics Table" class="img-fluid" id="plot-img-{{ loop.index }}">
+                    <div class="mt-2">
+                        <button class="btn btn-primary download-plot-btn" data-index="{{ loop.index }}">Download Plot</button>
+                        <button class="btn btn-info ms-2" id="downloadTableCSV">Download Table</button>
+                    </div>
                 {% else %}
                     <!-- Other plots -->
                     <img src="data:image/png;base64,{{ plot }}" alt="Generated Plot" class="img-fluid" id="plot-img-{{ loop.index }}">
+                    <button class="btn btn-primary mt-2 download-plot-btn" data-index="{{ loop.index }}">Download Plot</button>
                 {% endif %}
-                <button class="btn btn-primary mt-2 download-plot-btn" data-index="{{ loop.index }}">Download Plot</button>
             </div>
         {% endfor %}
     </div>
@@ -192,198 +202,113 @@
             });
         });
 
-        // Average Table CSV Download
-        document.getElementById('downloadAvgCSV').addEventListener('click', function() {
+        // Download Table CSV
+        document.getElementById('downloadTableCSV').addEventListener('click', function() {
             try {
-                console.log('Average CSV button clicked');
+                console.log('Table CSV button clicked');
                 
                 var tableNames = {{ table_names|tojson|safe }};
                 var avgValuesData = {{ avg_values_data|tojson|safe }};
-                
-                console.log('Table names:', tableNames);
-                console.log('Avg values data:', avgValuesData);
-                
-                if (!avgValuesData || !avgValuesData.avg_values || avgValuesData.avg_values.length === 0) {
-                    alert('Average data not available. Data: ' + JSON.stringify(avgValuesData));
-                    return;
-                }
-                
-                var csvData = [];
-                var avgValues = avgValuesData.avg_values;
-                var groupNames = avgValuesData.group_names || [];
-                
-                // Create default group names if not provided
-                if (groupNames.length === 0) {
-                    for (var i = 0; i < (avgValues[0] ? avgValues[0].length : 4); i++) {
-                        groupNames.push('State ' + i);
-                    }
-                }
-                
-                // Create header row
-                var header = ['State/Group'].concat(tableNames || []).concat(['Row Average']);
-                csvData.push(header);
-                
-                // Create data rows
-                for (var i = 0; i < groupNames.length; i++) {
-                    var row = [groupNames[i]];
-                    var rowValues = [];
-                    
-                    // Add values for each table
-                    for (var j = 0; j < avgValues.length; j++) {
-                        if (avgValues[j] && avgValues[j][i] !== undefined) {
-                            var value = parseFloat(avgValues[j][i]).toFixed(3);
-                            row.push(value);
-                            rowValues.push(parseFloat(value));
-                        } else {
-                            row.push('N/A');
-                        }
-                    }
-                    
-                    // Calculate and add row average
-                    if (rowValues.length > 0) {
-                        var rowAvg = (rowValues.reduce((a, b) => a + b, 0) / rowValues.length).toFixed(3);
-                        row.push(rowAvg);
-                    } else {
-                        row.push('N/A');
-                    }
-                    
-                    csvData.push(row);
-                }
-                
-                downloadCSVTable(csvData, 'average_table.csv');
-            } catch (error) {
-                console.error('Error in average CSV download:', error);
-                alert('Error generating average CSV: ' + error.message);
-            }
-        });
-
-        // Standard Deviation Table CSV Download
-        document.getElementById('downloadStdCSV').addEventListener('click', function() {
-            try {
-                console.log('Std CSV button clicked');
-                
-                var tableNames = {{ table_names|tojson|safe }};
                 var stdValuesData = {{ std_values_data|tojson|safe }};
-                
-                console.log('Table names:', tableNames);
-                console.log('Std values data:', stdValuesData);
-                
-                if (!stdValuesData || !stdValuesData.std_values || stdValuesData.std_values.length === 0) {
-                    alert('Standard deviation data not available. Data: ' + JSON.stringify(stdValuesData));
-                    return;
-                }
-                
-                var csvData = [];
-                var stdValues = stdValuesData.std_values;
-                var groupNames = stdValuesData.group_names || [];
-                
-                // Create default group names if not provided
-                if (groupNames.length === 0) {
-                    for (var i = 0; i < (stdValues[0] ? stdValues[0].length : 4); i++) {
-                        groupNames.push('State ' + i);
-                    }
-                }
-                
-                // Create header row
-                var header = ['State/Group'].concat(tableNames || []).concat(['Row Average']);
-                csvData.push(header);
-                
-                // Create data rows
-                for (var i = 0; i < groupNames.length; i++) {
-                    var row = [groupNames[i]];
-                    var rowValues = [];
-                    
-                    // Add values for each table
-                    for (var j = 0; j < stdValues.length; j++) {
-                        if (stdValues[j] && stdValues[j][i] !== undefined) {
-                            var value = parseFloat(stdValues[j][i]).toFixed(3);
-                            row.push(value);
-                            rowValues.push(parseFloat(value));
-                        } else {
-                            row.push('N/A');
-                        }
-                    }
-                    
-                    // Calculate and add row average
-                    if (rowValues.length > 0) {
-                        var rowAvg = (rowValues.reduce((a, b) => a + b, 0) / rowValues.length).toFixed(3);
-                        row.push(rowAvg);
-                    } else {
-                        row.push('N/A');
-                    }
-                    
-                    csvData.push(row);
-                }
-                
-                downloadCSVTable(csvData, 'standard_deviation_table.csv');
-            } catch (error) {
-                console.error('Error in std CSV download:', error);
-                alert('Error generating standard deviation CSV: ' + error.message);
-            }
-        });
-
-        // BER PPM Table CSV Download
-        document.getElementById('downloadBerCSV').addEventListener('click', function() {
-            try {
-                console.log('BER CSV button clicked');
-                
-                var tableNames = {{ table_names|tojson|safe }};
                 var berValuesData = {{ ber_values_data|tojson|safe }};
+                var pointsData = {{ points_data|tojson|safe }};
                 
                 console.log('Table names:', tableNames);
-                console.log('BER values data:', berValuesData);
+                console.log('All data:', {avg: avgValuesData, std: stdValuesData, ber: berValuesData, points: pointsData});
                 
-                if (!berValuesData || !berValuesData.ber_values || berValuesData.ber_values.length === 0) {
-                    alert('BER data not available. Data: ' + JSON.stringify(berValuesData));
+                if (!tableNames || tableNames.length === 0) {
+                    alert('No table data available for download.');
                     return;
                 }
                 
                 var csvData = [];
-                var berValues = berValuesData.ber_values;
-                var groupNames = berValuesData.group_names || [];
+                var avgValues = avgValuesData ? avgValuesData.avg_values : null;
+                var stdValues = stdValuesData ? stdValuesData.std_values : null;
+                var berValues = berValuesData ? berValuesData.ber_values : null;
+                var pointsValues = pointsData ? pointsData.points_count : null;
                 
-                // Create default group names if not provided
-                if (groupNames.length === 0) {
-                    for (var i = 0; i < (berValues[0] ? berValues[0].length : 4); i++) {
-                        groupNames.push('State ' + i);
-                    }
+                // Create header row matching the exact summary table format from the image
+                var header = ['Table Name'];
+                
+                // Add Points columns (S0 Points, S1 Points, S2 Points, S3 Points)
+                for (var i = 0; i < 4; i++) {
+                    header.push('S' + i + ' Points');
                 }
                 
-                // Create header row
-                var header = ['State/Group'].concat(tableNames || []).concat(['Row Average']);
+                // Add Average columns (S0 Avg, S1 Avg, S2 Avg, S3 Avg)
+                for (var i = 0; i < 4; i++) {
+                    header.push('S' + i + ' Avg');
+                }
+                
+                // Add Standard Deviation columns (S0 Std, S1 Std, S2 Std, S3 Std)
+                for (var i = 0; i < 4; i++) {
+                    header.push('S' + i + ' Std');
+                }
+                
+                // Add BER columns (S0->S1 BER, S1->S2 BER, S2->S3 BER)
+                header.push('S0->S1 BER');
+                header.push('S1->S2 BER');
+                header.push('S2->S3 BER');
+                
                 csvData.push(header);
                 
-                // Create data rows
-                for (var i = 0; i < groupNames.length; i++) {
-                    var row = [groupNames[i]];
-                    var rowValues = [];
+                // Create data rows for each table
+                for (var j = 0; j < tableNames.length; j++) {
+                    var row = [tableNames[j]];
                     
-                    // Add values for each table
-                    for (var j = 0; j < berValues.length; j++) {
-                        if (berValues[j] && berValues[j][i] !== undefined) {
-                            var value = parseFloat(berValues[j][i]).toFixed(0);
-                            row.push(value);
-                            rowValues.push(parseFloat(value));
+                    // Add Points columns
+                    for (var i = 0; i < 4; i++) {
+                        if (pointsValues && pointsValues[j] && pointsValues[j][i] !== undefined && pointsValues[j][i] !== null) {
+                            row.push(pointsValues[j][i]);
                         } else {
                             row.push('N/A');
                         }
                     }
                     
-                    // Calculate and add row average
-                    if (rowValues.length > 0) {
-                        var rowAvg = (rowValues.reduce((a, b) => a + b, 0) / rowValues.length).toFixed(0);
-                        row.push(rowAvg);
+                    // Add Average values
+                    for (var i = 0; i < 4; i++) {
+                        if (avgValues && avgValues[j] && avgValues[j][i] !== undefined && avgValues[j][i] !== null) {
+                            var value = parseFloat(avgValues[j][i]);
+                            row.push(isNaN(value) ? 'N/A' : value.toFixed(2));
+                        } else {
+                            row.push('N/A');
+                        }
+                    }
+                    
+                    // Add Standard Deviation values
+                    for (var i = 0; i < 4; i++) {
+                        if (stdValues && stdValues[j] && stdValues[j][i] !== undefined && stdValues[j][i] !== null) {
+                            var value = parseFloat(stdValues[j][i]);
+                            row.push(isNaN(value) ? 'N/A' : value.toFixed(2));
+                        } else {
+                            row.push('N/A');
+                        }
+                    }
+                    
+                    // Add BER values (S0->S1, S1->S2, S2->S3)
+                    if (berValues && berValues[j] && Array.isArray(berValues[j])) {
+                        for (var i = 0; i < 3; i++) {
+                            if (i < berValues[j].length && berValues[j][i] !== undefined && berValues[j][i] !== null) {
+                                var value = parseFloat(berValues[j][i]);
+                                row.push(isNaN(value) ? 'N/A' : Math.round(value));
+                            } else {
+                                row.push('N/A');
+                            }
+                        }
                     } else {
+                        // If no BER data available
+                        row.push('N/A');
+                        row.push('N/A');
                         row.push('N/A');
                     }
                     
                     csvData.push(row);
                 }
                 
-                downloadCSVTable(csvData, 'ber_ppm_table.csv');
+                downloadCSVTable(csvData, 'summary_table.csv');
             } catch (error) {
-                console.error('Error in BER CSV download:', error);
-                alert('Error generating BER CSV: ' + error.message);
+                console.error('Error in table CSV download:', error);
+                alert('Error generating table CSV: ' + error.message);
             }
         });
 
@@ -693,7 +618,7 @@
     {% endif %}
 
     <!-- Add Sigma Intersections Table -->
-    {% if sigma_table %}
+    {% if sigma_table and enable_sigma_analysis %}
         <div class="sigma-intersections-tables mt-4 mb-4">
             <h3>Sigma Intersections Analysis</h3>
             {% for table_name in table_names %}

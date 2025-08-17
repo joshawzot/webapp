@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Database Not Found</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 4rem;
+            color: #e53e3e;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Template: error.html -->
+    <div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+        📄 <strong>Template:</strong> error.html
+    </div>
+    
+    <div class="container">
+        <div class="error-container">
+            <i class="fas fa-exclamation-triangle error-icon"></i>
+            <h1 class="mb-4 text-danger">Database Not Found</h1>
+            
+            <div class="alert alert-danger">
+                <strong>Error:</strong> {{ error_message }}
+            </div>
+            
+            <div class="mt-4">
+                <a href="{{ url_for('home') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+[
+  {
+    "timestamp": "2025-08-03T12:39:40.669006",
+    "action": "CHECK",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2Reset_20250109",
+    "status": "info",
+    "message": "Found 902 .ibd files"
+  },
+  {
+    "timestamp": "2025-08-03T12:39:50.769839",
+    "action": "DROP",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2Reset_20250109",
+    "status": "success",
+    "message": "Dropped broken database"
+  },
+  {
+    "timestamp": "2025-08-03T12:39:50.769914",
+    "action": "REBUILD",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2Reset_20250109",
+    "status": "error",
+    "message": "Rebuild failed: [Errno 13] Permission denied: '/var/lib/mysql/MaxZhang_Cullinan_183_100ReadRAC2Reset_20250109'"
+  },
+  {
+    "timestamp": "2025-08-03T12:39:50.797522",
+    "action": "CHECK",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC1Reset_20250109",
+    "status": "info",
+    "message": "Found 900 .ibd files"
+  },
+  {
+    "timestamp": "2025-08-03T12:40:04.897407",
+    "action": "DROP",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC1Reset_20250109",
+    "status": "success",
+    "message": "Dropped broken database"
+  },
+  {
+    "timestamp": "2025-08-03T12:40:04.897470",
+    "action": "REBUILD",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC1Reset_20250109",
+    "status": "error",
+    "message": "Rebuild failed: [Errno 13] Permission denied: '/var/lib/mysql/MaxZhang_Cullinan_183_100ReadRAC1Reset_20250109'"
+  },
+  {
+    "timestamp": "2025-08-03T12:40:04.915994",
+    "action": "CHECK",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2_20250109",
+    "status": "info",
+    "message": "Found 900 .ibd files"
+  },
+  {
+    "timestamp": "2025-08-03T12:40:17.765786",
+    "action": "DROP",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2_20250109",
+    "status": "success",
+    "message": "Dropped broken database"
+  },
+  {
+    "timestamp": "2025-08-03T12:40:17.765880",
+    "action": "REBUILD",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2_20250109",
+    "status": "error",
+    "message": "Rebuild failed: [Errno 13] Permission denied: '/var/lib/mysql/MaxZhang_Cullinan_183_100ReadRAC2_20250109'"
+  }
+]

@@ -24,6 +24,7 @@ def get_pattern_files():
         return {
             "1296x64_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "/home/admin2/webapp_2/State_pattern_files/2048x32_rowbar_4states.npy",
+            "2048x32_random": "/home/admin2/webapp_2/State_pattern_files/2048x32_random.npy",
             "3x4_4states_debug": "/home/admin2/webapp_2/State_pattern_files/3x4_4states_debug.npy",
             "248x248_checkerboard_4states": "/home/admin2/webapp_2/State_pattern_files/248x248_checkerboard_4states.npy",
             "1296x64_Adrien_random_4states": "/home/admin2/webapp_2/State_pattern_files/1296x64_Adrien_random_4states.npy",
@@ -31,18 +32,22 @@ def get_pattern_files():
             "1296x64_1state": "/home/admin2/webapp_2/State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "/home/admin2/webapp_2/State_pattern_files/248x248_16states.npy",
             "248x248_2states": "/home/admin2/webapp_2/State_pattern_files/248x248_2states.npy",
+            "248x248_64states": "/home/admin2/webapp_2/State_pattern_files/248x248_64states.npy",
             "62x62_2states": "/home/admin2/webapp_2/State_pattern_files/62x62_2states.npy",
             "248x1_1state": "/home/admin2/webapp_2/State_pattern_files/248x1_1state.npy",
             "248x256_1state": "/home/admin2/webapp_2/State_pattern_files/248x256_1state.npy",
             "82944x78_ecc_fuxi": "/home/admin2/webapp_2/State_pattern_files/82944x78_ecc_fuxi.npy",
+            "65536x78_ecc": "/home/admin2/webapp_2/State_pattern_files/65536x78_ecc.npy",
             "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
+            "test_chin": "/home/admin2/webapp_2/State_pattern_files/ecc_new.npy",
         }
     else:
         # Relative paths dictionary
         return {
             "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
             "2048x32_rowbar_4states": "State_pattern_files/2048x32_rowbar_4states.npy",
+            "2048x32_random": "State_pattern_files/2048x32_random.npy",
             "3x4_4states_debug": "State_pattern_files/3x4_4states_debug.npy",
             "248x248_checkerboard_4states": "State_pattern_files/248x248_checkerboard_4states.npy",
             "1296x64_Adrien_random_4states": "State_pattern_files/1296x64_Adrien_random_4states.npy",
@@ -50,12 +55,15 @@ def get_pattern_files():
             "1296x64_1state": "State_pattern_files/1296x64_1state.npy",
             "248x248_16states": "State_pattern_files/248x248_16states.npy",
             "248x248_2states": "State_pattern_files/248x248_2states.npy",
+            "248x248_64states": "State_pattern_files/248x248_64states.npy",
             "62x62_2states": "State_pattern_files/62x62_2states.npy",
             "248x1_1state": "State_pattern_files/248x1_1state.npy",
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
             "82944x78_ecc_fuxi": "State_pattern_files/82944x78_ecc_fuxi.npy",
+            "65536x78_ecc": "State_pattern_files/65536x78_ecc.npy",
             "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
+            "test_chin": "State_pattern_files/ecc_new.npy",
         }
 
 def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array):
@@ -559,6 +567,10 @@ def generate_plot(table_names, database_name, form_data):
     correlation_analysis = None
     cluster_map = None
     
+    # Initialize pattern_file_array to avoid 'referenced before assignment' error
+    pattern_file_array = None
+    print(f"DEBUG: Initialized pattern_file_array = {pattern_file_array}")
+    
     if form_data['state_pattern_type'] == 'predefined':
         # Define the path to your state pattern files directory
         state_pattern = form_data.get('state_pattern')
@@ -581,6 +593,7 @@ def generate_plot(table_names, database_name, form_data):
             "248x256_1state": "State_pattern_files/248x256_1state.npy",
             "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
+            "test_chin": "State_pattern_files/ecc_new.npy",
             
         }'''
 
@@ -591,17 +604,24 @@ def generate_plot(table_names, database_name, form_data):
 
         # Load the pattern file array if the file path is found
         if file_path:
-            pattern_file_array = np.load(file_path)
-            # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
-            if state_pattern == "82944x78_ecc_fuxi":
-                # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
-                pattern_file_array = pattern_file_array.reshape(78, 82944).T
-                        # Special handling for 65536x78_ecc.npy which is actually (78, 32, 2048)
-            if state_pattern == "65536x78_ecc":
-                # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
-                pattern_file_array = pattern_file_array.reshape(78, 65536).T
+            try:
+                pattern_file_array = np.load(file_path)
+                print(f"DEBUG: Loaded pattern_file_array with shape {pattern_file_array.shape}")
+                # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
+                if state_pattern == "82944x78_ecc_fuxi":
+                    # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+                    pattern_file_array = pattern_file_array.reshape(78, 82944).T
+                    print(f"DEBUG: Reshaped 82944x78_ecc_fuxi to {pattern_file_array.shape}")
+                            # Special handling for 65536x78_ecc.npy which is actually (78, 32, 2048)
+                if state_pattern == "65536x78_ecc":
+                    # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
+                    pattern_file_array = pattern_file_array.reshape(78, 65536).T
+                    print(f"DEBUG: Reshaped 65536x78_ecc to {pattern_file_array.shape}")
+                print(f"DEBUG: Final pattern_file_array after loading: {pattern_file_array is not None}")
+            except Exception as e:
+                raise Exception(f"Error loading pattern file '{file_path}': {str(e)}")
         else:
-            print("Invalid state pattern or file path not found.")
+            raise Exception(f"Pattern file not found for state pattern: {state_pattern}. Available patterns: {list(pattern_files.keys())}")
     elif form_data['state_pattern_type'] == '1D':
         state_pattern = None
         number_of_states = form_data.get('number_of_states', "")
@@ -617,7 +637,11 @@ def generate_plot(table_names, database_name, form_data):
         target_ranges = pass_range
 
     print("target_ranges:", target_ranges)
-    target_ranges = [float(x) for x in target_ranges.split(',') if x.replace('.', '', 1).isdigit()]
+    # Handle the case where target_ranges might be None or empty
+    if target_ranges:
+        target_ranges = [float(x) for x in target_ranges.split(',') if x.replace('.', '', 1).isdigit()]
+    else:
+        target_ranges = []
     print("target_ranges:", target_ranges)
 
     # Check if target_ranges has values
@@ -765,6 +789,10 @@ def generate_plot(table_names, database_name, form_data):
     
     if column_analysis_enabled:
         print("Column-by-column analysis enabled for 82944x78_ecc_fuxi")
+        # Ensure pattern_file_array is loaded before using it for column analysis
+        print(f"DEBUG: Column analysis - pattern_file_array is None: {pattern_file_array is None}")
+        if pattern_file_array is None:
+            raise Exception(f"Pattern file array not loaded for column-by-column analysis: {form_data.get('state_pattern')}")
         # Handle column-by-column analysis
         return generate_column_by_column_analysis(table_names, database_name, form_data, data_matrices, 
                                                 pattern_file_array, target_ranges, target_range_flag, 
@@ -797,6 +825,10 @@ def generate_plot(table_names, database_name, form_data):
                 groups, stats, selected_groups = get_group_data_new_from_matrix(
                     data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
+                # Ensure pattern_file_array is loaded before using it
+                print(f"DEBUG: Before predefined processing (target_range_flag=0) - pattern_file_array is None: {pattern_file_array is None}")
+                if pattern_file_array is None:
+                    raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups = get_group_data_from_matrix(
                     data_matrix, selected_groups, pattern_file_array)
@@ -806,6 +838,10 @@ def generate_plot(table_names, database_name, form_data):
                 groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
                     target_ranges, data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
+                # Ensure pattern_file_array is loaded before using it
+                print(f"DEBUG: Before predefined processing (target_range_flag=1) - pattern_file_array is None: {pattern_file_array is None}")
+                if pattern_file_array is None:
+                    raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                 # Modify to use the data matrix directly
                 groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
                     target_ranges, data_matrix, selected_groups, pattern_file_array)
@@ -1262,7 +1298,8 @@ def generate_plot(table_names, database_name, form_data):
                 filtered_std_values,  # Add real standard deviation values
                 filtered_ber_results,  # Add real BER results from CDF analysis
                 selected_groups,  # Add selected groups for state names
-                location_dots_map)  # Add location dots map
+                location_dots_map,  # Add location dots map
+                filtered_group_data)  # Add group data for points count
 
     # Handle the case where there is only one selected group
     if sorted_table_names is None:
@@ -1331,7 +1368,8 @@ def generate_plot(table_names, database_name, form_data):
             filtered_std_values,  # Add real standard deviation values
             filtered_ber_results,  # Add real BER results from CDF analysis
             selected_groups,  # Add selected groups for state names
-            location_dots_map)  # Add location dots map
+            location_dots_map,  # Add location dots map
+            filtered_group_data)  # Add group data for points count
 
 # Add helper functions to work with matrices directly instead of fetching from database
 
@@ -1799,7 +1837,8 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
             None,
             None,
             None,
-            None)  # location_dots_map (None for column analysis)
+            None,  # location_dots_map (None for column analysis)
+            None)  # filtered_group_data (None for column analysis)
 
 def plot_column_data_points_summary(all_column_group_data, all_column_names, selected_groups):
     """

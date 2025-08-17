@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schema Archived - {{ database }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .archive-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        .archive-icon {
+            font-size: 4rem;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+        .schema-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #17a2b8;
+        }
+        .restore-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s ease;
+        }
+        .restore-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+        .back-btn {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+        }
+        .loading-spinner {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Template: schema_archived.html -->
+    <div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+        📄 <strong>Template:</strong> schema_archived.html
+    </div>
+    
+    <div class="container">
+        <div class="archive-container text-center">
+            <i class="fas fa-archive archive-icon"></i>
+            <h1 class="mb-4">📦 Schema Archived</h1>
+            
+            <div class="schema-info text-start">
+                <h4 class="text-info mb-3">
+                    <i class="fas fa-database"></i> {{ database }}
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>📍 Current Location:</strong><br>
+                        <span class="badge bg-info">{{ storage_location.title() }} Storage</span></p>
+                        
+                        <p><strong>💾 Storage Device:</strong><br>
+                        /dev/sda1 (Archive Drive)</p>
+                    </div>
+                    <div class="col-md-6">
+                        {% if schema_timestamp %}
+                        <p><strong>📅 Created:</strong><br>
+                        {{ schema_timestamp.strftime('%Y-%m-%d %H:%M') }}</p>
+                        
+                        {% if schema_age_days %}
+                        <p><strong>⏰ Age:</strong><br>
+                        {{ schema_age_days }} days old</p>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>What happened?</strong> This schema was automatically moved to archive storage because it's older than 60 days. This helps keep your primary storage fast and organized.
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h5>Choose an action:</h5>
+                
+                <div class="d-grid gap-3 d-md-flex justify-content-center mt-3">
+                    <button type="button" class="btn btn-success restore-btn" onclick="restoreSchema()">
+                        <i class="fas fa-undo"></i> Restore Schema
+                    </button>
+                    
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary back-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+                
+                <div class="loading-spinner mt-3">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Restoring...</span>
+                    </div>
+                    <p class="mt-2">Restoring schema... This may take a few minutes.</p>
+                </div>
+            </div>
+
+            <div class="mt-4 text-muted">
+                <small>
+                    <i class="fas fa-shield-alt"></i>
+                    Your data is safe! A complete backup was created before archiving.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function restoreSchema() {
+            if (confirm('Are you sure you want to restore this schema to primary storage? This may take a few minutes.')) {
+                // Show loading spinner
+                document.querySelector('.restore-btn').style.display = 'none';
+                document.querySelector('.loading-spinner').style.display = 'block';
+                
+                // Send restore request
+                fetch('/restore-schema', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        'database': '{{ database }}'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Schema restored successfully!');
+                        // Redirect to the tables list
+                        window.location.href = '/list-tables';
+                    } else {
+                        alert('Error restoring schema: ' + data.error);
+                        // Hide loading spinner and show button again
+                        document.querySelector('.restore-btn').style.display = 'inline-block';
+                        document.querySelector('.loading-spinner').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    alert('Error restoring schema: ' + error);
+                    // Hide loading spinner and show button again
+                    document.querySelector('.restore-btn').style.display = 'inline-block';
+                    document.querySelector('.loading-spinner').style.display = 'none';
+                });
+            }
+        }
+    </script>
+</body>
+</html>

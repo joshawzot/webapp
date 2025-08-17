@@ -787,24 +787,34 @@ if __name__ == '__main__':
     import eventlet
     eventlet.monkey_patch()
     
-    # Run the app on multiple ports (3001-3020)
-    import multiprocessing
+    # Run the app on multiple ports (3000-3007)
+    import threading
     
-    def start_server(port):
+    def start_server_on_port(port):
+        """Start a server instance on a specific port"""
         print(f"Starting server on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port, debug=True)
+        socketio.run(app, host='0.0.0.0', port=port, debug=False)
     
-    # Create and start processes for each port
-    processes = []
-    for port in range(3000, 3008):  #3007 for chin file upload
-        process = multiprocessing.Process(target=start_server, args=(port,))
-        processes.append(process)
-        process.start()
-        print(f"Started process for port {port}")
+    # Create threads for each port
+    threads = []
+    ports = range(3000, 3008)  # 3000 to 3007 inclusive
     
-    # Wait for all processes to complete (which they won't unless interrupted)
-    for process in processes:
-        process.join()
+    for port in ports:
+        thread = threading.Thread(target=start_server_on_port, args=(port,))
+        thread.daemon = True
+        threads.append(thread)
+        thread.start()
+        print(f"Started thread for port {port}")
+    
+    print(f"All servers started on ports {list(ports)}")
+    
+    # Keep the main thread alive
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Shutting down servers...")
+        exit(0)
 else:
     # WSGI entry point - this is used by Gunicorn
     # We need to make sure Gunicorn can work with SocketIO
@@ -819,5 +829,35 @@ else:
         print(f"Starting SocketIO server on port {port}")
         socketio.run(app, host='0.0.0.0', port=port, debug=False)
     
-    # Override the run_flask function to use SocketIO
-    run_flask = run_with_socketio
+    def run_multiple_ports():
+        """Run servers on multiple ports (3000-3007) when used as WSGI module"""
+        import threading
+        
+        def start_server_on_port(port):
+            """Start a server instance on a specific port"""
+            print(f"Starting WSGI server on port {port}")
+            socketio.run(app, host='0.0.0.0', port=port, debug=False)
+        
+        # Create threads for each port
+        threads = []
+        ports = range(3000, 3008)  # 3000 to 3007 inclusive
+        
+        for port in ports:
+            thread = threading.Thread(target=start_server_on_port, args=(port,))
+            thread.daemon = True
+            threads.append(thread)
+            thread.start()
+            print(f"Started WSGI thread for port {port}")
+        
+        print(f"All WSGI servers started on ports {list(ports)}")
+        
+        # Keep the main thread alive
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Shutting down WSGI servers...")
+            exit(0)
+    
+    # Override the run_flask function to use SocketIO on multiple ports
+    run_flask = run_multiple_ports

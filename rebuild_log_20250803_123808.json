@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2025-08-03T12:38:08.202875",
+    "action": "REBUILD",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2Reset_20250109",
+    "status": "success",
+    "message": "DRY RUN: Would rebuild (Found 902 .ibd files)"
+  },
+  {
+    "timestamp": "2025-08-03T12:38:08.224036",
+    "action": "REBUILD",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC1Reset_20250109",
+    "status": "success",
+    "message": "DRY RUN: Would rebuild (Found 900 .ibd files)"
+  },
+  {
+    "timestamp": "2025-08-03T12:38:08.244116",
+    "action": "REBUILD",
+    "schema": "MaxZhang_Cullinan_183_100ReadRAC2_20250109",
+    "status": "success",
+    "message": "DRY RUN: Would rebuild (Found 900 .ibd files)"
+  }
+]

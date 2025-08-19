@@ -96,3 +96,71 @@
 [I 2025-08-05 03:34:10.427 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
 [I 2025-08-05 18:40:22.499 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
 [I 2025-08-05 18:40:28.634 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
+[W 2025-08-19 09:48:20.102 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 55.09ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 09:48:20.125 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 2.03ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 09:48:20.153 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 4.37ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 09:48:29.090 ServerApp] Notebook AP_OV_Qual_Tracking.ipynb is not trusted
+[W 2025-08-19 09:48:29.098 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.57ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 09:48:29.162 ServerApp] Kernel started: dee3cee7-5f33-40e1-80f3-8edf8d57e44c
+[I 2025-08-19 09:50:29.833 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 09:58:29.825 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:06:29.824 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:16:29.792 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:18:29.165 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:20:29.799 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:21:42.501 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 10.35ms
+[I 2025-08-19 10:21:49.754 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 0.90ms
+[I 2025-08-19 10:24:29.152 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:26:29.788 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:28:29.147 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:30:29.142 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:32:29.787 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:46:29.217 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:48:29.773 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 10:50:29.769 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:08:29.122 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:10:29.758 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:12:29.755 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:16:29.737 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:20:29.088 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:22:29.751 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:32:29.748 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:44:29.089 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:46:29.069 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:48:29.714 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:50:29.739 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 11:52:29.098 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 12:18:29.153 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:26:29.012 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:28:28.964 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:30:28.946 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:32:28.948 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:34:28.983 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:36:28.954 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:38:29.022 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:40:29.598 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:46:29.059 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:48:28.954 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:50:29.581 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:54:28.934 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 14:56:28.963 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:00:28.934 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:02:02.126 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 1.43ms
+[I 2025-08-19 15:02:29.590 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:04:28.935 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 15:05:47.947 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.2) 3.61ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 15:05:47.968 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 3.12ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 15:05:47.987 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.2) 3.24ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 15:05:56.320 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.2) 3.08ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:06:29.588 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:10:29.593 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:12:29.576 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:17:48.556 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:17:55.104 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:93621b3882ef4e3b914bf85704150cb8
+[W 2025-08-19 15:18:18.583 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.85ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:40:17.741 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:42:17.620 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:44:18.548 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:46:17.600 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:48:17.612 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 15:50:18.545 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb

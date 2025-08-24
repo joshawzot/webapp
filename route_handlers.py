@@ -8,6 +8,9 @@
 # - /api/create-file
 # - /api/create-directory
 
+import sys
+sys.path.append('/home/admin2/agate_mpw5_testing/tests/postprocess')
+
 from collections import defaultdict
 from run import app, cache, redis_client
 from db_operations import *
@@ -17,6 +20,51 @@ from flask_caching import Cache
 from conductance_calculator import run_flint_conductance_calculator, convert_table_to_conductance, get_unique_original_values_and_conductance, get_unique_original_values_and_linear_conversion, update_linear_conversion_params
 from sqlalchemy import text
 import pandas as pd
+from functools import wraps
+
+# User-port mapping - centralized definition
+USER_PORT_MAPPING = {
+    'others': 3000,
+    'alisa': 3001,
+    'adrien': 3002,
+    'chin': 3003,
+    'yan': 3004,
+    'mingyi': 3005,
+    'max': 3006
+}
+
+def require_auth_and_port(f):
+    """
+    Decorator to require authentication and validate port access for protected routes
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if user is logged in
+        username = session.get('username')
+        if not username:
+            return redirect(url_for('login'))
+        
+        # Check if user exists in port mapping
+        if username not in USER_PORT_MAPPING:
+            session.pop('username', None)  # Clear invalid session
+            return redirect(url_for('login'))
+        
+        # Get current port
+        current_port = request.environ.get('SERVER_PORT', '5000')
+        try:
+            current_port = int(current_port)
+        except (ValueError, TypeError):
+            current_port = 5000
+        
+        # Check port restriction
+        required_port = USER_PORT_MAPPING[username]
+        if current_port != required_port:
+            session.pop('username', None)  # Clear session on port mismatch
+            flash(f"Access denied! User '{username}' can only access through port {required_port}. Please use: http://{request.host.split(':')[0]}:{required_port}", 'error')
+            return redirect(url_for('login'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Standard library imports
 import os, base64, json, time
@@ -212,55 +260,74 @@ def extract_statistical_data(table_names, database_name, form_data):
         }
 
 @app.route('/')
+@require_auth_and_port
 def home():
     username = session.get('username')
     print(username)
-    if username:
-        try:
-            conn = create_connection()
-            cursor = conn.cursor()
-            databases = get_all_databases(cursor)
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        databases = get_all_databases(cursor)
+        
+        # Retrieve recent folder visits
+        recent_visits_json = redis_client.get('recent_folder_visits')
+        recent_visits = []
+        if recent_visits_json:
+            try:
+                recent_visits = json.loads(recent_visits_json)
+            except:
+                # If JSON parsing fails, start with empty list
+                recent_visits = []
+        
+        # Check disk space
+        disk_info = get_disk_space()
+        
+        # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
+        disk_stats = shutil.disk_usage("/")  # Use root directory, which always exists
+        #disk_stats = shutil.disk_usage("/app") original
+        free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
+        low_disk_space = free_space_gb < 10  # True if less than 10GB
             
-            # Retrieve recent folder visits
-            recent_visits_json = redis_client.get('recent_folder_visits')
-            recent_visits = []
-            if recent_visits_json:
-                try:
-                    recent_visits = json.loads(recent_visits_json)
-                except:
-                    # If JSON parsing fails, start with empty list
-                    recent_visits = []
-            
-            # Check disk space
-            disk_info = get_disk_space()
-            
-            # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-            disk_stats = shutil.disk_usage("/")  # Use root directory, which always exists
-            #disk_stats = shutil.disk_usage("/app") original
-            free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
-            low_disk_space = free_space_gb < 10  # True if less than 10GB
-                
-            cursor.close()
-            conn.close()
-            return render_template('home_page.html', 
-                                  databases=databases,
-                                  username=username, 
-                                  recent_visits=recent_visits,
-                                  disk_info=disk_info,
-                                  low_disk_space=low_disk_space)
-        except mysql.connector.Error as err:
-            return str(err), 500
-    else:
-        return redirect(url_for('login'))
+        cursor.close()
+        conn.close()
+        return render_template('home_page.html', 
+                              databases=databases,
+                              username=username, 
+                              recent_visits=recent_visits,
+                              disk_info=disk_info,
+                              low_disk_space=low_disk_space)
+    except mysql.connector.Error as err:
+        return str(err), 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
-        if username:
+        
+        if not username:
+            return render_template('login.html', error="Please select a user")
+        
+        # Get the current port from the request
+        current_port = request.environ.get('SERVER_PORT', '5000')
+        try:
+            current_port = int(current_port)
+        except (ValueError, TypeError):
+            current_port = 5000  # Default fallback
+        
+        # Check if user exists in mapping
+        if username not in USER_PORT_MAPPING:
+            return render_template('login.html', error="Invalid user selected")
+        
+        # Check port restriction
+        required_port = USER_PORT_MAPPING[username]
+        if current_port != required_port:
+            error_msg = f"Access denied! User '{username}' can only login through port {required_port}. Current port: {current_port}. Please access: http://{request.host.split(':')[0]}:{required_port}"
+            return render_template('login.html', error=error_msg)
+        
+        # If port validation passes, proceed with login
             session['username'] = username
             return redirect(url_for('home'))
-        return render_template('login.html', error="Please enter a username")
+        
     return render_template('login.html')
 
 @app.route('/logout')
@@ -269,6 +336,7 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/create-db')
+@require_auth_and_port
 def create_db_page():
     conn = create_connection()
     cursor = conn.cursor()
@@ -364,11 +432,10 @@ def create_symlink():
         })
 
 @app.route('/list-tables', methods=['POST', 'GET'])
+@require_auth_and_port
 def list_tables():
     # Get the username from the session
     username = session.get('username')
-    if not username:
-        return redirect(url_for('login'))
         
     if request.method == 'POST':
         session['database'] = request.form.get('database')
@@ -446,6 +513,7 @@ def list_tables():
                          storage_info=storage_info, plot_function=plot_function, images = images, hash_hex = hash_hex)
 
 @app.route('/view-table/<database>/<table_name>', methods=['GET'])
+@require_auth_and_port
 def view_table(database, table_name):
     """View the content of a specific table."""
     print('database:', database)
@@ -471,12 +539,10 @@ def view_table(database, table_name):
         return str(err)
 
 @app.route('/view-colormap/<database>/<table_name>', methods=['GET'])
+@require_auth_and_port
 def view_colormap(database, table_name):
     """View the colormap visualization of a specific table."""
     try:
-        if 'username' not in session:
-            return "User not logged in", 403
-
         # Get the table data
         data_matrix, data_matrix_size = get_full_table_data(table_name, database)
         
@@ -1735,6 +1801,27 @@ Reshaped to (a*b, 1):
  [ 6]
  [ 9]]'''
 
+def detect_78_io_tables(table_names):
+    """
+    Detect if the selected tables are exactly 78 IO tables (IO0 through IO77).
+    Returns True if detected, False otherwise.
+    """
+    if len(table_names) != 78:
+        return False
+    
+    # Extract IO numbers from table names
+    io_numbers = set()
+    for table_name in table_names:
+        # Look for IO pattern in table name (case insensitive)
+        import re
+        match = re.search(r'IO(\d+)', table_name, re.IGNORECASE)
+        if match:
+            io_numbers.add(int(match.group(1)))
+    
+    # Check if we have exactly IO0 through IO77
+    expected_ios = set(range(78))  # 0 to 77
+    return io_numbers == expected_ios
+
 def get_pattern_file(pattern_name):
     """
     Return the full path to a pattern file based on the pattern name.
@@ -1767,6 +1854,85 @@ def get_pattern_file(pattern_name):
         "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
         "test_chin": "State_pattern_files/ecc_new.npy",
+        # ECC 2048x32 IO files
+        "ecc_2048x32_IO0": "State_pattern_files/ecc_2048x32_IO0.npy",
+        "ecc_2048x32_IO1": "State_pattern_files/ecc_2048x32_IO1.npy",
+        "ecc_2048x32_IO2": "State_pattern_files/ecc_2048x32_IO2.npy",
+        "ecc_2048x32_IO3": "State_pattern_files/ecc_2048x32_IO3.npy",
+        "ecc_2048x32_IO4": "State_pattern_files/ecc_2048x32_IO4.npy",
+        "ecc_2048x32_IO5": "State_pattern_files/ecc_2048x32_IO5.npy",
+        "ecc_2048x32_IO6": "State_pattern_files/ecc_2048x32_IO6.npy",
+        "ecc_2048x32_IO7": "State_pattern_files/ecc_2048x32_IO7.npy",
+        "ecc_2048x32_IO8": "State_pattern_files/ecc_2048x32_IO8.npy",
+        "ecc_2048x32_IO9": "State_pattern_files/ecc_2048x32_IO9.npy",
+        "ecc_2048x32_IO10": "State_pattern_files/ecc_2048x32_IO10.npy",
+        "ecc_2048x32_IO11": "State_pattern_files/ecc_2048x32_IO11.npy",
+        "ecc_2048x32_IO12": "State_pattern_files/ecc_2048x32_IO12.npy",
+        "ecc_2048x32_IO13": "State_pattern_files/ecc_2048x32_IO13.npy",
+        "ecc_2048x32_IO14": "State_pattern_files/ecc_2048x32_IO14.npy",
+        "ecc_2048x32_IO15": "State_pattern_files/ecc_2048x32_IO15.npy",
+        "ecc_2048x32_IO16": "State_pattern_files/ecc_2048x32_IO16.npy",
+        "ecc_2048x32_IO17": "State_pattern_files/ecc_2048x32_IO17.npy",
+        "ecc_2048x32_IO18": "State_pattern_files/ecc_2048x32_IO18.npy",
+        "ecc_2048x32_IO19": "State_pattern_files/ecc_2048x32_IO19.npy",
+        "ecc_2048x32_IO20": "State_pattern_files/ecc_2048x32_IO20.npy",
+        "ecc_2048x32_IO21": "State_pattern_files/ecc_2048x32_IO21.npy",
+        "ecc_2048x32_IO22": "State_pattern_files/ecc_2048x32_IO22.npy",
+        "ecc_2048x32_IO23": "State_pattern_files/ecc_2048x32_IO23.npy",
+        "ecc_2048x32_IO24": "State_pattern_files/ecc_2048x32_IO24.npy",
+        "ecc_2048x32_IO25": "State_pattern_files/ecc_2048x32_IO25.npy",
+        "ecc_2048x32_IO26": "State_pattern_files/ecc_2048x32_IO26.npy",
+        "ecc_2048x32_IO27": "State_pattern_files/ecc_2048x32_IO27.npy",
+        "ecc_2048x32_IO28": "State_pattern_files/ecc_2048x32_IO28.npy",
+        "ecc_2048x32_IO29": "State_pattern_files/ecc_2048x32_IO29.npy",
+        "ecc_2048x32_IO30": "State_pattern_files/ecc_2048x32_IO30.npy",
+        "ecc_2048x32_IO31": "State_pattern_files/ecc_2048x32_IO31.npy",
+        "ecc_2048x32_IO32": "State_pattern_files/ecc_2048x32_IO32.npy",
+        "ecc_2048x32_IO33": "State_pattern_files/ecc_2048x32_IO33.npy",
+        "ecc_2048x32_IO34": "State_pattern_files/ecc_2048x32_IO34.npy",
+        "ecc_2048x32_IO35": "State_pattern_files/ecc_2048x32_IO35.npy",
+        "ecc_2048x32_IO36": "State_pattern_files/ecc_2048x32_IO36.npy",
+        "ecc_2048x32_IO37": "State_pattern_files/ecc_2048x32_IO37.npy",
+        "ecc_2048x32_IO38": "State_pattern_files/ecc_2048x32_IO38.npy",
+        "ecc_2048x32_IO39": "State_pattern_files/ecc_2048x32_IO39.npy",
+        "ecc_2048x32_IO40": "State_pattern_files/ecc_2048x32_IO40.npy",
+        "ecc_2048x32_IO41": "State_pattern_files/ecc_2048x32_IO41.npy",
+        "ecc_2048x32_IO42": "State_pattern_files/ecc_2048x32_IO42.npy",
+        "ecc_2048x32_IO43": "State_pattern_files/ecc_2048x32_IO43.npy",
+        "ecc_2048x32_IO44": "State_pattern_files/ecc_2048x32_IO44.npy",
+        "ecc_2048x32_IO45": "State_pattern_files/ecc_2048x32_IO45.npy",
+        "ecc_2048x32_IO46": "State_pattern_files/ecc_2048x32_IO46.npy",
+        "ecc_2048x32_IO47": "State_pattern_files/ecc_2048x32_IO47.npy",
+        "ecc_2048x32_IO48": "State_pattern_files/ecc_2048x32_IO48.npy",
+        "ecc_2048x32_IO49": "State_pattern_files/ecc_2048x32_IO49.npy",
+        "ecc_2048x32_IO50": "State_pattern_files/ecc_2048x32_IO50.npy",
+        "ecc_2048x32_IO51": "State_pattern_files/ecc_2048x32_IO51.npy",
+        "ecc_2048x32_IO52": "State_pattern_files/ecc_2048x32_IO52.npy",
+        "ecc_2048x32_IO53": "State_pattern_files/ecc_2048x32_IO53.npy",
+        "ecc_2048x32_IO54": "State_pattern_files/ecc_2048x32_IO54.npy",
+        "ecc_2048x32_IO55": "State_pattern_files/ecc_2048x32_IO55.npy",
+        "ecc_2048x32_IO56": "State_pattern_files/ecc_2048x32_IO56.npy",
+        "ecc_2048x32_IO57": "State_pattern_files/ecc_2048x32_IO57.npy",
+        "ecc_2048x32_IO58": "State_pattern_files/ecc_2048x32_IO58.npy",
+        "ecc_2048x32_IO59": "State_pattern_files/ecc_2048x32_IO59.npy",
+        "ecc_2048x32_IO60": "State_pattern_files/ecc_2048x32_IO60.npy",
+        "ecc_2048x32_IO61": "State_pattern_files/ecc_2048x32_IO61.npy",
+        "ecc_2048x32_IO62": "State_pattern_files/ecc_2048x32_IO62.npy",
+        "ecc_2048x32_IO63": "State_pattern_files/ecc_2048x32_IO63.npy",
+        "ecc_2048x32_IO64": "State_pattern_files/ecc_2048x32_IO64.npy",
+        "ecc_2048x32_IO65": "State_pattern_files/ecc_2048x32_IO65.npy",
+        "ecc_2048x32_IO66": "State_pattern_files/ecc_2048x32_IO66.npy",
+        "ecc_2048x32_IO67": "State_pattern_files/ecc_2048x32_IO67.npy",
+        "ecc_2048x32_IO68": "State_pattern_files/ecc_2048x32_IO68.npy",
+        "ecc_2048x32_IO69": "State_pattern_files/ecc_2048x32_IO69.npy",
+        "ecc_2048x32_IO70": "State_pattern_files/ecc_2048x32_IO70.npy",
+        "ecc_2048x32_IO71": "State_pattern_files/ecc_2048x32_IO71.npy",
+        "ecc_2048x32_IO72": "State_pattern_files/ecc_2048x32_IO72.npy",
+        "ecc_2048x32_IO73": "State_pattern_files/ecc_2048x32_IO73.npy",
+        "ecc_2048x32_IO74": "State_pattern_files/ecc_2048x32_IO74.npy",
+        "ecc_2048x32_IO75": "State_pattern_files/ecc_2048x32_IO75.npy",
+        "ecc_2048x32_IO76": "State_pattern_files/ecc_2048x32_IO76.npy",
+        "ecc_2048x32_IO77": "State_pattern_files/ecc_2048x32_IO77.npy",
     }
     
     # Define absolute paths
@@ -1790,11 +1956,96 @@ def get_pattern_file(pattern_name):
         "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
         "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
         "test_chin" : "/home/admin2/webapp_2/State_pattern_files/ecc_new.npy",
+        # ECC 2048x32 IO files
+        "ecc_2048x32_IO0": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO0.npy",
+        "ecc_2048x32_IO1": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO1.npy",
+        "ecc_2048x32_IO2": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO2.npy",
+        "ecc_2048x32_IO3": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO3.npy",
+        "ecc_2048x32_IO4": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO4.npy",
+        "ecc_2048x32_IO5": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO5.npy",
+        "ecc_2048x32_IO6": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO6.npy",
+        "ecc_2048x32_IO7": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO7.npy",
+        "ecc_2048x32_IO8": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO8.npy",
+        "ecc_2048x32_IO9": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO9.npy",
+        "ecc_2048x32_IO10": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO10.npy",
+        "ecc_2048x32_IO11": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO11.npy",
+        "ecc_2048x32_IO12": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO12.npy",
+        "ecc_2048x32_IO13": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO13.npy",
+        "ecc_2048x32_IO14": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO14.npy",
+        "ecc_2048x32_IO15": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO15.npy",
+        "ecc_2048x32_IO16": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO16.npy",
+        "ecc_2048x32_IO17": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO17.npy",
+        "ecc_2048x32_IO18": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO18.npy",
+        "ecc_2048x32_IO19": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO19.npy",
+        "ecc_2048x32_IO20": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO20.npy",
+        "ecc_2048x32_IO21": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO21.npy",
+        "ecc_2048x32_IO22": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO22.npy",
+        "ecc_2048x32_IO23": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO23.npy",
+        "ecc_2048x32_IO24": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO24.npy",
+        "ecc_2048x32_IO25": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO25.npy",
+        "ecc_2048x32_IO26": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO26.npy",
+        "ecc_2048x32_IO27": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO27.npy",
+        "ecc_2048x32_IO28": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO28.npy",
+        "ecc_2048x32_IO29": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO29.npy",
+        "ecc_2048x32_IO30": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO30.npy",
+        "ecc_2048x32_IO31": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO31.npy",
+        "ecc_2048x32_IO32": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO32.npy",
+        "ecc_2048x32_IO33": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO33.npy",
+        "ecc_2048x32_IO34": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO34.npy",
+        "ecc_2048x32_IO35": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO35.npy",
+        "ecc_2048x32_IO36": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO36.npy",
+        "ecc_2048x32_IO37": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO37.npy",
+        "ecc_2048x32_IO38": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO38.npy",
+        "ecc_2048x32_IO39": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO39.npy",
+        "ecc_2048x32_IO40": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO40.npy",
+        "ecc_2048x32_IO41": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO41.npy",
+        "ecc_2048x32_IO42": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO42.npy",
+        "ecc_2048x32_IO43": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO43.npy",
+        "ecc_2048x32_IO44": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO44.npy",
+        "ecc_2048x32_IO45": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO45.npy",
+        "ecc_2048x32_IO46": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO46.npy",
+        "ecc_2048x32_IO47": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO47.npy",
+        "ecc_2048x32_IO48": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO48.npy",
+        "ecc_2048x32_IO49": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO49.npy",
+        "ecc_2048x32_IO50": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO50.npy",
+        "ecc_2048x32_IO51": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO51.npy",
+        "ecc_2048x32_IO52": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO52.npy",
+        "ecc_2048x32_IO53": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO53.npy",
+        "ecc_2048x32_IO54": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO54.npy",
+        "ecc_2048x32_IO55": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO55.npy",
+        "ecc_2048x32_IO56": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO56.npy",
+        "ecc_2048x32_IO57": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO57.npy",
+        "ecc_2048x32_IO58": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO58.npy",
+        "ecc_2048x32_IO59": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO59.npy",
+        "ecc_2048x32_IO60": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO60.npy",
+        "ecc_2048x32_IO61": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO61.npy",
+        "ecc_2048x32_IO62": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO62.npy",
+        "ecc_2048x32_IO63": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO63.npy",
+        "ecc_2048x32_IO64": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO64.npy",
+        "ecc_2048x32_IO65": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO65.npy",
+        "ecc_2048x32_IO66": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO66.npy",
+        "ecc_2048x32_IO67": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO67.npy",
+        "ecc_2048x32_IO68": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO68.npy",
+        "ecc_2048x32_IO69": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO69.npy",
+        "ecc_2048x32_IO70": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO70.npy",
+        "ecc_2048x32_IO71": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO71.npy",
+        "ecc_2048x32_IO72": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO72.npy",
+        "ecc_2048x32_IO73": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO73.npy",
+        "ecc_2048x32_IO74": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO74.npy",
+        "ecc_2048x32_IO75": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO75.npy",
+        "ecc_2048x32_IO76": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO76.npy",
+        "ecc_2048x32_IO77": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO77.npy",
     }
     
     # Choose the appropriate pattern files based on configuration
     use_absolute_paths = current_app.config.get('USE_ABSOLUTE_STATE_PATTERN_PATHS', True)
     pattern_files = absolute_pattern_files if use_absolute_paths else relative_pattern_files
+    
+    # Special handling for 78-table pattern
+    if pattern_name == "ecc_2048x32_78tables":
+        # This is a special case that will be handled differently
+        # Return a special marker that indicates 78-table processing
+        return "SPECIAL_78TABLES"
     
     # Return the path for the pattern name
     return pattern_files.get(pattern_name, "")
@@ -1905,6 +2156,7 @@ def merge_tables_process():
             if len(pattern_array.shape) == 3:
                 pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
             print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
+        
         
         print(f"DEBUG: Original pattern array shape: {pattern_array.shape}, dtype: {pattern_array.dtype}")
         
@@ -3442,6 +3694,17 @@ def get_table_columns():
         cursor = connection.cursor()
         cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
         columns = [row[0] for row in cursor.fetchall()]
+        
+        # Debug: Also get some sample data to verify column contents
+        print(f"DEBUG: Columns for {database}.{table_name}: {columns[:10]}")
+        
+        # Get a sample of data to see what's actually in key columns
+        sample_query = f"SELECT * FROM `{table_name}` LIMIT 2"
+        cursor.execute(sample_query)
+        sample_rows = cursor.fetchall()
+        if sample_rows:
+            print(f"DEBUG: Sample row from {table_name}: {dict(zip(columns[:10], sample_rows[0][:10]))}")
+        
         connection.close()
         return jsonify(success=True, columns=columns)
     except Exception as e:
@@ -6215,7 +6478,7 @@ def parse_macro_filter(macro_str):
 
 @app.route('/gui-rwb-analysis')
 def gui_rwb_analysis():
-    """Display the GUI RWB analysis form"""
+    """Display the GUI RWB analysis form (legacy - combined form)"""
     try:
         # Get all column names from the RWB database
         connection = mysql.connector.connect(
@@ -6239,30 +6502,1146 @@ def gui_rwb_analysis():
         flash(f'Error loading column information: {str(e)}', 'error')
         return render_template('rwb_analysis_form.html', available_columns=[])
 
+@app.route('/agate-rev1-analysis')
+@require_auth_and_port  
+def agate_rev1_analysis_form():
+    """Display the AGATE_REV1 analysis form"""
+    try:
+        return render_template('agate_rev1_analysis_form.html')
+    except Exception as e:
+        flash(f'Error loading AGATE_REV1 analysis form: {str(e)}', 'error')
+        return redirect(url_for('home'))
+
+@app.route('/original-analysis')
+@require_auth_and_port  
+def original_analysis_form():
+    """Display the original template analysis form"""
+    try:
+        return render_template('original_analysis_form.html')
+    except Exception as e:
+        flash(f'Error loading original analysis form: {str(e)}', 'error')
+        return redirect(url_for('home'))
+
+@app.route('/interactive-rwb-analysis')
+@require_auth_and_port  
+def interactive_rwb_analysis():
+    """Display the new interactive RWB analysis form"""
+    try:
+        return render_template('rwb_analysis_form_v2.html')
+    except Exception as e:
+        flash(f'Error loading interactive RWB analysis form: {str(e)}', 'error')
+        return redirect(url_for('home'))
+
+@app.route('/get-filtered-data-preview', methods=['POST'])
+@require_auth_and_port
+def get_filtered_data_preview():
+    """Get filtered data preview for the interactive interface"""
+    try:
+        print("=== Starting get_filtered_data_preview ===")
+        data = request.get_json()
+        print(f"Request data: {data}")
+        
+        if not data:
+            print("ERROR: No JSON data received")
+            return jsonify({
+                'success': False,
+                'error': 'No JSON data received'
+            })
+        
+        table_name = data.get('table', 'rwb_db_3')
+        filters = data.get('filters', [])
+        
+        print(f"Getting filtered data preview for table: {table_name}")
+        print(f"Filters: {filters}")
+        
+        # Import database functions
+        try:
+            from db_operations import create_long_running_connection
+            print("Successfully imported create_long_running_connection")
+        except ImportError as e:
+            print(f"ERROR: Failed to import database functions: {e}")
+            return jsonify({
+                'success': False,
+                'error': f'Database import error: {str(e)}'
+            })
+        
+        # Connect to database
+        try:
+            print("Attempting to create database connection...")
+            connection = create_long_running_connection(database='rwb')
+            print("Successfully created database connection")
+            cursor = connection.cursor(dictionary=True)
+            print("Successfully created cursor")
+        except Exception as e:
+            print(f"ERROR: Database connection failed: {e}")
+            return jsonify({
+                'success': False,
+                'error': f'Database connection error: {str(e)}'
+            })
+        
+        try:
+            print("Building SQL query...")
+            # Build SQL query
+            base_query = f"SELECT * FROM {table_name}"
+            where_conditions = []
+            params = []
+            
+            print(f"Processing {len(filters)} filters...")
+            for i, filter_obj in enumerate(filters):
+                print(f"Processing filter {i+1}: {filter_obj}")
+                column = filter_obj.get('column')
+                operator = filter_obj.get('operator')
+                value = filter_obj.get('value')
+                
+                if not column or not value:
+                    print(f"Skipping filter {i+1}: missing column or value")
+                    continue
+                
+                print(f"Filter {i+1}: {column} {operator} {value}")
+                
+                if operator == 'equals':
+                    where_conditions.append(f"`{column}` = %s")
+                    params.append(value)
+                elif operator == 'contains':
+                    where_conditions.append(f"`{column}` LIKE %s")
+                    params.append(f"%{value}%")
+                elif operator == 'not_equals':
+                    where_conditions.append(f"`{column}` != %s")
+                    params.append(value)
+                elif operator == 'greater_than':
+                    where_conditions.append(f"`{column}` > %s")
+                    params.append(value)
+                elif operator == 'less_than':
+                    where_conditions.append(f"`{column}` < %s")
+                    params.append(value)
+                elif operator == 'in_list':
+                    values = [v.strip() for v in value.split(',') if v.strip()]
+                    if values:
+                        placeholders = ','.join(['%s'] * len(values))
+                        where_conditions.append(f"`{column}` IN ({placeholders})")
+                        params.extend(values)
+            
+            # Build complete query
+            if where_conditions:
+                query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+            else:
+                query = base_query
+            
+            # Add limit for preview (show first 100 rows)
+            query += " LIMIT 100"
+            
+            print(f"Final query: {query}")
+            print(f"Query parameters: {params}")
+            
+            print("Executing main query...")
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            print(f"Query executed successfully, got {len(results)} results")
+            
+            # Get total count (without limit)
+            print("Getting total count...")
+            count_query = f"SELECT COUNT(*) as total FROM {table_name}"
+            if where_conditions:
+                count_query = f"SELECT COUNT(*) as total FROM {table_name} WHERE {' AND '.join(where_conditions)}"
+            
+            print(f"Count query: {count_query}")
+            cursor.execute(count_query, params if where_conditions else [])
+            total_count = cursor.fetchone()['total']
+            print(f"Total count: {total_count}")
+            
+            # Get column names
+            print("Getting column names...")
+            cursor.execute(f"SHOW COLUMNS FROM {table_name}")
+            columns = [col['Field'] for col in cursor.fetchall()]
+            print(f"Found {len(columns)} columns: {columns[:10]}...")  # Show first 10 columns
+            
+            print(f"Returning success: {len(results)} preview rows out of {total_count} total")
+            
+            return jsonify({
+                'success': True,
+                'data': results,
+                'columns': columns,
+                'total_count': total_count,
+                'preview_count': len(results)
+            })
+            
+        except Exception as e:
+            print(f"Error executing query: {e}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            })
+        finally:
+            cursor.close()
+            connection.close()
+            
+    except Exception as e:
+        print(f"Error in get_filtered_data_preview: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/process-ai-analysis', methods=['POST'])
+@require_auth_and_port
+def process_ai_analysis():
+    """Process AI-assisted analysis requests"""
+    try:
+        selected_table = request.form.get('selected_table', 'rwb_db_3')
+        filters_json = request.form.get('filters_json', '[]')
+        analysis_description = request.form.get('analysis_description', '')
+        filtered_data_preview = request.form.get('filtered_data_preview', '[]')
+        
+        print(f"Processing AI analysis for table: {selected_table}")
+        print(f"Analysis description: {analysis_description}")
+        
+        # Parse filters and data
+        import json
+        filters = json.loads(filters_json)
+        preview_data = json.loads(filtered_data_preview)
+        
+        # Connect to database to get full filtered data
+        connection = create_long_running_connection(database='rwb')
+        cursor = connection.cursor(dictionary=True)
+        
+        try:
+            # Build SQL query (same logic as preview but without limit)
+            base_query = f"SELECT * FROM {selected_table}"
+            where_conditions = []
+            params = []
+            
+            for filter_obj in filters:
+                column = filter_obj.get('column')
+                operator = filter_obj.get('operator')
+                value = filter_obj.get('value')
+                
+                if not column or not value:
+                    continue
+                
+                if operator == 'equals':
+                    where_conditions.append(f"`{column}` = %s")
+                    params.append(value)
+                elif operator == 'contains':
+                    where_conditions.append(f"`{column}` LIKE %s")
+                    params.append(f"%{value}%")
+                elif operator == 'not_equals':
+                    where_conditions.append(f"`{column}` != %s")
+                    params.append(value)
+                elif operator == 'greater_than':
+                    where_conditions.append(f"`{column}` > %s")
+                    params.append(value)
+                elif operator == 'less_than':
+                    where_conditions.append(f"`{column}` < %s")
+                    params.append(value)
+                elif operator == 'in_list':
+                    values = [v.strip() for v in value.split(',') if v.strip()]
+                    if values:
+                        placeholders = ','.join(['%s'] * len(values))
+                        where_conditions.append(f"`{column}` IN ({placeholders})")
+                        params.extend(values)
+            
+            # Build complete query
+            if where_conditions:
+                query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+            else:
+                query = base_query
+            
+            print(f"Executing AI analysis query: {query}")
+            cursor.execute(query, params)
+            full_data = cursor.fetchall()
+            
+            print(f"Retrieved {len(full_data)} records for AI analysis")
+            
+            # Convert to pandas DataFrame for analysis
+            import pandas as pd
+            df = pd.DataFrame(full_data)
+            
+            if df.empty:
+                flash('No data found with the applied filters', 'warning')
+                return redirect(url_for('interactive_rwb_analysis'))
+            
+            # Simple AI analysis interpretation
+            plot_config = interpret_analysis_request(analysis_description, df)
+            
+            # Generate the plot based on interpretation
+            plot_result = generate_ai_plot(df, plot_config, analysis_description)
+            
+            # Prepare analysis summary
+            analysis_summary = {
+                'analysis_template': 'AI-Assisted Analysis',
+                'selected_table': selected_table,
+                'analysis_description': analysis_description,
+                'total_records': len(full_data),
+                'filters_applied': filters,
+                'num_filters': len(filters),
+                'plot_config': plot_config
+            }
+            
+            return render_template('ai_analysis_results.html', 
+                                 analysis_summary=analysis_summary,
+                                 plot_path=plot_result.get('plot_path'),
+                                 success=True)
+            
+        except Exception as e:
+            print(f"Error in AI analysis processing: {e}")
+            flash(f'Error processing AI analysis: {str(e)}', 'error')
+            return redirect(url_for('interactive_rwb_analysis'))
+        finally:
+            cursor.close()
+            connection.close()
+            
+    except Exception as e:
+        print(f"Error in process_ai_analysis: {e}")
+        flash(f'Error processing AI analysis: {str(e)}', 'error')
+        return redirect(url_for('interactive_rwb_analysis'))
+
+@app.route('/process-direct-rwb-analysis', methods=['POST'])
+@require_auth_and_port
+def process_direct_rwb_analysis():
+    """Process direct RWB analysis using core post-processing functions"""
+    print("🚀 DIRECT RWB ANALYSIS ENDPOINT CALLED!")
+    print(f"Request method: {request.method}")
+    print(f"Request form data: {dict(request.form)}")
+    print(f"Request content type: {request.content_type}")
+    
+    try:
+        selected_table = request.form.get('selected_table')
+        filters_json = request.form.get('filters_json')
+        analysis_type = request.form.get('analysis_type')
+        parameters_json = request.form.get('parameters')
+        
+        print(f"📊 Extracted parameters:")
+        print(f"  - selected_table: {selected_table}")
+        print(f"  - analysis_type: {analysis_type}")
+        print(f"  - filters_json: {filters_json}")
+        print(f"  - parameters_json: {parameters_json}")
+        
+        if not selected_table or not analysis_type:
+            print(f"❌ Missing required parameters!")
+            flash('Missing required parameters', 'error')
+            return redirect(url_for('interactive_rwb_analysis'))
+        
+        # Parse inputs
+        filters = json.loads(filters_json) if filters_json else []
+        parameters = json.loads(parameters_json) if parameters_json else {}
+        
+        print(f"Direct RWB Analysis Request:")
+        print(f"  Table: {selected_table}")
+        print(f"  Analysis Type: {analysis_type}")
+        print(f"  Filters: {len(filters)} filters")
+        print(f"  Parameters: {parameters}")
+        
+        # Get filtered data from database
+        from db_operations import create_long_running_connection
+        connection = create_long_running_connection(database='rwb')
+        cursor = connection.cursor(dictionary=True)
+        
+        # Build SQL query with filters
+        where_conditions = []
+        params = []
+        
+        for filter_obj in filters:
+            column = filter_obj['column']
+            operator = filter_obj['operator']
+            value = filter_obj['value']
+            
+            if operator == 'equals':
+                # Handle numeric columns for MACRO, IO, DIE_ID
+                if column in ['MACRO', 'IO', 'DIE_ID']:
+                    try:
+                        where_conditions.append(f"{column} = %s")
+                        params.append(int(value))
+                    except ValueError:
+                        where_conditions.append(f"{column} = %s")
+                        params.append(value)
+                elif column == 'RUN_NAME':
+                    # Special handling for RUN_NAME - treat equals as contains
+                    where_conditions.append(f"{column} LIKE %s")
+                    params.append(f"%{value}%")
+                else:
+                    where_conditions.append(f"{column} = %s")
+                    params.append(value)
+            elif operator == 'contains':
+                where_conditions.append(f"{column} LIKE %s")
+                params.append(f"%{value}%")
+            elif operator == 'in_list':
+                values = [v.strip() for v in value.split(',')]
+                # Try numeric conversion for MACRO, IO, DIE_ID
+                if column in ['MACRO', 'IO', 'DIE_ID']:
+                    try:
+                        values = [int(v) for v in values]
+                    except ValueError:
+                        pass
+                placeholders = ','.join(['%s'] * len(values))
+                where_conditions.append(f"{column} IN ({placeholders})")
+                params.extend(values)
+            elif operator == 'greater_than':
+                where_conditions.append(f"{column} > %s")
+                params.append(value)
+            elif operator == 'less_than':
+                where_conditions.append(f"{column} < %s")
+                params.append(value)
+            else:
+                # Default to equals for unknown operators
+                where_conditions.append(f"{column} = %s")
+                params.append(value)
+        
+        # Build and execute query
+        base_query = f"SELECT * FROM {selected_table}"
+        if where_conditions:
+            query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+        else:
+            query = base_query
+        
+        print(f"Executing query: {query}")
+        print(f"With parameters: {params}")
+        
+        # Execute query with parameters only if we have parameters
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        results = cursor.fetchall()
+        
+        # Convert to DataFrame (rwb_plot equivalent)
+        import pandas as pd
+        rwb_plot = pd.DataFrame(results)
+        
+        print(f"Fetched {len(rwb_plot)} rows for analysis")
+        
+        if len(rwb_plot) == 0:
+            flash('No data found with the applied filters', 'warning')
+            return redirect(url_for('interactive_rwb_analysis'))
+        
+        # Import the core functions
+        from core_post_processing_functions import rwb_groupby_level_nqplot, rwb_calc_io_mean
+        
+        plot_html = None
+        mean_results = None
+        analysis_summary = {
+            'table': selected_table,
+            'filters': filters,
+            'analysis_type': analysis_type,
+            'parameters': parameters,
+            'rows_processed': len(rwb_plot)
+        }
+        
+        if analysis_type == 'level_plot':
+            # Generate level plot using rwb_groupby_level_nqplot
+            overlay_col = parameters.get('overlay_col', 'IO')
+            legend = parameters.get('legend', False)
+            title = parameters.get('title', 'RWB Level Analysis')
+            
+            print(f"Generating level plot with overlay_col={overlay_col}, legend={legend}, title={title}")
+            
+            # Call the actual function
+            rwb_groupby_level_nqplot(
+                rwb_plot, 
+                overlay_col=overlay_col, 
+                legend=legend, 
+                title=title
+            )
+            
+            # Convert plot to HTML
+            import io
+            import matplotlib.pyplot as plt
+            import base64
+            
+            img_buffer = io.BytesIO()
+            plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+            img_buffer.seek(0)
+            img_data = base64.b64encode(img_buffer.read()).decode()
+            plot_html = f'<img src="data:image/png;base64,{img_data}" class="img-fluid" alt="RWB Level Plot">'
+            plt.close()
+            
+            analysis_summary['plot_title'] = title
+            analysis_summary['overlay_col'] = overlay_col
+            
+        elif analysis_type == 'mean_calculation':
+            # Calculate mean using rwb_calc_io_mean
+            groupby_cols_str = parameters.get('groupby_cols', 'TEST_NAME')
+            groupby_cols = [col.strip() for col in groupby_cols_str.split(',')]
+            display_columns = parameters.get('display_columns', ['TEST_NAME', 'LEVEL_01_XPOINT_PPM', 'LEVEL_12_XPOINT_PPM', 'LEVEL_23_XPOINT_PPM'])
+            
+            print(f"Calculating mean with groupby_cols={groupby_cols}")
+            
+            # Call the actual function
+            rwb_mean = rwb_calc_io_mean(rwb_plot, groupby_cols=groupby_cols)
+            
+            print(f"Mean calculation completed. Result shape: {rwb_mean.shape}")
+            
+            # Filter to display columns that exist in the result
+            available_columns = [col for col in display_columns if col in rwb_mean.columns]
+            mean_results = rwb_mean[available_columns].to_dict('records')
+            
+            analysis_summary['groupby_cols'] = groupby_cols
+            analysis_summary['display_columns'] = available_columns
+            analysis_summary['mean_rows'] = len(mean_results)
+        
+        cursor.close()
+        connection.close()
+        
+        return render_template('direct_rwb_results.html', 
+                             plot_html=plot_html,
+                             mean_results=mean_results,
+                             analysis_summary=analysis_summary)
+        
+    except Exception as e:
+        print(f"Error in process_direct_rwb_analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Error processing RWB analysis: {str(e)}', 'error')
+        return redirect(url_for('interactive_rwb_analysis'))
+
+@app.route('/generate-level-plot-ajax', methods=['POST'])
+@require_auth_and_port
+def generate_level_plot_ajax_v2():
+    """Generate level plot using AJAX (avoiding form submission issues)"""
+    try:
+        print("🚀 LEVEL PLOT AJAX ENDPOINT CALLED!")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data received'})
+        
+        table = data.get('table', 'rwb_db_3')
+        filters = data.get('filters', [])
+        overlay_col = data.get('overlay_col', 'IO')
+        legend = data.get('legend', False)
+        title = data.get('title', 'RWB Level Analysis')
+        
+        print(f"Parameters: table={table}, filters={len(filters)}, overlay={overlay_col}, legend={legend}")
+        
+        # Get filtered data
+        from db_operations import create_long_running_connection
+        connection = create_long_running_connection(database='rwb')
+        cursor = connection.cursor(dictionary=True)
+        
+        # Build SQL query with filters
+        where_conditions = []
+        params = []
+        
+        for filter_obj in filters:
+            column = filter_obj['column']
+            operator = filter_obj['operator']
+            value = filter_obj['value']
+            
+            if operator == 'equals':
+                if column in ['MACRO', 'IO', 'DIE_ID']:
+                    try:
+                        where_conditions.append(f"`{column}` = %s")
+                        params.append(int(value))
+                    except ValueError:
+                        where_conditions.append(f"`{column}` = %s")
+                        params.append(value)
+                else:
+                    where_conditions.append(f"`{column}` = %s")
+                    params.append(value)
+            elif operator == 'contains':
+                where_conditions.append(f"`{column}` LIKE %s")
+                params.append(f"%{value}%")
+            elif operator == 'in_list':
+                values = [v.strip() for v in value.split(',')]
+                if column in ['MACRO', 'IO', 'DIE_ID']:
+                    try:
+                        values = [int(v) for v in values]
+                    except ValueError:
+                        pass
+                placeholders = ','.join(['%s'] * len(values))
+                where_conditions.append(f"`{column}` IN ({placeholders})")
+                params.extend(values)
+        
+        # Build and execute query
+        base_query = f"SELECT * FROM `{table}`"
+        if where_conditions:
+            query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+            cursor.execute(query, params)
+        else:
+            cursor.execute(base_query)
+        
+        results = cursor.fetchall()
+        print(f"Fetched {len(results)} rows")
+        
+        if len(results) == 0:
+            cursor.close()
+            connection.close()
+            return jsonify({'success': False, 'error': 'No data found with applied filters'})
+        
+        # Convert to DataFrame
+        import pandas as pd
+        rwb_plot = pd.DataFrame(results)
+        
+        # Import and call the core function
+        from core_post_processing_functions import rwb_groupby_level_nqplot
+        
+        print(f"Calling rwb_groupby_level_nqplot with overlay_col={overlay_col}, legend={legend}, title={title}")
+        rwb_groupby_level_nqplot(rwb_plot, overlay_col=overlay_col, legend=legend, title=title)
+        
+        # Capture the plot
+        import matplotlib.pyplot as plt
+        import io
+        import base64
+        
+        img_buffer = io.BytesIO()
+        plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+        img_buffer.seek(0)
+        img_data = base64.b64encode(img_buffer.read()).decode()
+        plot_html = f'<img src="data:image/png;base64,{img_data}" class="img-fluid" alt="RWB Level Plot">'
+        plt.close()
+        
+        cursor.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'plot_html': plot_html,
+            'rows_processed': len(rwb_plot)
+        })
+        
+    except Exception as e:
+        print(f"Error in generate_level_plot_ajax: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/generate-mean-calculation-ajax', methods=['POST'])
+@require_auth_and_port
+def generate_mean_calculation_ajax():
+    """Generate mean calculation using AJAX (avoiding form submission issues)"""
+    try:
+        print("🚀 MEAN CALCULATION AJAX ENDPOINT CALLED!")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data received'})
+        
+        table = data.get('table', 'rwb_db_3')
+        filters = data.get('filters', [])
+        groupby_cols = data.get('groupby_cols', 'TEST_NAME')
+        display_columns = data.get('display_columns', ['TEST_NAME', 'LEVEL_01_XPOINT_PPM', 'LEVEL_12_XPOINT_PPM', 'LEVEL_23_XPOINT_PPM'])
+        
+        print(f"Parameters: table={table}, filters={len(filters)}, groupby={groupby_cols}")
+        
+        # Get filtered data (same as level plot)
+        from db_operations import create_long_running_connection
+        connection = create_long_running_connection(database='rwb')
+        cursor = connection.cursor(dictionary=True)
+        
+        # Build SQL query with filters
+        where_conditions = []
+        params = []
+        
+        for filter_obj in filters:
+            column = filter_obj['column']
+            operator = filter_obj['operator']
+            value = filter_obj['value']
+            
+            if operator == 'equals':
+                if column in ['MACRO', 'IO', 'DIE_ID']:
+                    try:
+                        where_conditions.append(f"`{column}` = %s")
+                        params.append(int(value))
+                    except ValueError:
+                        where_conditions.append(f"`{column}` = %s")
+                        params.append(value)
+                else:
+                    where_conditions.append(f"`{column}` = %s")
+                    params.append(value)
+            elif operator == 'contains':
+                where_conditions.append(f"`{column}` LIKE %s")
+                params.append(f"%{value}%")
+            elif operator == 'in_list':
+                values = [v.strip() for v in value.split(',')]
+                if column in ['MACRO', 'IO', 'DIE_ID']:
+                    try:
+                        values = [int(v) for v in values]
+                    except ValueError:
+                        pass
+                placeholders = ','.join(['%s'] * len(values))
+                where_conditions.append(f"`{column}` IN ({placeholders})")
+                params.extend(values)
+        
+        # Build and execute query
+        base_query = f"SELECT * FROM `{table}`"
+        if where_conditions:
+            query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+            cursor.execute(query, params)
+        else:
+            cursor.execute(base_query)
+        
+        results = cursor.fetchall()
+        print(f"Fetched {len(results)} rows")
+        
+        if len(results) == 0:
+            cursor.close()
+            connection.close()
+            return jsonify({'success': False, 'error': 'No data found with applied filters'})
+        
+        # Convert to DataFrame
+        import pandas as pd
+        rwb_plot = pd.DataFrame(results)
+        
+        # Import and call the core function
+        from core_post_processing_functions import rwb_calc_io_mean
+        
+        # Parse groupby columns
+        groupby_cols_list = [col.strip() for col in groupby_cols.split(',')]
+        print(f"Calling rwb_calc_io_mean with groupby_cols={groupby_cols_list}")
+        
+        rwb_mean = rwb_calc_io_mean(rwb_plot, groupby_cols=groupby_cols_list)
+        print(f"Mean calculation completed. Result shape: {rwb_mean.shape}")
+        
+        # Filter to requested display columns
+        available_columns = [col for col in display_columns if col in rwb_mean.columns]
+        mean_results = rwb_mean[available_columns].to_dict('records')
+        
+        cursor.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'mean_results': mean_results,
+            'rows_processed': len(rwb_plot)
+        })
+        
+    except Exception as e:
+        print(f"Error in generate_mean_calculation_ajax: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/generate-analysis-simple', methods=['POST'])
+@require_auth_and_port
+def generate_analysis_simple():
+    """Simple analysis endpoint that reuses the working preview logic"""
+    try:
+        print("🚀 SIMPLE ANALYSIS ENDPOINT CALLED!")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data received'})
+        
+        analysis_type = data.get('analysis_type')  # 'level_plot' or 'mean_calculation'
+        table = data.get('table', 'rwb_db_3')
+        filters = data.get('filters', [])
+        
+        print(f"Analysis type: {analysis_type}, Table: {table}, Filters: {len(filters)}")
+        
+        # Reuse the WORKING preview logic to get data
+        from db_operations import create_long_running_connection
+        connection = create_long_running_connection(database='rwb')
+        cursor = connection.cursor(dictionary=True)
+        
+        # Use the same logic as get_filtered_data_preview (which works!)
+        where_conditions = []
+        params = []
+        
+        for filter_obj in filters:
+            column = filter_obj.get('column')
+            operator = filter_obj.get('operator', 'equals')
+            value = filter_obj.get('value', '')
+            
+            if not column or not value:
+                continue
+                
+            print(f"Processing filter: {column} {operator} {value}")
+            
+            if operator == 'equals':
+                where_conditions.append(f"`{column}` = %s")
+                params.append(value)
+            elif operator == 'contains':
+                where_conditions.append(f"`{column}` LIKE %s")
+                params.append(f"%{value}%")
+            elif operator == 'in_list':
+                values = [v.strip() for v in value.split(',')]
+                placeholders = ','.join(['%s'] * len(values))
+                where_conditions.append(f"`{column}` IN ({placeholders})")
+                params.extend(values)
+            elif operator == 'greater_than':
+                where_conditions.append(f"`{column}` > %s")
+                params.append(value)
+            elif operator == 'less_than':
+                where_conditions.append(f"`{column}` < %s")
+                params.append(value)
+        
+        # Build query
+        base_query = f"SELECT * FROM `{table}`"
+        if where_conditions:
+            query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+            print(f"Executing query: {query} with params: {params}")
+            cursor.execute(query, params)
+        else:
+            print(f"No filters, executing: {base_query}")
+            cursor.execute(base_query)
+        
+        results = cursor.fetchall()
+        print(f"Got {len(results)} rows")
+        
+        if len(results) == 0:
+            cursor.close()
+            connection.close()
+            return jsonify({'success': False, 'error': 'No data found with applied filters'})
+        
+        # Convert to DataFrame
+        import pandas as pd
+        rwb_plot = pd.DataFrame(results)
+        
+        # Import core functions
+        from core_post_processing_functions import rwb_groupby_level_nqplot, rwb_calc_io_mean
+        
+        if analysis_type == 'level_plot':
+            overlay_col = data.get('overlay_col', 'IO')
+            legend = data.get('legend', False)
+            title = data.get('title', 'RWB Level Analysis')
+            
+            print(f"Generating level plot: overlay={overlay_col}, legend={legend}, title={title}")
+            
+            # Generate plot
+            rwb_groupby_level_nqplot(rwb_plot, overlay_col=overlay_col, legend=legend, title=title)
+            
+            # Capture plot
+            import matplotlib.pyplot as plt
+            import io
+            import base64
+            
+            img_buffer = io.BytesIO()
+            plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+            img_buffer.seek(0)
+            img_data = base64.b64encode(img_buffer.read()).decode()
+            plot_html = f'<img src="data:image/png;base64,{img_data}" class="img-fluid" alt="RWB Level Plot">'
+            plt.close()
+            
+            cursor.close()
+            connection.close()
+            
+            return jsonify({
+                'success': True,
+                'plot_html': plot_html,
+                'rows_processed': len(rwb_plot),
+                'analysis_type': 'level_plot'
+            })
+            
+        elif analysis_type == 'mean_calculation':
+            groupby_cols = data.get('groupby_cols', 'TEST_NAME')
+            
+            print(f"Calculating mean: groupby={groupby_cols}")
+            
+            # Parse groupby columns
+            groupby_cols_list = [col.strip() for col in groupby_cols.split(',')]
+            
+            # Calculate mean
+            rwb_mean = rwb_calc_io_mean(rwb_plot, groupby_cols=groupby_cols_list)
+            
+            # Show only the group by column(s) plus the 3 specific LEVEL columns
+            level_columns = ['LEVEL_01_XPOINT_PPM', 'LEVEL_12_XPOINT_PPM', 'LEVEL_23_XPOINT_PPM']
+            available_columns = groupby_cols_list + [col for col in level_columns if col in rwb_mean.columns]
+            
+            print(f"Showing {len(available_columns)} columns: {available_columns}")
+            
+            # Check if all expected LEVEL columns exist
+            missing_cols = [col for col in level_columns if col not in rwb_mean.columns]
+            if missing_cols:
+                print(f"Warning: Missing LEVEL columns: {missing_cols}")
+                print(f"Available columns in DataFrame: {list(rwb_mean.columns)}")
+                # Show whatever LEVEL columns we have
+                available_level_cols = [col for col in rwb_mean.columns if 'LEVEL' in col and 'XPOINT_PPM' in col]
+                available_columns = groupby_cols_list + available_level_cols
+                print(f"Using available LEVEL columns: {available_level_cols}")
+            
+            # Convert DataFrame to dict and handle NaN values for JSON serialization
+            import numpy as np
+            import pandas as pd
+            mean_results_raw = rwb_mean[available_columns].to_dict('records')
+            
+            # Replace NaN, inf, and -inf values with None for proper JSON serialization
+            mean_results = []
+            for row in mean_results_raw:
+                clean_row = {}
+                for key, value in row.items():
+                    if pd.isna(value) or (isinstance(value, float) and (np.isinf(value) or np.isnan(value))):
+                        clean_row[key] = None
+                    else:
+                        clean_row[key] = value
+                mean_results.append(clean_row)
+            
+            print(f"Cleaned {len(mean_results)} result rows for JSON serialization")
+            
+            cursor.close()
+            connection.close()
+            
+            return jsonify({
+                'success': True,
+                'mean_results': mean_results,
+                'rows_processed': len(rwb_plot),
+                'analysis_type': 'mean_calculation',
+                'display_columns': available_columns
+            })
+        
+        else:
+            cursor.close()
+            connection.close()
+            return jsonify({'success': False, 'error': f'Unknown analysis type: {analysis_type}'})
+            
+    except Exception as e:
+        print(f"Error in generate_analysis_simple: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+def interpret_analysis_request(description, df):
+    """Enhanced AI interpretation of analysis requests"""
+    description_lower = description.lower()
+    
+    plot_config = {
+        'plot_type': 'line',
+        'x_column': None,
+        'y_column': None,
+        'overlay_column': None,
+        'title': description
+    }
+    
+    # Get numeric and categorical columns
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    
+    # Special handling for LEVEL data (common in RWB analysis)
+    level_cols = [col for col in numeric_cols if 'LEVEL' in col.upper()]
+    adc_cols = [col for col in numeric_cols if 'ADC' in col.upper() or 'CODE' in col.upper()]
+    sigma_cols = [col for col in numeric_cols if 'SIGMA' in col.upper()]
+    
+    # Enhanced keyword-based interpretation
+    if 'scatter' in description_lower:
+        plot_config['plot_type'] = 'scatter'
+        if len(numeric_cols) >= 2:
+            plot_config['x_column'] = numeric_cols[0]
+            plot_config['y_column'] = numeric_cols[1]
+    elif 'heatmap' in description_lower:
+        plot_config['plot_type'] = 'heatmap'
+    elif 'bar' in description_lower and 'level' not in description_lower:
+        # Only use bar chart if explicitly requested AND not dealing with LEVEL data
+        plot_config['plot_type'] = 'bar'
+        if categorical_cols:
+            plot_config['x_column'] = categorical_cols[0]
+        if numeric_cols:
+            plot_config['y_column'] = numeric_cols[0]
+    else:
+        # Default to line plot, especially for LEVEL data
+        plot_config['plot_type'] = 'line'
+        
+        # Smart column selection for RWB/LEVEL data
+        if level_cols and adc_cols:
+            # LEVEL vs ADC plot (most common RWB analysis)
+            plot_config['x_column'] = adc_cols[0]  # ADC Code on x-axis
+            plot_config['y_column'] = level_cols[0]  # LEVEL on y-axis
+        elif level_cols and sigma_cols:
+            # LEVEL vs Sigma plot
+            plot_config['x_column'] = sigma_cols[0]
+            plot_config['y_column'] = level_cols[0]
+        elif 'io' in description_lower and 'IO' in df.columns:
+            plot_config['x_column'] = 'IO'
+            if level_cols:
+                plot_config['y_column'] = level_cols[0]
+            elif numeric_cols:
+                plot_config['y_column'] = numeric_cols[0]
+        else:
+            # General case
+            if len(numeric_cols) >= 2:
+                plot_config['x_column'] = numeric_cols[0]
+                plot_config['y_column'] = numeric_cols[1]
+            elif categorical_cols and numeric_cols:
+                plot_config['x_column'] = categorical_cols[0]
+                plot_config['y_column'] = numeric_cols[0]
+    
+    # Enhanced overlay/grouping logic
+    if 'macro' in description_lower and 'MACRO' in df.columns:
+        plot_config['overlay_column'] = 'MACRO'
+    elif 'die' in description_lower and 'DIE_ID' in df.columns:
+        plot_config['overlay_column'] = 'DIE_ID'
+    elif 'io' in description_lower and 'IO' in df.columns and plot_config['x_column'] != 'IO':
+        plot_config['overlay_column'] = 'IO'
+    elif 'test' in description_lower and 'TEST_NAME' in df.columns:
+        plot_config['overlay_column'] = 'TEST_NAME'
+    elif categorical_cols and not plot_config['overlay_column']:
+        # Smart overlay selection
+        suitable_overlay = None
+        for col in categorical_cols:
+            if col != plot_config['x_column'] and df[col].nunique() <= 20:  # Reasonable number of categories
+                suitable_overlay = col
+                break
+        plot_config['overlay_column'] = suitable_overlay
+    
+    return plot_config
+
+def generate_ai_plot(df, plot_config, description):
+    """Generate plot based on AI interpretation"""
+    try:
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from datetime import datetime
+        import os
+        
+        # Create plots directory if it doesn't exist
+        plots_dir = os.path.join(os.getcwd(), 'static', 'plots')
+        os.makedirs(plots_dir, exist_ok=True)
+        
+        # Generate unique filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"ai_analysis_{timestamp}.png"
+        plot_path = os.path.join(plots_dir, filename)
+        
+        plt.figure(figsize=(12, 8))
+        
+        plot_type = plot_config.get('plot_type', 'line')
+        x_col = plot_config.get('x_column')
+        y_col = plot_config.get('y_column')
+        overlay_col = plot_config.get('overlay_column')
+        
+        if plot_type == 'scatter' and x_col and y_col:
+            if overlay_col:
+                groups = df[overlay_col].unique()[:10]  # Limit to 10 groups for readability
+                for group in groups:
+                    subset = df[df[overlay_col] == group]
+                    plt.scatter(subset[x_col], subset[y_col], label=str(group), alpha=0.6)
+                plt.legend()
+            else:
+                plt.scatter(df[x_col], df[y_col], alpha=0.6)
+            plt.xlabel(x_col)
+            plt.ylabel(y_col)
+            
+        elif plot_type == 'bar':
+            if x_col and y_col:
+                grouped_data = df.groupby(x_col)[y_col].mean().head(20)  # Top 20 categories
+                grouped_data.plot(kind='bar')
+                plt.xticks(rotation=45)
+                
+        elif plot_type == 'heatmap':
+            # Simple correlation heatmap for numeric columns
+            numeric_df = df.select_dtypes(include=['number'])
+            if not numeric_df.empty:
+                corr_matrix = numeric_df.corr()
+                plt.imshow(corr_matrix, cmap='coolwarm', aspect='auto')
+                plt.colorbar()
+                plt.xticks(range(len(corr_matrix.columns)), corr_matrix.columns, rotation=45)
+                plt.yticks(range(len(corr_matrix.columns)), corr_matrix.columns)
+                
+        else:
+            # Enhanced line plot for RWB data
+            if y_col:
+                if overlay_col:
+                    groups = df[overlay_col].unique()
+                    # Limit to reasonable number of lines for readability
+                    if len(groups) > 20:
+                        groups = groups[:20]
+                    
+                    # Use different colors and markers for better distinction
+                    colors = plt.cm.tab20(range(len(groups)))
+                    markers = ['o', 's', '^', 'v', 'D', 'p', '*', 'h', '+', 'x'] * (len(groups) // 10 + 1)
+                    
+                    for i, group in enumerate(groups):
+                        subset = df[df[overlay_col] == group]
+                        if len(subset) > 0:
+                            if x_col:
+                                # Sort by x-column for proper line plotting
+                                subset_sorted = subset.sort_values(x_col)
+                                plt.plot(subset_sorted[x_col], subset_sorted[y_col], 
+                                        label=f'{overlay_col}={group}', 
+                                        marker=markers[i % len(markers)], 
+                                        color=colors[i],
+                                        alpha=0.8, 
+                                        linewidth=1.5,
+                                        markersize=4)
+                            else:
+                                plt.plot(subset.index, subset[y_col], 
+                                        label=f'{overlay_col}={group}',
+                                        marker=markers[i % len(markers)],
+                                        color=colors[i],
+                                        alpha=0.8)
+                    
+                    # Enhanced legend
+                    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+                else:
+                    if x_col:
+                        # Sort by x-column for proper line plotting
+                        df_sorted = df.sort_values(x_col)
+                        plt.plot(df_sorted[x_col], df_sorted[y_col], marker='o', alpha=0.7, linewidth=2)
+                    else:
+                        plt.plot(df.index, df[y_col], marker='o', alpha=0.7, linewidth=2)
+                
+                # Enhanced axis labels
+                if y_col:
+                    plt.ylabel(y_col, fontsize=12)
+                if x_col:
+                    plt.xlabel(x_col, fontsize=12)
+                    
+                # Add grid for better readability
+                plt.grid(True, alpha=0.3)
+                
+                # Adjust layout to accommodate legend
+                plt.tight_layout()
+        
+        plt.title(plot_config.get('title', 'AI Analysis Result'))
+        plt.tight_layout()
+        plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        # Return relative path for web serving
+        return {
+            'plot_path': f"plots/{filename}",
+            'success': True
+        }
+        
+    except Exception as e:
+        print(f"Error generating AI plot: {e}")
+        return {
+            'plot_path': None,
+            'success': False,
+            'error': str(e)
+        }
+
 @app.route('/process-rwb-analysis', methods=['POST'])
 def process_rwb_analysis():
     """Process the RWB analysis form and generate results"""
     # Extract form data first so we can use it in error handling
-    regex = request.form.get('regex', '').strip()
-    regex_col = request.form.get('regex_col', 'DIE_ID')
+    analysis_template = request.form.get('analysis_template', 'AGATE_REV1_analysis').strip()
+    selected_table = request.form.get('selected_table', 'rwb_db_3').strip()  # Get single selected table
     
-    # If regex is empty, don't apply regex filtering
-    if not regex:
-        regex = False
+    # Get template-specific parameters
+    analysis_type = request.form.get('analysis_type', 't0').strip()  # For AGATE_REV1
+    
+    # Get dynamic filter configuration
+    num_filters = int(request.form.get('num_filters', 0))
+    dynamic_filters = []
+    
+    for i in range(1, num_filters + 1):
+        filter_column = request.form.get(f'filter_column_{i}', '').strip()
+        filter_operator = request.form.get(f'filter_operator_{i}', 'equals').strip()
+        filter_value = request.form.get(f'filter_value_{i}', '').strip()
+        
+        if filter_column and filter_value:  # Only add valid filters
+            dynamic_filters.append({
+                'column': filter_column,
+                'operator': filter_operator,
+                'value': filter_value
+            })
+    
+    # Legacy support - keep some old variables for backward compatibility
+    regex = False  # No longer using regex filtering
+    regex_col = 'DIE_ID'  # Default for backward compatibility
     date = request.form.get('date', '')
-    skip_rwb_2 = 'skip_rwb_2' in request.form
-    
-    # Get filter values - empty means no filter applied
-    test_name_filter = request.form.get('test_name_filter', '').strip()
-    macro_filter_str = request.form.get('macro_filter', '').strip()
-    datetime_filter = request.form.get('datetime_filter', '').strip()
-    
-    # Parse macro filter only if provided - can be single values, ranges, or combinations
-    macro_values = parse_macro_filter(macro_filter_str) if macro_filter_str else None
+    test_name_filter = ''
+    macro_filter_str = ''
+    datetime_filter = ''
+    macro_values = None
     
     overlay_col = request.form.get('overlay_col', 'IO')
     legend = 'legend' in request.form
     plot_title = request.form.get('plot_title', 'DOE21: BLREF_CAL by IO')
+    
+    # Get deduplication parameters
+    deduplication_mode = request.form.get('deduplication_mode', 'none')
+    groupby_columns = request.form.get('groupby_columns', 'DIE_ID,MACRO,IO,TEST_NAME')
+    custom_dedup_column = request.form.get('custom_dedup_column', 'TEST_START_DATETIME')
+    custom_dedup_method = request.form.get('custom_dedup_method', 'max')
     
     groupby_cols = request.form.get('groupby_cols', '').strip()
     # If empty, pass None to the function for no grouping
@@ -6277,17 +7656,23 @@ def process_rwb_analysis():
         groupby_cols = 'None (no grouping)'
     
     # Prepare default analysis summary for error cases
+    notebook_file = f'{analysis_template}.ipynb + core_post_processing_functions.py'
     analysis_summary = {
+        'analysis_template': analysis_template,
+        'analysis_type': analysis_type if analysis_template == 'AGATE_REV1_analysis' else None,
+        'notebook_file': notebook_file,
+        'selected_table': selected_table,
+        'dynamic_filters': dynamic_filters,
+        'num_filters': len(dynamic_filters),
         'total_records': 0,
         'filtered_records': 0,
-        'regex_pattern': regex if regex != False else 'None (no regex)',
-        'regex_col': regex_col,
         'plot_title': plot_title,
-        'test_name_filter': test_name_filter or 'None (no filter)',
-        'macro_filter': macro_filter_str or 'None (no filter)',
-        'datetime_filter': datetime_filter or 'None (no filter)',
         'groupby_cols': groupby_cols,
-        'overlay_col': overlay_col
+        'overlay_col': overlay_col,
+        'deduplication_mode': deduplication_mode,
+        'deduplication_columns': groupby_columns if deduplication_mode != 'none' else None,
+        'custom_dedup_column': custom_dedup_column if deduplication_mode == 'custom_column' else None,
+        'custom_dedup_method': custom_dedup_method if deduplication_mode == 'custom_column' else None
     }
     
     try:
@@ -6305,12 +7690,253 @@ def process_rwb_analysis():
         sys.path.insert(0, postprocess_dir)
         
         # Import the core functions
-        from core_post_processing_functions import rwb_fetch_data, rwb_groupby_level_nqplot, rwb_calc_io_mean
+        from core_post_processing_functions import rwb_groupby_level_nqplot, rwb_calc_io_mean
         
-        # Step 1: Fetch data
-        print("Fetching RWB data...")
-        date_param = date if date else None
-        rwb_pull = rwb_fetch_data(regex=regex, regex_col=regex_col, date=date_param, skip_rwb_2=skip_rwb_2)
+        # Log which table and filters are being used
+        notebook_file = analysis_summary['notebook_file']
+        print(f"Starting RWB analysis using {notebook_file}...")
+        print(f"Selected table: {selected_table}")
+        print(f"Number of filters: {len(dynamic_filters)}")
+        for i, filter_info in enumerate(dynamic_filters, 1):
+            print(f"  Filter {i}: {filter_info['column']} {filter_info['operator']} '{filter_info['value']}'")
+        if not dynamic_filters:
+            print("  No filters applied - retrieving all data")
+        
+        # Step 1: Fetch data from selected table
+        print(f"Fetching data from table: {selected_table}...")
+        
+        # Import required modules for database connection
+        import mysql.connector
+        from db_operations import create_long_running_connection
+        
+        try:
+            # Connect to database and fetch data from selected table
+            # Use 'rwb' database for rwb tables, otherwise try without specifying database
+            database_name = 'rwb' if selected_table.startswith(('rwb_', 'postec_', 'aparam_', 'magcal_', 'cal_')) else None
+            print(f"Connecting to database: {database_name}")
+            
+            connection = create_long_running_connection(database=database_name)
+            cursor = connection.cursor(dictionary=True)
+            
+            # First, check if the table exists
+            check_query = f"SHOW TABLES LIKE '{selected_table}'"
+            cursor.execute(check_query)
+            table_exists = cursor.fetchone()
+            
+            if not table_exists:
+                print(f"ERROR: Table '{selected_table}' does not exist in database '{database_name}'")
+                rwb_pull = pd.DataFrame()
+            else:
+                # Quick check: count total records in table
+                cursor.execute(f"SELECT COUNT(*) FROM `{selected_table}`")
+                total_count = cursor.fetchone()['COUNT(*)']
+                print(f"Table '{selected_table}' has {total_count} total records")
+                
+                # Debug: Check what TEST_NAME values exist
+                cursor.execute(f"SELECT DISTINCT TEST_NAME FROM `{selected_table}` LIMIT 10")
+                test_names = [row['TEST_NAME'] for row in cursor.fetchall()]
+                print(f"Sample TEST_NAME values in table: {test_names}")
+                
+                print(f"Table '{selected_table}' exists, building optimized query...")
+                
+                # Build WHERE clause from dynamic filters for SQL optimization
+                where_conditions = []
+                params = []
+                
+                for filter_info in dynamic_filters:
+                    filter_col = filter_info['column']
+                    filter_operator = filter_info['operator']
+                    filter_value = filter_info['value']
+                    
+                    if not (filter_col and filter_value):
+                        continue
+                        
+                    # Build SQL condition based on operator
+                    if filter_operator == 'equals':
+                        # Special case: treat RUN_NAME equals as contains to match regex behavior
+                        if filter_col == 'RUN_NAME':
+                            where_conditions.append(f"`{filter_col}` LIKE %s")
+                            params.append(f"%{filter_value}%")
+                            print(f"DEBUG: Converting RUN_NAME equals to LIKE for regex compatibility")
+                        else:
+                            where_conditions.append(f"`{filter_col}` = %s")
+                            params.append(filter_value)
+                    elif filter_operator == 'not_equals':
+                        where_conditions.append(f"`{filter_col}` != %s")
+                        params.append(filter_value)
+                    elif filter_operator == 'contains':
+                        where_conditions.append(f"`{filter_col}` LIKE %s")
+                        params.append(f"%{filter_value}%")
+                    elif filter_operator == 'starts_with':
+                        where_conditions.append(f"`{filter_col}` LIKE %s")
+                        params.append(f"{filter_value}%")
+                    elif filter_operator == 'ends_with':
+                        where_conditions.append(f"`{filter_col}` LIKE %s")
+                        params.append(f"%{filter_value}")
+                    elif filter_operator == 'greater_than':
+                        where_conditions.append(f"`{filter_col}` > %s")
+                        params.append(filter_value)
+                    elif filter_operator == 'less_than':
+                        where_conditions.append(f"`{filter_col}` < %s")
+                        params.append(filter_value)
+                    elif filter_operator == 'in_list':
+                        values_list = [v.strip() for v in filter_value.split(',') if v.strip()]
+                        if filter_col == 'MACRO' and any('~' in v for v in values_list):
+                            # Handle MACRO ranges
+                            macro_values = parse_macro_filter(filter_value)
+                            if macro_values:
+                                placeholders = ','.join(['%s'] * len(macro_values))
+                                where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                                params.extend(macro_values)
+                        else:
+                            # Convert to appropriate types for numeric columns
+                            if filter_col in ['MACRO', 'IO', 'DIE_ID']:
+                                try:
+                                    # Try to convert to integers for numeric columns
+                                    numeric_values = [int(v) for v in values_list if v.isdigit()]
+                                    if numeric_values:
+                                        placeholders = ','.join(['%s'] * len(numeric_values))
+                                        where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                                        params.extend(numeric_values)
+                                        print(f"DEBUG: Converted {filter_col} values to integers: {numeric_values}")
+                                    else:
+                                        # Fallback to string values
+                                        placeholders = ','.join(['%s'] * len(values_list))
+                                        where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                                        params.extend(values_list)
+                                except ValueError:
+                                    # Fallback to string values
+                                    placeholders = ','.join(['%s'] * len(values_list))
+                                    where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                                    params.extend(values_list)
+                            else:
+                                placeholders = ','.join(['%s'] * len(values_list))
+                                where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                                params.extend(values_list)
+                
+                # Build optimized query
+                if where_conditions:
+                    where_clause = " AND ".join(where_conditions)
+                    query = f"SELECT * FROM `{selected_table}` WHERE {where_clause}"
+                    print(f"Executing filtered query with {len(dynamic_filters)} filters...")
+                else:
+                    query = f"SELECT * FROM `{selected_table}`"
+                    print(f"No filters applied, fetching all records...")
+                
+                print(f"SQL Query: {query}")
+                print(f"SQL Params: {params}")
+                
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+                
+                print(f"Raw SQL result count: {len(rows)}")
+                
+                # Convert to DataFrame
+                if rows:
+                    rwb_pull = pd.DataFrame(rows)
+                    print(f"Successfully fetched {len(rwb_pull)} filtered records from {selected_table}")
+                else:
+                    rwb_pull = pd.DataFrame()
+                    print(f"No records returned from query")
+                    
+                    # If no results from filtered query, let's try a fallback approach
+                    # that mimics your exact pandas logic for debugging
+                    print("Trying fallback approach with broader query...")
+                    
+                    # Fetch all data and apply pandas filtering (for debugging)
+                    cursor.execute(f"SELECT * FROM `{selected_table}` LIMIT 10000")
+                    fallback_rows = cursor.fetchall()
+                    
+                    if fallback_rows:
+                        fallback_df = pd.DataFrame(fallback_rows)
+                        print(f"Loaded {len(fallback_df)} total records for fallback filtering")
+                        
+                        # Apply your exact filtering logic step by step
+                        print("Applying your exact pandas filtering logic...")
+                        
+                        # Extract all filters
+                        filters_applied = {}
+                        for filter_info in dynamic_filters:
+                            col = filter_info['column']
+                            op = filter_info['operator']
+                            val = filter_info['value']
+                            filters_applied[col] = {'operator': op, 'value': val}
+                            print(f"Filter: {col} {op} '{val}'")
+                        
+                        # Start with full dataset
+                        working_df = fallback_df.copy()
+                        print(f"Starting with {len(working_df)} total records")
+                        
+                        # Step 1: Apply RUN_NAME filter (equivalent to cf.rwb_fetch_data(regex='KPIRev1', regex_col='RUN_NAME'))
+                        if 'RUN_NAME' in filters_applied:
+                            run_name_val = filters_applied['RUN_NAME']['value']
+                            if filters_applied['RUN_NAME']['operator'] == 'equals':
+                                # Convert equals to contains for RUN_NAME to match your regex logic
+                                working_df = working_df.loc[working_df['RUN_NAME'].str.contains(run_name_val, na=False)]
+                            else:
+                                working_df = working_df.loc[working_df['RUN_NAME'].str.contains(run_name_val, na=False)]
+                            print(f"After RUN_NAME filter: {len(working_df)} records")
+                        
+                        # Step 2: Apply STEPPING filter (equivalent to rwb_pull.STEPPING=='AGATE')
+                        if 'STEPPING' in filters_applied:
+                            stepping_val = filters_applied['STEPPING']['value']
+                            working_df = working_df.loc[working_df['STEPPING'] == stepping_val]
+                            print(f"After STEPPING filter: {len(working_df)} records")
+                        
+                        # Step 3: Apply TEST_NAME contains filter (equivalent to TEST_NAME.str.contains('pr1-r0'))
+                        if 'TEST_NAME' in filters_applied:
+                            test_name_val = filters_applied['TEST_NAME']['value']
+                            working_df = working_df.loc[working_df['TEST_NAME'].str.contains(test_name_val, na=False)]
+                            print(f"After TEST_NAME filter: {len(working_df)} records")
+                        
+                        # Step 4: Apply MACRO filter (equivalent to MACRO.isin([1,2,3,5]))
+                        if 'MACRO' in filters_applied:
+                            macro_val = filters_applied['MACRO']['value']
+                            if filters_applied['MACRO']['operator'] == 'in_list':
+                                macro_list = [int(x.strip()) for x in macro_val.split(',') if x.strip().isdigit()]
+                                working_df = working_df.loc[working_df['MACRO'].isin(macro_list)]
+                                print(f"After MACRO filter: {len(working_df)} records")
+                        
+                        print(f"Final pandas filtering result: {len(working_df)} records")
+                        
+                        if len(working_df) > 0:
+                            rwb_pull = working_df
+                            print("✅ Using fallback pandas filtering results!")
+                        else:
+                            print("❌ Even fallback filtering returned no results")
+                            # Debug: Show some sample data to understand what's available
+                            if len(fallback_df) > 0:
+                                print("Sample data from table:")
+                                for col in ['RUN_NAME', 'STEPPING', 'TEST_NAME', 'MACRO']:
+                                    if col in fallback_df.columns:
+                                        unique_vals = fallback_df[col].unique()[:5]
+                                        print(f"  {col}: {unique_vals}")
+                        
+                        # Additional debug: show what combinations exist
+                        if len(fallback_df) > 0:
+                            print("\nDebug: Checking filter combinations...")
+                            for filter_info in dynamic_filters:
+                                col = filter_info['column']
+                                val = filter_info['value']
+                                if col in fallback_df.columns:
+                                    if filter_info['operator'] == 'contains':
+                                        matches = fallback_df[fallback_df[col].str.contains(val, na=False)]
+                                        print(f"  {col} contains '{val}': {len(matches)} matches")
+                                    elif filter_info['operator'] == 'equals':
+                                        matches = fallback_df[fallback_df[col] == val]
+                                        print(f"  {col} equals '{val}': {len(matches)} matches")
+                    else:
+                        print("No data available for fallback approach either")
+                
+        except Exception as e:
+            print(f"Error fetching data from {selected_table}: {e}")
+            # Fallback to empty DataFrame
+            rwb_pull = pd.DataFrame()
+        finally:
+            if 'cursor' in locals():
+                cursor.close()
+            if 'connection' in locals():
+                connection.close()
         
         analysis_summary['total_records'] = len(rwb_pull)
         
@@ -6319,33 +7945,71 @@ def process_rwb_analysis():
                                  analysis_summary=analysis_summary,
                                  error_message="No data found with the specified parameters.")
         
-        # Step 2: Apply filters
-        print("Applying filters...")
+        # Step 2: Data is already filtered by SQL, minimal processing needed
+        print(f"Using SQL-filtered data: {len(rwb_pull)} records")
         
-        # Start with all data
+        # Use the pre-filtered data directly (SQL already did the heavy lifting)
         rwb_plot = rwb_pull.copy()
         
-        # Apply TEST_NAME filter if specified (non-empty)
-        if test_name_filter:
-            print(f"Applying TEST_NAME filter: {test_name_filter}")
-            rwb_plot = rwb_plot.loc[rwb_plot.TEST_NAME.str.contains(test_name_filter, na=False)]
-        
-        # Apply MACRO filter if specified (non-empty)
-        if macro_values:
-            print(f"Applying MACRO filter: {macro_values}")
-            rwb_plot = rwb_plot.loc[rwb_plot.MACRO.isin(macro_values)]
-        
-        # Apply DATETIME filter if specified (non-empty)
-        if datetime_filter:
-            print(f"Applying DATETIME filter: {datetime_filter}")
-            rwb_plot = rwb_plot.loc[rwb_plot.TEST_START_DATETIME.str.contains(datetime_filter, na=False)]
+        # Step 2.5: Apply deduplication if requested
+        if deduplication_mode != 'none' and not rwb_plot.empty:
+            print(f"Applying deduplication mode: {deduplication_mode}")
+            original_count = len(rwb_plot)
+            
+            # Parse groupby columns
+            if groupby_columns:
+                dedup_groupby_cols = [col.strip() for col in groupby_columns.split(',') if col.strip()]
+                # Validate that all groupby columns exist in the dataframe
+                available_cols = rwb_plot.columns.tolist()
+                dedup_groupby_cols = [col for col in dedup_groupby_cols if col in available_cols]
+                
+                if dedup_groupby_cols:
+                    print(f"Deduplicating by columns: {dedup_groupby_cols}")
+                    
+                    if deduplication_mode == 'latest_datetime':
+                        if 'TEST_START_DATETIME' in rwb_plot.columns:
+                            # Keep latest record per group (equivalent to your example)
+                            rwb_plot = rwb_plot.loc[rwb_plot.groupby(dedup_groupby_cols)['TEST_START_DATETIME'].idxmax()]
+                            print(f"Applied latest datetime deduplication")
+                        else:
+                            print("WARNING: TEST_START_DATETIME column not found, skipping deduplication")
+                    
+                    elif deduplication_mode == 'first_datetime':
+                        if 'TEST_START_DATETIME' in rwb_plot.columns:
+                            # Keep first record per group
+                            rwb_plot = rwb_plot.loc[rwb_plot.groupby(dedup_groupby_cols)['TEST_START_DATETIME'].idxmin()]
+                            print(f"Applied first datetime deduplication")
+                        else:
+                            print("WARNING: TEST_START_DATETIME column not found, skipping deduplication")
+                    
+                    elif deduplication_mode == 'custom_column':
+                        if custom_dedup_column in rwb_plot.columns:
+                            # Keep max or min record per group based on custom column
+                            if custom_dedup_method == 'max':
+                                rwb_plot = rwb_plot.loc[rwb_plot.groupby(dedup_groupby_cols)[custom_dedup_column].idxmax()]
+                                print(f"Applied custom max deduplication on {custom_dedup_column}")
+                            else:  # min
+                                rwb_plot = rwb_plot.loc[rwb_plot.groupby(dedup_groupby_cols)[custom_dedup_column].idxmin()]
+                                print(f"Applied custom min deduplication on {custom_dedup_column}")
+                        else:
+                            print(f"WARNING: Custom deduplication column '{custom_dedup_column}' not found, skipping deduplication")
+                    
+                    # Reset index after deduplication
+                    rwb_plot = rwb_plot.reset_index(drop=True)
+                    
+                    dedup_count = len(rwb_plot)
+                    print(f"Deduplication results: {original_count} -> {dedup_count} records ({original_count - dedup_count} duplicates removed)")
+                else:
+                    print("WARNING: No valid groupby columns found for deduplication")
+            else:
+                print("WARNING: No groupby columns specified for deduplication")
         
         analysis_summary['filtered_records'] = len(rwb_plot)
         
         if rwb_plot.empty:
             return render_template('rwb_plots.html', 
                                  analysis_summary=analysis_summary,
-                                 error_message="No data found after applying filters.")
+                                 error_message="No data found after applying filters and deduplication.")
         
         # Step 3: Generate plot
         print("Generating plot...")
@@ -6354,7 +8018,113 @@ def process_rwb_analysis():
         # Configure matplotlib to not display plots
         plt.ioff()
         
-        # Call the plotting function
+        # Apply template-specific processing pipeline
+        print(f"Applying {analysis_template} processing pipeline...")
+        
+        try:
+            if analysis_template == 'AGATE_REV1_analysis':
+                # AGATE_REV1 pipeline: rwb_stitch_ios + rwb_calc_io_mean + plotting
+                print("Using AGATE_REV1 advanced pipeline...")
+                
+                # Import additional functions
+                from core_post_processing_functions import rwb_stitch_ios, rwb_calc_io_mean
+                
+                print(f"Processing {len(rwb_plot)} records through AGATE_REV1 pipeline...")
+                
+                # Step 1: Combine all macros (equivalent to rwb_t0_combined = cf.rwb_stitch_ios(rwb_t0_raw))
+                print("Step 1: Stitching IOs across macros...")
+                rwb_combined = rwb_stitch_ios(rwb_plot)
+                print(f"After stitching: {len(rwb_combined)} records")
+                
+                # Step 2: Calculate IO means (equivalent to rwb_t0_mean = cf.rwb_calc_io_mean(rwb_t0_combined, check_io_unique=False))
+                print("Step 2: Calculating IO means...")
+                rwb_mean = rwb_calc_io_mean(rwb_combined, check_io_unique=False)
+                print(f"After mean calculation: {len(rwb_mean)} records")
+                
+                # Step 3: Add readout column based on analysis type
+                readout_labels = {
+                    't0': 'T0',
+                    '1st_bake': 'Retention 1st Bake', 
+                    '2nd_bake': 'Retention 2nd Bake'
+                }
+                readout_label = readout_labels.get(analysis_type, 'T0')
+                rwb_mean['Readout'] = readout_label
+                
+                # Step 4: Plot with AGATE_REV1 settings (equivalent to cf.rwb_groupby_level_nqplot(rwb_t0_mean, overlay_col='Readout', cond_scale=(150,664)))
+                print(f"Step 4: Generating plot with AGATE_REV1 settings for {analysis_type} analysis...")
+                
+                # Use 'Readout' as overlay column and apply conditioning scale
+                final_overlay_col = 'Readout'
+                cond_scale = (150, 664)
+                
+                # Set plot title if not provided
+                if not plot_title:
+                    analysis_type_names = {
+                        't0': 'T0 Analysis',
+                        '1st_bake': '1st Bake Retention',
+                        '2nd_bake': '2nd Bake Retention'
+                    }
+                    analysis_name = analysis_type_names.get(analysis_type, 'T0 Analysis')
+                    plot_title = f"AGATE_REV1 {analysis_name} - {selected_table}"
+                
+                rwb_groupby_level_nqplot(
+                    rwb_mean, 
+                    overlay_col=final_overlay_col, 
+                    legend=legend, 
+                    title=plot_title,
+                    cond_scale=cond_scale
+                )
+                
+                print("✅ Successfully applied AGATE_REV1 processing pipeline!")
+                
+            else:
+                # Original agate_analysis_template: Intelligent analysis based on parameters
+                print(f"Using original agate_analysis_template pipeline...")
+                
+                print(f"Processing {len(rwb_plot)} records through original pipeline...")
+                
+                # Set plot title if not provided
+                if not plot_title:
+                    plot_title = f"Original Template Analysis - {selected_table}"
+                
+                # Original template: Generate intelligent analysis based on data and filters
+                print(f"Original template: Generating intelligent analysis...")
+                
+                # Check if groupby_cols is specified for mean calculation
+                if groupby_cols and groupby_cols.strip():
+                    # If groupby is specified, perform mean calculation
+                    print(f"Applying mean calculation with groupby: {groupby_cols_list}")
+                    try:
+                        from core_post_processing_functions import rwb_calc_io_mean
+                        rwb_plot = rwb_calc_io_mean(rwb_plot, groupby_cols=groupby_cols_list)
+                        print(f"After mean calculation: {len(rwb_plot)} records")
+                        plot_title += " (Mean Calculation)"
+                    except Exception as e:
+                        print(f"Mean calculation failed, using direct plot: {e}")
+                
+                # Generate the main plot
+                print(f"Generating plot with overlay column: {overlay_col}")
+                rwb_groupby_level_nqplot(
+                    rwb_plot, 
+                    overlay_col=overlay_col, 
+                    legend=legend, 
+                    title=plot_title
+                )
+                
+                print(f"✅ Successfully applied original template processing pipeline!")
+            
+        except ImportError as e:
+            print(f"⚠️  Could not import required functions ({e}), falling back to simple plotting...")
+            # Fallback to simple plotting
+            if not plot_title:
+                plot_title = f"RWB Analysis - {selected_table}"
+            rwb_groupby_level_nqplot(rwb_plot, overlay_col=overlay_col, legend=legend, title=plot_title)
+            
+        except Exception as e:
+            print(f"⚠️  Error in processing pipeline ({e}), falling back to simple plotting...")
+            # Fallback to simple plotting
+            if not plot_title:
+                plot_title = f"RWB Analysis - {selected_table}"
         rwb_groupby_level_nqplot(rwb_plot, overlay_col=overlay_col, legend=legend, title=plot_title)
         
         # Convert plot to HTML
@@ -6419,10 +8189,127 @@ def process_rwb_analysis():
                              analysis_summary=analysis_summary,
                              error_message=error_msg)
 
+@app.route('/get-cascaded-column-values', methods=['POST'])
+def get_cascaded_column_values():
+    """Get unique values for a column after applying previous filters"""
+    try:
+        data = request.get_json()
+        table_name = data.get('table', 'rwb_db_3').strip()
+        target_column = data.get('column')
+        applied_filters = data.get('filters', [])  # List of already applied filters
+        
+        if not target_column:
+            return jsonify({'error': 'Column name is required'})
+            
+        # Validate table name to prevent SQL injection
+        valid_tables = [
+            'rwb_db_3', 'rwb_db_4', 'postec_db_die92', 'postec_db_die89', 
+            'postec_db_0', 'magcal_db_0', 'cal_db_0', 'aparam_db_0', 
+            'aparam_db_1', 'rwb_db_test2', 'temp_table', 'rwb_db_test',
+            'rwb_db', 'rwb_db_2'
+        ]
+        
+        if table_name not in valid_tables:
+            return jsonify({'error': f'Invalid table name: {table_name}'})
+        
+        # Connect to database
+        database_name = 'rwb' if table_name.startswith(('rwb_', 'postec_', 'aparam_', 'magcal_', 'cal_')) else None
+        connection = create_long_running_connection(database=database_name)
+        cursor = connection.cursor(dictionary=True)
+        
+        # Build WHERE clause from applied filters
+        where_conditions = []
+        params = []
+        
+        for filter_info in applied_filters:
+            filter_col = filter_info.get('column')
+            filter_operator = filter_info.get('operator', 'equals')
+            filter_value = filter_info.get('value')
+            
+            if not (filter_col and filter_value):
+                continue
+                
+            # Build condition based on operator
+            if filter_operator == 'equals':
+                where_conditions.append(f"`{filter_col}` = %s")
+                params.append(filter_value)
+            elif filter_operator == 'not_equals':
+                where_conditions.append(f"`{filter_col}` != %s")
+                params.append(filter_value)
+            elif filter_operator == 'contains':
+                where_conditions.append(f"`{filter_col}` LIKE %s")
+                params.append(f"%{filter_value}%")
+            elif filter_operator == 'starts_with':
+                where_conditions.append(f"`{filter_col}` LIKE %s")
+                params.append(f"{filter_value}%")
+            elif filter_operator == 'ends_with':
+                where_conditions.append(f"`{filter_col}` LIKE %s")
+                params.append(f"%{filter_value}")
+            elif filter_operator == 'greater_than':
+                where_conditions.append(f"`{filter_col}` > %s")
+                params.append(filter_value)
+            elif filter_operator == 'less_than':
+                where_conditions.append(f"`{filter_col}` < %s")
+                params.append(filter_value)
+            elif filter_operator == 'in_list':
+                values_list = [v.strip() for v in filter_value.split(',') if v.strip()]
+                if filter_col == 'MACRO' and any('~' in v for v in values_list):
+                    # Handle MACRO ranges
+                    macro_values = parse_macro_filter(filter_value)
+                    if macro_values:
+                        placeholders = ','.join(['%s'] * len(macro_values))
+                        where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                        params.extend(macro_values)
+                else:
+                    placeholders = ','.join(['%s'] * len(values_list))
+                    where_conditions.append(f"`{filter_col}` IN ({placeholders})")
+                    params.extend(values_list)
+        
+        # Build query
+        base_query = f"SELECT DISTINCT `{target_column}` FROM `{table_name}`"
+        if where_conditions:
+            where_clause = " AND ".join(where_conditions)
+            query = f"{base_query} WHERE {where_clause} ORDER BY `{target_column}` LIMIT 1000"
+        else:
+            query = f"{base_query} ORDER BY `{target_column}` LIMIT 1000"
+        
+        print(f"DEBUG: Cascaded query: {query}")
+        print(f"DEBUG: Params: {params}")
+        
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        
+        # Extract values and filter out None/NULL
+        values = [row[target_column] for row in results if row[target_column] is not None]
+        
+        cursor.close()
+        connection.close()
+        
+        print(f"DEBUG: Found {len(values)} cascaded values for {target_column}")
+        return jsonify({'values': values})
+        
+    except Exception as e:
+        print(f"Error in get_cascaded_column_values: {e}")
+        return jsonify({'error': str(e)})
+
 @app.route('/get-rwb-column-values/<column_name>')
 def get_rwb_column_values(column_name):
-    """Get unique values for a specific RWB column"""
+    """Get unique values for a specific RWB column from specified table"""
     try:
+        # Get table parameter from query string, default to rwb_db_3
+        table_name = request.args.get('table', 'rwb_db_3').strip()
+        
+        # Validate table name to prevent SQL injection
+        valid_tables = [
+            'rwb_db_3', 'rwb_db_4', 'postec_db_die92', 'postec_db_die89', 
+            'postec_db_0', 'magcal_db_0', 'cal_db_0', 'aparam_db_0', 
+            'aparam_db_1', 'rwb_db_test2', 'temp_table', 'rwb_db_test', 
+            'rwb_db', 'rwb_db_2'
+        ]
+        
+        if table_name not in valid_tables:
+            return jsonify({'error': f'Invalid table name: {table_name}'}), 400
+        
         # Create database connection
         connection = mysql.connector.connect(
             host='localhost',
@@ -6432,18 +8319,18 @@ def get_rwb_column_values(column_name):
         )
         cursor = connection.cursor()
         
-        # First, validate the column exists
-        cursor.execute("SHOW COLUMNS FROM rwb_db_3")
+        # First, validate the column exists in the specified table
+        cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
         columns = [col[0] for col in cursor.fetchall()]
         
         if column_name not in columns:
             cursor.close()
             connection.close()
-            return jsonify({'error': f'Column "{column_name}" not found'}), 400
+            return jsonify({'error': f'Column "{column_name}" not found in table "{table_name}"'}), 400
         
         # Get unique values for the column (limit to prevent memory issues)
         # Use DISTINCT and LIMIT to get a reasonable sample of values
-        query = f"SELECT DISTINCT `{column_name}` FROM rwb_db_3 WHERE `{column_name}` IS NOT NULL ORDER BY `{column_name}` LIMIT 500"
+        query = f"SELECT DISTINCT `{column_name}` FROM `{table_name}` WHERE `{column_name}` IS NOT NULL ORDER BY `{column_name}` LIMIT 500"
         cursor.execute(query)
         
         values = [row[0] for row in cursor.fetchall()]
@@ -6454,7 +8341,8 @@ def get_rwb_column_values(column_name):
         return jsonify({
             'values': values,
             'count': len(values),
-            'column_name': column_name
+            'column_name': column_name,
+            'table_name': table_name
         })
         
     except mysql.connector.Error as e:
@@ -6566,6 +8454,7 @@ def analyze_pattern():
         elif state_pattern == "65536x78_ecc":
             if len(pattern_array.shape) == 3:
                 pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+
         
         # Store original shape
         original_shape = pattern_array.shape
@@ -7312,6 +9201,22 @@ def search_value_in_range():
                 pattern_array = np.load(pattern_file_path)
                 print(f"Loaded pattern array shape: {pattern_array.shape}")
                 
+                # Apply special handling for specific patterns that need transposition
+                if pattern_file == "82944x78_ecc_fuxi":
+                    # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+                    print(f"DEBUG: Special handling for 82944x78_ecc_fuxi pattern")
+                    if len(pattern_array.shape) == 3:
+                        pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+                    print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
+                elif pattern_file == "65536x78_ecc":
+                    # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
+                    print(f"DEBUG: Special handling for 65536x78_ecc pattern")
+                    if len(pattern_array.shape) == 3:
+                        pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+                    print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
+
+                print(f"Final pattern array shape after processing: {pattern_array.shape}")
+                
                 # Trim pattern to the specified range
                 pattern_min_row = max(0, min_row)
                 pattern_max_row = min(pattern_array.shape[0], max_row + 1)
@@ -7763,6 +9668,22 @@ def get_pattern_levels(pattern_name):
         # Load the pattern array
         pattern_array = np.load(pattern_file_path, allow_pickle=True)
         print(f"Loaded pattern array shape: {pattern_array.shape}")
+        
+        # Apply special handling for specific patterns that need transposition
+        if pattern_name == "82944x78_ecc_fuxi":
+            # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
+            print(f"DEBUG: Special handling for 82944x78_ecc_fuxi pattern")
+            if len(pattern_array.shape) == 3:
+                pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+            print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
+        elif pattern_name == "65536x78_ecc":
+            # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
+            print(f"DEBUG: Special handling for 65536x78_ecc pattern")
+            if len(pattern_array.shape) == 3:
+                pattern_array = pattern_array.reshape(pattern_array.shape[0], pattern_array.shape[1] * pattern_array.shape[2]).T
+            print(f"DEBUG: After reshaping, pattern array shape: {pattern_array.shape}")
+
+        print(f"Final pattern array shape after processing: {pattern_array.shape}")
         
         # Get unique values, excluding only NaN
         unique_values = np.unique(pattern_array)

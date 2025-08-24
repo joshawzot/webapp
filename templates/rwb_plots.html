@@ -39,24 +39,46 @@
                                             <td><strong>Filtered Records:</strong></td>
                                             <td>{{ analysis_summary.filtered_records }}</td>
                                         </tr>
+
                                         <tr>
-                                            <td><strong>Analysis Parameters:</strong></td>
+                                            <td><strong>Selected Table:</strong></td>
                                             <td>
-                                                Regex: {{ analysis_summary.regex_pattern }}<br>
-                                                Column: {{ analysis_summary.regex_col }}<br>
-                                                Title: {{ analysis_summary.plot_title }}
+                                                <code>{{ analysis_summary.selected_table if analysis_summary.selected_table else 'rwb_db_3' }}</code>
                                             </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Applied Filters:</strong></td>
+                                            <td>
+                                                {% if analysis_summary.dynamic_filters %}
+                                                    {% for filter in analysis_summary.dynamic_filters %}
+                                                        <div class="mb-1">
+                                                            <strong>{{ filter.column }}</strong> 
+                                                            <span class="badge badge-secondary">{{ filter.operator }}</span> 
+                                                            <code>{{ filter.value }}</code>
+                                                        </div>
+                                                    {% endfor %}
+                                                {% else %}
+                                                    <em class="text-muted">No filters applied</em>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Plot Title:</strong></td>
+                                            <td>{{ analysis_summary.plot_title }}</td>
                                         </tr>
                                     </table>
                                 </div>
                                 <div class="col-md-6">
                                     <table class="table table-bordered">
                                         <tr>
-                                            <td><strong>Filters Applied:</strong></td>
+                                            <td><strong>Number of Filters:</strong></td>
                                             <td>
-                                                TEST_NAME: {{ analysis_summary.test_name_filter }}<br>
-                                                MACRO: {{ analysis_summary.macro_filter }}<br>
-                                                DATETIME: {{ analysis_summary.datetime_filter }}
+                                                {% if analysis_summary.dynamic_filters %}
+                                                    <span class="badge badge-primary">{{ analysis_summary.dynamic_filters|length }}</span> 
+                                                    {% if analysis_summary.dynamic_filters|length == 1 %}filter{% else %}filters{% endif %} applied
+                                                {% else %}
+                                                    <span class="badge badge-secondary">0</span> No filters applied
+                                                {% endif %}
                                             </td>
                                         </tr>
                                         <tr>
@@ -66,6 +88,35 @@
                                         <tr>
                                             <td><strong>Overlay Column:</strong></td>
                                             <td>{{ analysis_summary.overlay_col }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Deduplication:</strong></td>
+                                            <td>
+                                                {% if analysis_summary.deduplication_mode == 'none' %}
+                                                    <span class="badge badge-secondary">None</span> All records used
+                                                {% elif analysis_summary.deduplication_mode == 'latest_datetime' %}
+                                                    <span class="badge badge-info">Latest DateTime</span> by {{ analysis_summary.deduplication_columns }}
+                                                {% elif analysis_summary.deduplication_mode == 'first_datetime' %}
+                                                    <span class="badge badge-info">First DateTime</span> by {{ analysis_summary.deduplication_columns }}
+                                                {% elif analysis_summary.deduplication_mode == 'custom_column' %}
+                                                    <span class="badge badge-warning">Custom {{ analysis_summary.custom_dedup_method|title }}</span> 
+                                                    <code>{{ analysis_summary.custom_dedup_column }}</code> by {{ analysis_summary.deduplication_columns }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Analysis Template:</strong></td>
+                                            <td>
+                                                <span class="badge badge-primary">{{ analysis_summary.analysis_template }}</span>
+                                                {% if analysis_summary.analysis_type %}
+                                                    <span class="badge badge-success ml-1">{{ analysis_summary.analysis_type|title }} Analysis</span>
+                                                {% endif %}
+
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Notebook Source:</strong></td>
+                                            <td><code>{{ analysis_summary.notebook_file }}</code></td>
                                         </tr>
                                     </table>
                                 </div>

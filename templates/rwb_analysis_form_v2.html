@@ -1,0 +1,1185 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Template: rwb_analysis_form_v2.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> rwb_analysis_form_v2.html
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> RWB Analysis
+                    </h3>
+                    <small class="text-light"></small>
+                </div>
+                <div class="card-body">
+                    
+
+
+                    <!-- Section 1: Data Filtering -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h4 class="mb-0">
+                                <i class="fas fa-filter"></i> 1. Data Filtering
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="num_filters">Number of Filters:</label>
+                                    <select class="form-control" id="num_filters" name="num_filters" onchange="updateFilters()">
+                                        <option value="0">No Filters (Show All Data)</option>
+                                        <option value="1">1 Filter</option>
+                                        <option value="2">2 Filters</option>
+                                        <option value="3">3 Filters</option>
+                                        <option value="4" selected>4 Filters</option>
+                                        <option value="5">5 Filters</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="button" class="btn btn-primary btn-block" onclick="applyFilters()">
+                                            <i class="fas fa-search"></i> Apply Filters & Preview Data
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-warning btn-block" onclick="loadDefaultFilters()">
+                                            <i class="fas fa-magic"></i> Load Default (TTU4 r21 MACRO=7)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Filter Container -->
+                            <div id="filters-container">
+                                <!-- Filters will be generated here -->
+                            </div>
+
+                            <!-- Data Preview Section -->
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5><i class="fas fa-table"></i> Filtered Data Preview</h5>
+                                    <div>
+                                        <span id="record-count" class="badge badge-info">No data loaded</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ml-2" onclick="exportFilteredData()">
+                                            <i class="fas fa-download"></i> Export
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Loading indicator -->
+                                <div id="loading-indicator" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading filtered data...</p>
+                                </div>
+
+                                <!-- Data table -->
+                                <div id="data-preview-container" class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <div class="alert alert-light text-center">
+                                        <i class="fas fa-arrow-up"></i> Apply filters to see data preview
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: RWB Analysis Functions -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-chart-line"></i> 2. Analysis Functions
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Function 1: Level Plot -->
+                                <div class="col-md-6">
+                                    <div class="card bg-light h-100">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-chart-line text-primary"></i> Level NQ Plot
+                                            </h6>
+                                            <small class="text-muted">cf.rwb_groupby_level_nqplot()</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group">
+                                                <label for="overlay_col">Overlay Column:</label>
+                                                <select class="form-control" id="overlay_col">
+                                                    <option value="IO" selected>IO</option>
+                                                    <option value="MACRO">MACRO</option>
+                                                    <option value="DIE_ID">DIE_ID</option>
+                                                    <option value="TEST_NAME">TEST_NAME</option>
+                                                    <option value="RUN_NAME">RUN_NAME</option>
+                                                    <option value="STEPPING">STEPPING</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="legend">
+                                                    <label class="form-check-label" for="legend">Show Legend</label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="form-group">
+                                                <label for="plot_title">Plot Title:</label>
+                                                <input type="text" class="form-control" id="plot_title" 
+                                                       value="DOE21: BLREF_CAL by IO" placeholder="Enter plot title">
+                                            </div>
+                                            
+                                            <button type="button" class="btn btn-primary btn-block" onclick="generateLevelPlotAjax()" id="level-plot-btn">
+                                                <i class="fas fa-chart-line"></i> Generate Level Plot
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Function 2: Mean Calculation -->
+                                <div class="col-md-6">
+                                    <div class="card bg-light h-100">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-calculator text-success"></i> IO Mean Calculation
+                                            </h6>
+                                            <small class="text-muted">cf.rwb_calc_io_mean()</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group">
+                                                <label for="groupby_cols">Group By Columns:</label>
+                                                <select class="form-control" id="groupby_cols">
+                                                    <option value="TEST_NAME" selected>TEST_NAME</option>
+                                                    <option value="MACRO">MACRO</option>
+                                                    <option value="DIE_ID">DIE_ID</option>
+                                                    <option value="IO">IO</option>
+                                                    <option value="RUN_NAME">RUN_NAME</option>
+                                                    <option value="STEPPING">STEPPING</option>
+                                                </select>
+                                                <small class="form-text text-muted">Select primary grouping column. Default: TEST_NAME</small>
+                                            </div>
+                                            
+
+                                            
+                                            <button type="button" class="btn btn-success btn-block" onclick="generateMeanCalculationAjax()" id="mean-calc-btn">
+                                                <i class="fas fa-calculator"></i> Calculate Mean & Display
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Results Container -->
+                            <div class="row mt-4" id="analysis-results-container" style="display: none;">
+                                <div class="col-12">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-chart-bar"></i> Analysis Results
+                                            </h5>
+                                        </div>
+                                        <div class="card-body" id="analysis-results-content">
+                                            <!-- Results will be displayed here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Status Display -->
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-info" id="analysis-status">
+                                        <i class="fas fa-info-circle"></i> 
+                                        <strong>Ready:</strong> Apply filters above, then use the analysis functions.
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <strong>Table:</strong> rwb_db_3 | 
+                                                <strong>Filtered Rows:</strong> <span id="current-filter-count">None</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Back Button -->
+                    <div class="text-center">
+                        <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </a>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let availableColumns = ['DIE_ID', 'TEST_NAME', 'MACRO', 'IO', 'TEST_START_DATETIME', 'RUN_NAME', 'STEPPING'];
+let filteredDataCache = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial columns and filters
+    loadTableColumns();
+    updateFilters();
+    loadDefaultFilters();
+    
+    // Load columns for analysis functions after a short delay
+    setTimeout(() => {
+        loadAnalysisColumns();
+    }, 1000);
+});
+
+function loadTableColumns() {
+    // Fetch real columns from rwb_db_3 for filtering
+    fetch('{{ url_for("get_table_columns") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            database: 'rwb',
+            tableName: 'rwb_db_3'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.columns) {
+            availableColumns = data.columns;
+            console.log(`Loaded ${availableColumns.length} filter columns:`, availableColumns);
+            updateFilters();
+        } else {
+            // Fallback to default columns if loading fails
+            availableColumns = [
+                'DIE_ID', 'TEST_NAME', 'MACRO', 'IO', 'TEST_START_DATETIME', 
+                'RUN_NAME', 'STEPPING', 'TEMPERATURE', 'VOLTAGE', 'CURRENT',
+                'DEVICE_ID', 'WAFER_ID', 'LOT_ID', 'STATUS', 'ERROR_CODE'
+            ];
+            updateFilters();
+        }
+    })
+    .catch(error => {
+        console.error('Error loading filter columns:', error);
+        // Fallback to default columns
+        availableColumns = [
+            'DIE_ID', 'TEST_NAME', 'MACRO', 'IO', 'TEST_START_DATETIME', 
+            'RUN_NAME', 'STEPPING', 'TEMPERATURE', 'VOLTAGE', 'CURRENT',
+            'DEVICE_ID', 'WAFER_ID', 'LOT_ID', 'STATUS', 'ERROR_CODE'
+        ];
+        updateFilters();
+    });
+}
+
+function getSelectedTable() {
+    return 'rwb_db_3'; // Hardcoded
+}
+
+function updateFilters() {
+    const numFilters = parseInt(document.getElementById('num_filters').value);
+    const container = document.getElementById('filters-container');
+    
+    // Clear existing filters
+    container.innerHTML = '';
+    
+    if (numFilters === 0) {
+        container.innerHTML = '<div class="alert alert-info"><em>No filters selected. All data will be retrieved.</em></div>';
+        return;
+    }
+    
+    // Generate filter inputs
+    for (let i = 1; i <= numFilters; i++) {
+        const filterDiv = document.createElement('div');
+        filterDiv.className = 'card mb-3';
+        
+        filterDiv.innerHTML = `
+            <div class="card-header">
+                <h6 class="mb-0">Filter ${i}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="filter_column_${i}">Column:</label>
+                        <select class="form-control" id="filter_column_${i}">
+                            <option value="">-- Select Column --</option>
+                            ${availableColumns.map(col => `<option value="${col}">${col}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filter_operator_${i}">Operator:</label>
+                        <select class="form-control" id="filter_operator_${i}">
+                            <option value="equals">Equals (=)</option>
+                            <option value="contains">Contains (LIKE %value%)</option>
+                            <option value="in_list">In List (comma separated)</option>
+                            <option value="greater_than">Greater Than (&gt;)</option>
+                            <option value="less_than">Less Than (&lt;)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="filter_value_${i}">Value:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="filter_value_${i}" placeholder="Enter filter value">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                        id="filterDropdownButton_${i}" data-toggle="dropdown" disabled>
+                                    <span id="filterDropdownText_${i}">Select Column First</span>
+                                </button>
+                                <div class="dropdown-menu" id="filterDropdownMenu_${i}" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="dropdown-item-text">Select a column first</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(filterDiv);
+        
+        // Set up cascading for this filter
+        setTimeout(() => {
+            setupCascadingForFilter(i);
+        }, 100);
+    }
+    
+    updateFilterStatus();
+}
+
+function loadDefaultFilters() {
+    // Set number of filters to 3
+    document.getElementById('num_filters').value = '3';
+    updateFilters();
+    
+    // Wait for DOM to update, then set filter values
+    setTimeout(() => {
+        // Filter 1: DIE_ID equals TTU4
+        if (document.getElementById('filter_column_1')) {
+            document.getElementById('filter_column_1').value = 'DIE_ID';
+            document.getElementById('filter_operator_1').value = 'equals';
+            document.getElementById('filter_value_1').value = 'TTU4';
+        }
+        
+        // Filter 2: TEST_NAME contains -r21
+        if (document.getElementById('filter_column_2')) {
+            document.getElementById('filter_column_2').value = 'TEST_NAME';
+            document.getElementById('filter_operator_2').value = 'contains';
+            document.getElementById('filter_value_2').value = '-r21';
+        }
+        
+        // Filter 3: MACRO equals 7
+        if (document.getElementById('filter_column_3')) {
+            document.getElementById('filter_column_3').value = 'MACRO';
+            document.getElementById('filter_operator_3').value = 'equals';
+            document.getElementById('filter_value_3').value = '7';
+        }
+        
+        updateFilterStatus();
+    }, 100);
+}
+
+function collectFilters() {
+    const numFilters = parseInt(document.getElementById('num_filters').value);
+    const filters = [];
+    
+    for (let i = 1; i <= numFilters; i++) {
+        const columnEl = document.getElementById(`filter_column_${i}`);
+        const operatorEl = document.getElementById(`filter_operator_${i}`);
+        const valueEl = document.getElementById(`filter_value_${i}`);
+        
+        if (columnEl && operatorEl && valueEl) {
+            const column = columnEl.value;
+            const operator = operatorEl.value;
+            const value = valueEl.value.trim();
+            
+            if (column && value) {
+                filters.push({ column, operator, value });
+            }
+        }
+    }
+    
+    return filters;
+}
+
+function applyFilters() {
+    const filters = collectFilters();
+    showLoading();
+    
+    fetch('{{ url_for("get_filtered_data_preview") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            table: 'rwb_db_3',
+            filters: filters
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            displayDataPreview(data.data, data.columns);
+            updateRecordCount(data.total_count, data.preview_count);
+            filteredDataCache = data.data;
+            updateFilterStatus();
+        } else {
+            showError(data.message || 'Error loading data');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('Network error: ' + error.message);
+    });
+}
+
+function displayDataPreview(data, columns) {
+    const container = document.getElementById('data-preview-container');
+    
+    if (data.length === 0) {
+        container.innerHTML = '<div class="alert alert-warning">No data matches your filters</div>';
+        return;
+    }
+    
+    let html = '<table class="table table-striped table-hover table-sm"><thead class="thead-dark"><tr>';
+    columns.forEach(col => {
+        html += `<th>${col}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    
+    data.forEach(row => {
+        html += '<tr>';
+        columns.forEach(col => {
+            html += `<td>${row[col] || ''}</td>`;
+        });
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function updateRecordCount(total, preview) {
+    const badge = document.getElementById('record-count');
+    if (badge) {
+        if (total === preview) {
+            badge.textContent = `${total} records`;
+        } else {
+            badge.textContent = `${preview} of ${total} records`;
+        }
+    }
+}
+
+function updateFilterStatus() {
+    const currentFilters = collectFilters();
+    const filterCountSpan = document.getElementById('current-filter-count');
+    
+    if (filterCountSpan) {
+        filterCountSpan.textContent = currentFilters.length > 0 ? `${currentFilters.length} active` : 'None';
+    }
+}
+
+function showLoading() {
+    const indicator = document.getElementById('loading-indicator');
+    if (indicator) indicator.style.display = 'block';
+}
+
+function hideLoading() {
+    const indicator = document.getElementById('loading-indicator');
+    if (indicator) indicator.style.display = 'none';
+}
+
+function showError(message) {
+    const container = document.getElementById('data-preview-container');
+    container.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+}
+
+function exportFilteredData() {
+    if (!filteredDataCache || filteredDataCache.length === 0) {
+        alert('No data to export. Please apply filters first.');
+        return;
+    }
+    
+    // Convert to CSV
+    const filters = collectFilters();
+    const filename = `rwb_db_3_filtered_${filters.length}filters_${new Date().toISOString().slice(0,10)}.csv`;
+    
+    const headers = Object.keys(filteredDataCache[0]);
+    let csv = headers.join(',') + '\\n';
+    
+    filteredDataCache.forEach(row => {
+        const values = headers.map(header => {
+            const value = row[header];
+            return value !== null && value !== undefined ? `"${value}"` : '';
+        });
+        csv += values.join(',') + '\\n';
+    });
+    
+    downloadCSV(csv, filename);
+}
+
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Analysis Functions using AJAX (avoids form submission issues)
+function generateLevelPlotAjax() {
+    console.log('🎯 Generating Level Plot with AJAX...');
+    
+    const filters = collectFilters();
+    const overlayCol = document.getElementById('overlay_col').value;
+    const legend = document.getElementById('legend').checked;
+    const plotTitle = document.getElementById('plot_title').value || 'RWB Level Analysis';
+    
+    console.log('Parameters:', { overlayCol, legend, plotTitle, filters: filters.length });
+    
+    // Disable button and show loading
+    const btn = document.getElementById('level-plot-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Plot...';
+    
+    updateAnalysisStatus('Generating level plot...', 'info');
+    
+    // Use the new simple analysis endpoint
+    fetch('{{ url_for("generate_analysis_simple") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            analysis_type: 'level_plot',
+            table: 'rwb_db_3',
+            filters: filters,
+            overlay_col: overlayCol,
+            legend: legend,
+            title: plotTitle
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Level plot response:', data);
+        
+        if (data.success) {
+            displayAnalysisResults({
+                type: 'level_plot',
+                plot_html: data.plot_html,
+                parameters: { overlayCol, legend, plotTitle },
+                rows_processed: data.rows_processed,
+                filters: filters
+            });
+            updateAnalysisStatus('Level plot generated successfully!', 'success');
+        } else {
+            updateAnalysisStatus('Error: ' + (data.error || 'Unknown error'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        updateAnalysisStatus('Network error: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-chart-line"></i> Generate Level Plot';
+    });
+}
+
+function generateMeanCalculationAjax() {
+    console.log('🎯 Generating Mean Calculation with AJAX...');
+    
+    const filters = collectFilters();
+    const groupbySelect = document.getElementById('groupby_cols');
+    const groupbyCols = groupbySelect.value || 'TEST_NAME';
+    
+    // Show all columns in results (no filtering)
+    const displayColumns = ['all']; // Special flag to show all columns
+    
+    console.log('Parameters:', { groupbyCols, filters: filters.length });
+    
+    // Disable button and show loading
+    const btn = document.getElementById('mean-calc-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+    
+    updateAnalysisStatus('Calculating mean values...', 'info');
+    
+    // Use the new simple analysis endpoint
+    fetch('{{ url_for("generate_analysis_simple") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            analysis_type: 'mean_calculation',
+            table: 'rwb_db_3',
+            filters: filters,
+            groupby_cols: groupbyCols,
+            display_columns: displayColumns
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Mean calculation response:', data);
+        
+        if (data.success) {
+            displayAnalysisResults({
+                type: 'mean_calculation',
+                mean_results: data.mean_results,
+                parameters: { groupbyCols, displayColumns: data.display_columns },
+                rows_processed: data.rows_processed,
+                filters: filters
+            });
+            updateAnalysisStatus('Mean calculation completed successfully!', 'success');
+        } else {
+            updateAnalysisStatus('Error: ' + (data.error || 'Unknown error'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Mean calculation error:', error);
+        
+        // Try to parse response for better error message
+        let errorMessage = error.message;
+        if (error.message.includes('Unexpected token')) {
+            errorMessage = 'Invalid JSON response - likely due to NaN values in calculation results';
+        }
+        
+        updateAnalysisStatus('Network error: ' + errorMessage, 'danger');
+        
+        // Log more details for debugging
+        console.error('Full error details:', {
+            error: error,
+            stack: error.stack,
+            message: error.message
+        });
+    })
+    .finally(() => {
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-calculator"></i> Calculate Mean & Display';
+    });
+}
+
+function displayAnalysisResults(data) {
+    const container = document.getElementById('analysis-results-container');
+    const content = document.getElementById('analysis-results-content');
+    
+    let html = '';
+    
+    if (data.type === 'level_plot' && data.plot_html) {
+        html = `
+            <div class="analysis-summary mb-3">
+                <h6><i class="fas fa-info-circle"></i> Plot Summary</h6>
+                <p><strong>Function:</strong> <code>cf.rwb_groupby_level_nqplot(rwb_plot, overlay_col='${data.parameters.overlayCol}', legend=${data.parameters.legend}, title='${data.parameters.plotTitle}')</code></p>
+                <p><strong>Rows Processed:</strong> ${data.rows_processed} | <strong>Filters:</strong> ${data.filters.length} active</p>
+            </div>
+            <div class="plot-container text-center">
+                ${data.plot_html}
+            </div>
+        `;
+    } else if (data.type === 'mean_calculation' && data.mean_results) {
+        html = `
+            <div class="analysis-summary mb-3">
+                <h6><i class="fas fa-info-circle"></i> Calculation Summary</h6>
+                <p><strong>Function:</strong> <code>cf.rwb_calc_io_mean(rwb_plot, groupby_cols=[${data.parameters.groupbyCols.split(',').map(c => `'${c.trim()}'`).join(', ')}])</code></p>
+                <p><strong>Rows Processed:</strong> ${data.rows_processed} | <strong>Result Rows:</strong> ${data.mean_results.length}</p>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            ${data.parameters.displayColumns.map(col => `<th>${col}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.mean_results.map(row => 
+                            `<tr>${data.parameters.displayColumns.map(col => {
+                                const value = row[col];
+                                if (value === null || value === undefined) {
+                                    return '<td class="text-muted">N/A</td>';
+                                } else if (col.endsWith('_PPM') && typeof value === 'number') {
+                                    return `<td>${value.toFixed(2)}</td>`;
+                                } else {
+                                    return `<td>${value}</td>`;
+                                }
+                            }).join('')}</tr>`
+                        ).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    content.innerHTML = html;
+    container.style.display = 'block';
+    
+    // Scroll to results
+    container.scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateAnalysisStatus(message, type = 'info') {
+    const statusDiv = document.getElementById('analysis-status');
+    if (statusDiv) {
+        statusDiv.className = `alert alert-${type}`;
+        statusDiv.innerHTML = `<i class="fas fa-${type === 'info' ? 'info-circle' : type === 'danger' ? 'exclamation-triangle' : 'check-circle'}"></i> ${message}`;
+    }
+}
+
+function loadAnalysisColumns() {
+    console.log('Loading analysis columns...');
+    
+    // Fetch columns from rwb_db_3 table
+    fetch('{{ url_for("get_table_columns") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            database: 'rwb',
+            tableName: 'rwb_db_3'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.columns) {
+            console.log(`Loaded ${data.columns.length} columns:`, data.columns);
+            updateOverlayColumnOptions(data.columns);
+            updateGroupByColumnHelp(data.columns);
+        } else {
+            console.error('Failed to load columns:', data.message);
+            // Keep default columns if loading fails
+        }
+    })
+    .catch(error => {
+        console.error('Error loading columns:', error);
+        // Keep default columns if loading fails
+    });
+}
+
+function updateOverlayColumnOptions(columns) {
+    const overlaySelect = document.getElementById('overlay_col');
+    if (!overlaySelect) return;
+    
+    const currentValue = overlaySelect.value;
+    
+    // Clear existing options
+    overlaySelect.innerHTML = '';
+    
+    // Add all available columns
+    columns.forEach(column => {
+        const option = document.createElement('option');
+        option.value = column;
+        option.textContent = column;
+        
+        // Keep the previously selected value if it exists
+        if (column === currentValue || (currentValue === 'IO' && column === 'IO')) {
+            option.selected = true;
+        }
+        
+        overlaySelect.appendChild(option);
+    });
+    
+    // If no selection was preserved, select IO if available, otherwise first option
+    if (!overlaySelect.value) {
+        const ioOption = overlaySelect.querySelector('option[value="IO"]');
+        if (ioOption) {
+            ioOption.selected = true;
+        } else if (overlaySelect.options.length > 0) {
+            overlaySelect.options[0].selected = true;
+        }
+    }
+    
+    console.log(`Updated overlay column options with ${columns.length} columns. Selected: ${overlaySelect.value}`);
+}
+
+function updateGroupByColumnHelp(columns) {
+    const groupBySelect = document.getElementById('groupby_cols');
+    
+    if (!groupBySelect) return;
+    
+    const currentValue = groupBySelect.value;
+    
+    // Clear existing options
+    groupBySelect.innerHTML = '';
+    
+    // Add all available columns
+    columns.forEach(column => {
+        const option = document.createElement('option');
+        option.value = column;
+        option.textContent = column;
+        
+        // Keep the previously selected value if it exists
+        if (column === currentValue || (currentValue === 'TEST_NAME' && column === 'TEST_NAME')) {
+            option.selected = true;
+        }
+        
+        groupBySelect.appendChild(option);
+    });
+    
+    // If no selection was preserved, select TEST_NAME if available, otherwise first option
+    if (!groupBySelect.value) {
+        const testNameOption = groupBySelect.querySelector('option[value="TEST_NAME"]');
+        if (testNameOption) {
+            testNameOption.selected = true;
+        } else if (groupBySelect.options.length > 0) {
+            groupBySelect.options[0].selected = true;
+        }
+    }
+    
+    console.log(`Updated group by column dropdown with ${columns.length} available columns. Selected: ${groupBySelect.value}`);
+}
+
+// Global storage for dropdown data
+window.dropdownData = {};
+
+function setupCascadingForFilter(filterIndex) {
+    const columnSelect = document.getElementById(`filter_column_${filterIndex}`);
+    const operatorSelect = document.getElementById(`filter_operator_${filterIndex}`);
+    const valueInput = document.getElementById(`filter_value_${filterIndex}`);
+    
+    // When column changes, load values for this column
+    if (columnSelect) {
+        columnSelect.addEventListener('change', () => {
+            loadColumnValues(filterIndex);
+            updateSubsequentFilters(filterIndex);
+        });
+    }
+    
+    // When operator changes, update subsequent filters
+    if (operatorSelect) {
+        operatorSelect.addEventListener('change', () => {
+            updateSubsequentFilters(filterIndex);
+        });
+    }
+    
+    // When value changes (with debounce), update subsequent filters
+    if (valueInput) {
+        let timeoutId;
+        valueInput.addEventListener('input', () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                if (valueInput.value.trim()) {
+                    updateSubsequentFilters(filterIndex);
+                }
+            }, 500);
+        });
+    }
+}
+
+function loadColumnValues(filterIndex) {
+    const columnSelect = document.getElementById(`filter_column_${filterIndex}`);
+    const dropdownButton = document.getElementById(`filterDropdownButton_${filterIndex}`);
+    const dropdownText = document.getElementById(`filterDropdownText_${filterIndex}`);
+    const dropdownMenu = document.getElementById(`filterDropdownMenu_${filterIndex}`);
+    
+    const selectedColumn = columnSelect.value;
+    
+    if (!selectedColumn) {
+        dropdownButton.disabled = true;
+        dropdownText.textContent = 'Select Column First';
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text">Select a column first</div>';
+        return;
+    }
+    
+    dropdownButton.disabled = false;
+    dropdownText.textContent = 'Loading...';
+    dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading values...</div>';
+    
+    // Get applied filters for cascading (only filters before this one)
+    const appliedFilters = getPreviousFilters(filterIndex);
+    
+    // Use cascading endpoint for better filtering
+    fetch('{{ url_for("get_cascaded_column_values") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            table: 'rwb_db_3',
+            column: selectedColumn,
+            filters: appliedFilters
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            dropdownText.textContent = 'Error';
+            dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
+            console.error('Error loading cascaded values for ' + selectedColumn + ':', data.error);
+        } else {
+            // Store data globally for search functionality
+            const menuId = `filterDropdownMenu_${filterIndex}`;
+            window.dropdownData[menuId] = data.values;
+            
+            const filterCount = appliedFilters.length;
+            const cascadeText = filterCount > 0 ? ` (filtered by ${filterCount} previous filters)` : '';
+            dropdownText.textContent = `${data.values.length} items${cascadeText}`;
+            renderFilterDropdownItems(filterIndex, data.values);
+            
+            console.log(`Loaded ${data.values.length} cascaded values for ${selectedColumn} with ${filterCount} previous filters`);
+        }
+    })
+    .catch(error => {
+        dropdownText.textContent = 'Error';
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
+        console.error('Error fetching cascaded values for ' + selectedColumn + ':', error);
+    });
+}
+
+function getPreviousFilters(currentFilterIndex) {
+    const appliedFilters = [];
+    
+    // Get all filters before the current one
+    for (let i = 1; i < currentFilterIndex; i++) {
+        const columnSelect = document.getElementById(`filter_column_${i}`);
+        const operatorSelect = document.getElementById(`filter_operator_${i}`);
+        const valueInput = document.getElementById(`filter_value_${i}`);
+        
+        if (columnSelect && operatorSelect && valueInput && 
+            columnSelect.value && valueInput.value.trim()) {
+            appliedFilters.push({
+                column: columnSelect.value,
+                operator: operatorSelect.value,
+                value: valueInput.value.trim()
+            });
+        }
+    }
+    
+    return appliedFilters;
+}
+
+function renderFilterDropdownItems(filterIndex, values, searchTerm = '') {
+    const dropdownMenu = document.getElementById(`filterDropdownMenu_${filterIndex}`);
+    
+    // Filter values based on search term
+    let filteredValues = values;
+    if (searchTerm) {
+        filteredValues = values.filter(value => 
+            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+    
+    if (filteredValues.length === 0) {
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text text-muted">No matches found</div>';
+        return;
+    }
+    
+    let html = '';
+    
+    // Add "Clear" option
+    html += `<a class="dropdown-item" href="#" onclick="selectFilterValue(${filterIndex}, '')"><i class="fas fa-times text-danger"></i> Clear</a>`;
+    html += '<div class="dropdown-divider"></div>';
+    
+    // Add all filtered items
+    filteredValues.forEach(value => {
+        const displayValue = value === null ? 'NULL' : value;
+        const safeValue = value === null ? '' : value.toString().replace(/'/g, "\\'");
+        html += `<a class="dropdown-item" href="#" onclick="selectFilterValue(${filterIndex}, '${safeValue}')">${displayValue}</a>`;
+    });
+    
+    // Show total count
+    if (filteredValues.length > 0) {
+        html += '<div class="dropdown-divider"></div>';
+        html += `<div class="dropdown-item-text text-muted">${filteredValues.length} options</div>`;
+    }
+    
+    dropdownMenu.innerHTML = html;
+    
+    // Set up search functionality for this filter
+    setupFilterSearch(filterIndex);
+}
+
+function selectFilterValue(filterIndex, value) {
+    const input = document.getElementById(`filter_value_${filterIndex}`);
+    const operator = document.getElementById(`filter_operator_${filterIndex}`).value;
+    
+    if (operator === 'in_list' && input.value && value) {
+        // For in_list operator, append to existing value
+        const currentValue = input.value.trim();
+        if (currentValue && currentValue !== value) {
+            input.value = currentValue + ',' + value;
+        } else {
+            input.value = value;
+        }
+    } else {
+        input.value = value;
+    }
+    
+    // Trigger input event
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    
+    // Trigger cascading update for subsequent filters
+    updateSubsequentFilters(filterIndex);
+}
+
+function updateSubsequentFilters(changedFilterIndex) {
+    // Get the total number of filters
+    const numFilters = parseInt(document.getElementById('num_filters').value);
+    
+    // Update all filters after the changed one
+    for (let i = changedFilterIndex + 1; i <= numFilters; i++) {
+        const columnSelect = document.getElementById(`filter_column_${i}`);
+        if (columnSelect && columnSelect.value) {
+            console.log(`Cascading update: refreshing filter ${i} due to change in filter ${changedFilterIndex}`);
+            loadColumnValues(i);
+        }
+    }
+}
+
+function setupFilterSearch(filterIndex) {
+    const input = document.getElementById(`filter_value_${filterIndex}`);
+    const menuId = `filterDropdownMenu_${filterIndex}`;
+    let searchTimeout;
+    
+    // Remove any existing event listener
+    input.removeEventListener('input', input._searchHandler);
+    
+    // Add new search handler
+    input._searchHandler = function() {
+        const searchTerm = this.value;
+        const values = window.dropdownData[menuId];
+        
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Debounce search for better performance
+        searchTimeout = setTimeout(() => {
+            if (values) {
+                renderFilterDropdownItems(filterIndex, values, searchTerm);
+            }
+        }, 150);
+    };
+    
+    input.addEventListener('input', input._searchHandler);
+}
+
+
+</script>
+
+<style>
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.table-responsive {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-block {
+    white-space: normal;
+}
+
+.alert {
+    margin-bottom: 1rem;
+}
+
+.badge {
+    font-size: 0.9em;
+}
+
+/* Analysis Results Styling */
+#analysis-results-container {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.plot-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.analysis-summary {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 15px;
+}
+
+.analysis-summary code {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Group By Column Dropdown Styling */
+
+/* Filter dropdown styling */
+.dropdown-menu {
+    max-width: 400px;
+}
+
+.dropdown-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.375rem 0.75rem;
+}
+
+.dropdown-item:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.input-group-append .btn {
+    border-left: 0;
+}
+
+.dropdown-toggle::after {
+    margin-left: 0.5rem;
+}
+
+.input-group .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.dropdown-toggle.loading {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.dropdown-toggle.filtered {
+    background-color: #e8f4fd;
+    border-color: #007bff;
+    color: #0056b3;
+}
+
+.dropdown-item.highlighted {
+    background-color: #fff3cd;
+    border-left: 3px solid #ffc107;
+}
+</style>
+
+{% endblock %}

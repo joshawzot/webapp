@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Template: ai_analysis_results.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> ai_analysis_results.html
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="card-title mb-0">
+                            <i class="fas fa-robot"></i> AI Analysis Results
+                        </h2>
+                        <div>
+                            <a href="{{ url_for('interactive_rwb_analysis') }}" class="btn btn-light btn-sm">
+                                <i class="fas fa-arrow-left"></i> Back to Analysis
+                            </a>
+                            <a href="{{ url_for('home') }}" class="btn btn-outline-light btn-sm ml-2">
+                                <i class="fas fa-home"></i> Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Summary -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-info-circle"></i> Analysis Summary
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td width="200"><strong>Analysis Type:</strong></td>
+                                        <td>
+                                            <span class="badge badge-primary">{{ analysis_summary.analysis_template }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Data Source:</strong></td>
+                                        <td>
+                                            <code>{{ analysis_summary.selected_table }}</code>
+                                            <span class="text-muted">({{ analysis_summary.total_records }} records)</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Filters Applied:</strong></td>
+                                        <td>
+                                            <span class="badge badge-warning">{{ analysis_summary.num_filters }} filter{{ 's' if analysis_summary.num_filters != 1 else '' }}</span>
+                                            {% if analysis_summary.filters_applied %}
+                                                <div class="mt-2">
+                                                    {% for filter in analysis_summary.filters_applied %}
+                                                        <small class="badge badge-outline-secondary mr-1">
+                                                            {{ filter.column }} {{ filter.operator }} "{{ filter.value }}"
+                                                        </small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>User Request:</strong></td>
+                                        <td>
+                                            <div class="alert alert-light border mb-0">
+                                                <i class="fas fa-quote-left text-muted"></i>
+                                                <em>{{ analysis_summary.analysis_description }}</em>
+                                                <i class="fas fa-quote-right text-muted"></i>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-cog"></i> AI Interpretation</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled small mb-0">
+                                        <li><strong>Plot Type:</strong> {{ analysis_summary.plot_config.plot_type|title }}</li>
+                                        {% if analysis_summary.plot_config.x_column %}
+                                            <li><strong>X-Axis:</strong> {{ analysis_summary.plot_config.x_column }}</li>
+                                        {% endif %}
+                                        {% if analysis_summary.plot_config.y_column %}
+                                            <li><strong>Y-Axis:</strong> {{ analysis_summary.plot_config.y_column }}</li>
+                                        {% endif %}
+                                        {% if analysis_summary.plot_config.overlay_column %}
+                                            <li><strong>Grouping:</strong> {{ analysis_summary.plot_config.overlay_column }}</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plot Results -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-area"></i> Generated Plot
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if plot_path %}
+                        <div class="text-center">
+                            <img src="{{ url_for('static', filename=plot_path) }}" 
+                                 class="img-fluid" 
+                                 alt="AI Generated Analysis Plot"
+                                 style="max-width: 100%; height: auto; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                        </div>
+                        <div class="mt-3 text-center">
+                            <a href="{{ url_for('static', filename=plot_path) }}" 
+                               class="btn btn-outline-primary" 
+                               download="ai_analysis_plot.png">
+                                <i class="fas fa-download"></i> Download Plot
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Plot Generation Failed</strong>
+                            <p class="mb-0">Sorry, we couldn't generate a plot for your request. This might be due to:</p>
+                            <ul class="mt-2 mb-0">
+                                <li>Insufficient or incompatible data columns</li>
+                                <li>Complex analysis requirements that need manual configuration</li>
+                                <li>Technical issues during plot generation</li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-lightbulb"></i> Next Steps
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Refine Your Analysis:</h6>
+                            <div class="btn-group-vertical btn-block">
+                                <a href="{{ url_for('interactive_rwb_analysis') }}" class="btn btn-outline-primary btn-sm mb-2">
+                                    <i class="fas fa-edit"></i> Modify Filters & Try Again
+                                </a>
+                                <a href="{{ url_for('agate_rev1_analysis_form') }}" class="btn btn-outline-success btn-sm mb-2">
+                                    <i class="fas fa-rocket"></i> Use AGATE_REV1 Template
+                                </a>
+                                <a href="{{ url_for('original_analysis_form') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-chart-area"></i> Use Original Template
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Alternative Descriptions to Try:</h6>
+                            <div class="alert alert-light">
+                                <small>
+                                    <ul class="mb-0">
+                                        <li>"Create a scatter plot of IO vs LEVEL_01 grouped by MACRO"</li>
+                                        <li>"Show me a bar chart of mean values by DIE_ID"</li>
+                                        <li>"Generate a heatmap showing correlations"</li>
+                                        <li>"Plot the trend of TEST_NAME over time"</li>
+                                        <li>"Compare MACRO performance with line plots"</li>
+                                    </ul>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Details (Collapsible) -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <button class="btn btn-link text-decoration-none p-0" 
+                                type="button" 
+                                data-toggle="collapse" 
+                                data-target="#technicalDetails">
+                            <i class="fas fa-code"></i> Technical Details
+                            <i class="fas fa-chevron-down ml-1"></i>
+                        </button>
+                    </h6>
+                </div>
+                <div id="technicalDetails" class="collapse">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Applied Filters (JSON):</h6>
+                                <pre class="bg-light p-3 rounded"><code>{{ analysis_summary.filters_applied | tojson(indent=2) }}</code></pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>AI Plot Configuration:</h6>
+                                <pre class="bg-light p-3 rounded"><code>{{ analysis_summary.plot_config | tojson(indent=2) }}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styling for AI results */
+.badge-outline-secondary {
+    border: 1px solid #6c757d;
+    color: #6c757d;
+    background-color: transparent;
+}
+
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.alert-light {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+pre code {
+    font-size: 0.8em;
+    color: #495057;
+}
+
+.btn-group-vertical .btn {
+    text-align: left;
+}
+
+/* Responsive image */
+@media (max-width: 768px) {
+    .img-fluid {
+        max-width: 100%;
+        height: auto;
+    }
+}
+</style>
+
+{% endblock %}
+

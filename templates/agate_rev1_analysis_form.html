@@ -1,0 +1,475 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Template: agate_rev1_analysis_form.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> agate_rev1_analysis_form.html
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-rocket"></i> AGATE_REV1 Analysis
+                    </h3>
+                    <small class="text-light">Advanced pipeline with data stitching and mean calculation</small>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Notebook Source Info -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-book"></i> <strong>Notebook Source:</strong>
+                                </h6>
+                                <p class="mb-1">
+                                    This GUI replicates the exact workflow from 
+                                    <code>AGATE_REV1_analysis.ipynb</code> and 
+                                    <code>core_post_processing_functions.py</code>
+                                </p>
+                                <small class="text-muted">
+                                    📁 Located in: <code>/home/admin2/agate_mpw5_testing/tests/postprocess/</code>
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-2">Pipeline Steps:</h6>
+                                <ul class="list-unstyled small">
+                                    <li>✅ rwb_fetch_data(KPIRev1)</li>
+                                    <li>✅ Filter by STEPPING=AGATE</li>
+                                    <li>✅ Deduplication by datetime</li>
+                                    <li>✅ rwb_stitch_ios()</li>
+                                    <li>✅ rwb_calc_io_mean()</li>
+                                    <li>✅ Plot with cond_scale=(150,664)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('process_rwb_analysis') }}">
+                        <!-- Hidden field to specify this is AGATE_REV1 -->
+                        <input type="hidden" name="analysis_template" value="AGATE_REV1_analysis">
+                        
+                        <!-- Analysis Type Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-flask"></i> Analysis Type Selection
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check analysis-type-option">
+                                            <input class="form-check-input" type="radio" id="analysis_type_t0" name="analysis_type" value="t0" checked>
+                                            <label class="form-check-label" for="analysis_type_t0">
+                                                <div class="analysis-type-card">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-star text-primary"></i> T0 Analysis
+                                                    </h6>
+                                                    <p class="mb-2 small text-muted">Initial characterization</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li>• Filter: pr1-r0</li>
+                                                        <li>• MACRO: [1,2,3,5]</li>
+                                                        <li>• Readout: 'T0'</li>
+                                                    </ul>
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-primary badge-sm">Default</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check analysis-type-option">
+                                            <input class="form-check-input" type="radio" id="analysis_type_1st_bake" name="analysis_type" value="1st_bake">
+                                            <label class="form-check-label" for="analysis_type_1st_bake">
+                                                <div class="analysis-type-card">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-fire text-warning"></i> 1st Bake Retention
+                                                    </h6>
+                                                    <p class="mb-2 small text-muted">Post-bake retention study</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li>• Filter: 1stBake-r0</li>
+                                                        <li>• MACRO: [1,2,3,5]</li>
+                                                        <li>• Readout: 'Retention 1st Bake'</li>
+                                                    </ul>
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-warning badge-sm">Retention</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check analysis-type-option">
+                                            <input class="form-check-input" type="radio" id="analysis_type_2nd_bake" name="analysis_type" value="2nd_bake">
+                                            <label class="form-check-label" for="analysis_type_2nd_bake">
+                                                <div class="analysis-type-card">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-burn text-danger"></i> 2nd Bake Retention
+                                                    </h6>
+                                                    <p class="mb-2 small text-muted">Extended retention study</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li>• Filter: 1stBake-r0</li>
+                                                        <li>• MACRO: [1,2,3,5]</li>
+                                                        <li>• Readout: 'Retention 2nd Bake'</li>
+                                                    </ul>
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-danger badge-sm">Extended</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted mt-3">
+                                    <i class="fas fa-info-circle"></i> Each analysis type applies specific filters and processing as defined in the AGATE_REV1_analysis.ipynb notebook.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Database/Table Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-database"></i> Database Selection
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Select Table for Analysis:</label>
+                                    <div class="table-selection-container">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_3" name="selected_table" value="rwb_db_3" checked>
+                                                    <label class="form-check-label" for="table_rwb_db_3">
+                                                        <strong>rwb_db_3</strong> <span class="text-muted">(81,893 × 456)</span>
+                                                        <small class="d-block text-primary"><i class="fas fa-star"></i> Recommended for AGATE_REV1</small>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_4" name="selected_table" value="rwb_db_4">
+                                                    <label class="form-check-label" for="table_rwb_db_4">
+                                                        <strong>rwb_db_4</strong> <span class="text-muted">(18,111 × 381)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_2" name="selected_table" value="rwb_db_2">
+                                                    <label class="form-check-label" for="table_rwb_db_2">
+                                                        <strong>rwb_db_2</strong> <span class="text-muted">(3,522 × 1,017)</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="alert alert-light border">
+                                                    <h6 class="mb-2"><i class="fas fa-lightbulb text-warning"></i> Selection Guide:</h6>
+                                                    <ul class="list-unstyled small mb-0">
+                                                        <li><strong>rwb_db_3:</strong> Main production data - best for T0 analysis</li>
+                                                        <li><strong>rwb_db_4:</strong> Subset data - faster processing</li>
+                                                        <li><strong>rwb_db_2:</strong> Extended dataset - comprehensive analysis</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Data Processing -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-dark text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-cogs"></i> Data Processing Options
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="deduplication_mode">
+                                                <i class="fas fa-filter"></i> Deduplication Mode:
+                                            </label>
+                                            <select class="form-control" id="deduplication_mode" name="deduplication_mode">
+                                                <option value="latest_datetime" selected>Keep latest record per group (by TEST_START_DATETIME)</option>
+                                                <option value="first_datetime">Keep first record per group (by TEST_START_DATETIME)</option>
+                                                <option value="none">No deduplication (use all records)</option>
+                                            </select>
+                                            <small class="form-text text-muted">
+                                                Recommended: <strong>latest_datetime</strong> - matches notebook logic exactly
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="groupby_columns">
+                                                <i class="fas fa-layer-group"></i> Group By Columns:
+                                            </label>
+                                            <input type="text" class="form-control" id="groupby_columns" name="groupby_columns" 
+                                                   value="DIE_ID,MACRO,IO,TEST_NAME" readonly>
+                                            <small class="form-text text-muted">
+                                                Fixed grouping as defined in AGATE_REV1_analysis.ipynb
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Automatically applied filters info -->
+                                <div class="alert alert-success mt-3">
+                                    <h6 class="mb-2"><i class="fas fa-magic"></i> Automatically Applied Filters:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled small mb-0">
+                                                <li>✅ <strong>RUN_NAME:</strong> KPIRev1</li>
+                                                <li>✅ <strong>STEPPING:</strong> AGATE</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled small mb-0">
+                                                <li>✅ <strong>MACRO:</strong> [1,2,3,5]</li>
+                                                <li>✅ <strong>TEST_NAME:</strong> Based on analysis type</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">These filters are automatically applied based on your notebook workflow.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Plot Configuration -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-chart-line"></i> Plot Configuration
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="legend" name="legend">
+                                                <label class="form-check-label" for="legend">
+                                                    <i class="fas fa-list"></i> Show Legend
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="plot_title">
+                                                <i class="fas fa-heading"></i> Custom Plot Title:
+                                            </label>
+                                            <input type="text" class="form-control" id="plot_title" name="plot_title" 
+                                                   placeholder="Leave empty for auto-generated title">
+                                            <small class="form-text text-muted">
+                                                Auto-generated based on analysis type if left empty
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h6 class="mb-2"><i class="fas fa-info-circle"></i> Fixed Plot Parameters:</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled small mb-0">
+                                                <li>• <strong>Overlay Column:</strong> 'Readout'</li>
+                                                <li>• <strong>Conditioning Scale:</strong> (150, 664)</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <ul class="list-unstyled small mb-0">
+                                                <li>• <strong>Processing:</strong> rwb_stitch_ios + rwb_calc_io_mean</li>
+                                                <li>• <strong>Check IO Unique:</strong> False</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">These parameters are fixed to match the AGATE_REV1_analysis.ipynb workflow exactly.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Section -->
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
+                                    <i class="fas fa-rocket"></i> Run AGATE_REV1 Analysis
+                                </button>
+                                <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg ml-3 px-4">
+                                    <i class="fas fa-arrow-left"></i> Back to Home
+                                </a>
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> Processing time: ~30-60 seconds depending on data size
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden fields for compatibility -->
+                        <input type="hidden" name="num_filters" value="4">
+                        <input type="hidden" name="filter_column_1" value="RUN_NAME">
+                        <input type="hidden" name="filter_operator_1" value="equals">
+                        <input type="hidden" name="filter_value_1" value="KPIRev1">
+                        <input type="hidden" name="filter_column_2" value="STEPPING">
+                        <input type="hidden" name="filter_operator_2" value="equals">
+                        <input type="hidden" name="filter_value_2" value="AGATE">
+                        <input type="hidden" name="filter_column_3" value="TEST_NAME">
+                        <input type="hidden" name="filter_operator_3" value="contains">
+                        <input type="hidden" name="filter_value_3" id="hidden_test_name_filter" value="pr1-r0">
+                        <input type="hidden" name="filter_column_4" value="MACRO">
+                        <input type="hidden" name="filter_operator_4" value="in_list">
+                        <input type="hidden" name="filter_value_4" value="1,2,3,5">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update hidden filter based on analysis type selection
+    const analysisTypeRadios = document.querySelectorAll('input[name="analysis_type"]');
+    const hiddenTestNameFilter = document.getElementById('hidden_test_name_filter');
+    
+    analysisTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                switch(this.value) {
+                    case 't0':
+                        hiddenTestNameFilter.value = 'pr1-r0';
+                        break;
+                    case '1st_bake':
+                    case '2nd_bake':
+                        hiddenTestNameFilter.value = '1stBake-r0';
+                        break;
+                }
+                console.log('Updated TEST_NAME filter to:', hiddenTestNameFilter.value);
+            }
+        });
+    });
+});
+</script>
+
+<style>
+/* Analysis type selection styling */
+.analysis-type-option {
+    margin-bottom: 15px;
+}
+
+.analysis-type-option .form-check-input {
+    transform: scale(1.1);
+    margin-top: 0.2rem;
+}
+
+.analysis-type-card {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    height: 100%;
+    min-height: 140px;
+    cursor: pointer;
+}
+
+.analysis-type-option input:checked + label .analysis-type-card {
+    border-color: #28a745;
+    background: #f8fff9;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.15);
+}
+
+.analysis-type-card:hover {
+    border-color: #28a745;
+    background: #f0fff0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.analysis-type-card h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.analysis-type-card ul li {
+    margin-bottom: 3px;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* Table selection styling */
+.table-selection-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.table-option {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.table-option:hover {
+    background-color: #e3f2fd;
+}
+
+.table-option .form-check-input {
+    margin-top: 2px;
+}
+
+.table-option .form-check-label {
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
+.table-option .form-check-label strong {
+    color: #495057;
+}
+
+.table-option .text-muted {
+    font-size: 0.85em;
+}
+
+/* Card hover effects */
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Badge styling */
+.badge-sm {
+    font-size: 0.75em;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .analysis-type-card {
+        margin-bottom: 15px;
+        min-height: 120px;
+    }
+    
+    .table-option {
+        margin-bottom: 10px;
+    }
+}
+</style>
+
+{% endblock %}
+

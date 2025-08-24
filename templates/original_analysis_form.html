@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Template: original_analysis_form.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> original_analysis_form.html
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-chart-area"></i> Original Template Analysis
+                    </h3>
+                    <small class="text-light">Flexible analysis with direct plotting and custom parameters</small>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Notebook Source Info -->
+                    <div class="alert alert-info mb-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-book"></i> <strong>Notebook Source:</strong>
+                                </h6>
+                                <p class="mb-1">
+                                    This GUI replicates the workflow from 
+                                    <code>agate_analysis_template.ipynb</code> and 
+                                    <code>core_post_processing_functions.py</code>
+                                </p>
+                                <small class="text-muted">
+                                    📁 Located in: <code>/home/admin2/agate_mpw5_testing/tests/postprocess/</code>
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-2">Available Modes:</h6>
+                                <ul class="list-unstyled small">
+                                    <li>📊 Direct Plotting</li>
+                                    <li>🧮 Mean Calculation</li>
+                                    <li>📈 Scatter Plot</li>
+                                    <li>🔧 Custom Parameters</li>
+                                    <li>⚡ Fast Processing</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('process_rwb_analysis') }}">
+                        <!-- Hidden field to specify this is original template -->
+                        <input type="hidden" name="analysis_template" value="agate_analysis_template">
+                        
+                        <!-- Analysis Mode Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-cogs"></i> Analysis Mode Selection
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check analysis-mode-option">
+                                            <input class="form-check-input" type="radio" id="mode_plot" name="original_analysis_mode" value="plot" checked>
+                                            <label class="form-check-label" for="mode_plot">
+                                                <div class="analysis-mode-card">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-chart-line text-primary"></i> Direct Plot
+                                                    </h6>
+                                                    <p class="mb-2 small text-muted">Simple direct plotting</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li>• rwb_groupby_level_nqplot()</li>
+                                                        <li>• Custom overlay column</li>
+                                                        <li>• Fast processing</li>
+                                                    </ul>
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-primary badge-sm">Default</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check analysis-mode-option">
+                                            <input class="form-check-input" type="radio" id="mode_mean" name="original_analysis_mode" value="mean">
+                                            <label class="form-check-label" for="mode_mean">
+                                                <div class="analysis-mode-card">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-calculator text-info"></i> Mean Calculation
+                                                    </h6>
+                                                    <p class="mb-2 small text-muted">Calculate IO means with groupby</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li>• rwb_calc_io_mean()</li>
+                                                        <li>• Custom groupby columns</li>
+                                                        <li>• Statistical analysis</li>
+                                                    </ul>
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-info badge-sm">Statistics</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check analysis-mode-option">
+                                            <input class="form-check-input" type="radio" id="mode_scatter" name="original_analysis_mode" value="scatter">
+                                            <label class="form-check-label" for="mode_scatter">
+                                                <div class="analysis-mode-card">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-dot-circle text-secondary"></i> Scatter Plot
+                                                    </h6>
+                                                    <p class="mb-2 small text-muted">X-Y scatter visualization</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li>• rwb_scatter_plot()</li>
+                                                        <li>• X vs Y analysis</li>
+                                                        <li>• Overlay variables</li>
+                                                    </ul>
+                                                    <div class="mt-2">
+                                                        <span class="badge badge-secondary badge-sm">Correlation</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted mt-3">
+                                    <i class="fas fa-info-circle"></i> Each mode corresponds to different analysis patterns found in the agate_analysis_template.ipynb notebook.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Database/Table Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-database"></i> Database Selection
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Select Table for Analysis:</label>
+                                    <div class="table-selection-container">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="form-check table-option">
+                                                            <input class="form-check-input" type="radio" id="table_rwb_db_3" name="selected_table" value="rwb_db_3" checked>
+                                                            <label class="form-check-label" for="table_rwb_db_3">
+                                                                <strong>rwb_db_3</strong> <span class="text-muted">(81,893 × 456)</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check table-option">
+                                                            <input class="form-check-input" type="radio" id="table_rwb_db_4" name="selected_table" value="rwb_db_4">
+                                                            <label class="form-check-label" for="table_rwb_db_4">
+                                                                <strong>rwb_db_4</strong> <span class="text-muted">(18,111 × 381)</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check table-option">
+                                                            <input class="form-check-input" type="radio" id="table_rwb_db_2" name="selected_table" value="rwb_db_2">
+                                                            <label class="form-check-label" for="table_rwb_db_2">
+                                                                <strong>rwb_db_2</strong> <span class="text-muted">(3,522 × 1,017)</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-check table-option">
+                                                            <input class="form-check-input" type="radio" id="table_postec_db_die92" name="selected_table" value="postec_db_die92">
+                                                            <label class="form-check-label" for="table_postec_db_die92">
+                                                                <strong>postec_db_die92</strong> <span class="text-muted">(2,406 × 16)</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check table-option">
+                                                            <input class="form-check-input" type="radio" id="table_postec_db_die89" name="selected_table" value="postec_db_die89">
+                                                            <label class="form-check-label" for="table_postec_db_die89">
+                                                                <strong>postec_db_die89</strong> <span class="text-muted">(7,516 × 16)</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check table-option">
+                                                            <input class="form-check-input" type="radio" id="table_magcal_db_0" name="selected_table" value="magcal_db_0">
+                                                            <label class="form-check-label" for="table_magcal_db_0">
+                                                                <strong>magcal_db_0</strong> <span class="text-muted">(5,709 × 29)</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="alert alert-light border h-100 d-flex align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-2"><i class="fas fa-lightbulb text-warning"></i> Quick Presets:</h6>
+                                                        <button type="button" class="btn btn-outline-success btn-sm btn-block mb-2" onclick="applyTTU4Preset()">
+                                                            TTU4 Example
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-info btn-sm btn-block mb-2" onclick="applyMeanPreset()">
+                                                            Mean Calc Example
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm btn-block" onclick="clearFilters()">
+                                                            Clear All
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Filters -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-warning text-dark">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-filter"></i> Custom Filters
+                                    <span id="filter-count-badge" class="badge badge-light ml-2">0 filters</span>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="num_filters">Number of Filters:</label>
+                                    <select class="form-control" id="num_filters" name="num_filters" onchange="updateFilters()">
+                                        <option value="0">No Filters</option>
+                                        <option value="1">1 Filter</option>
+                                        <option value="2">2 Filters</option>
+                                        <option value="3" selected>3 Filters</option>
+                                        <option value="4">4 Filters</option>
+                                        <option value="5">5 Filters</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="filters-container">
+                                    <!-- Filters will be dynamically generated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Plot Configuration -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-chart-line"></i> Plot Configuration
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="overlay_col">
+                                                <i class="fas fa-layer-group"></i> Overlay Column:
+                                            </label>
+                                            <select class="form-control" id="overlay_col" name="overlay_col">
+                                                <option value="IO" selected>IO</option>
+                                                <option value="DIE_ID">DIE_ID</option>
+                                                <option value="MACRO">MACRO</option>
+                                                <option value="TEST_NAME">TEST_NAME</option>
+                                            </select>
+                                            <small class="form-text text-muted">
+                                                Column to use for plot overlay/grouping
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="legend" name="legend">
+                                                <label class="form-check-label" for="legend">
+                                                    <i class="fas fa-list"></i> Show Legend
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="plot_title">
+                                                <i class="fas fa-heading"></i> Plot Title:
+                                            </label>
+                                            <input type="text" class="form-control" id="plot_title" name="plot_title" 
+                                                   placeholder="Enter custom plot title">
+                                        </div>
+                                        
+                                        <!-- Mean calculation specific -->
+                                        <div class="form-group" id="groupby-section">
+                                            <label for="groupby_cols">
+                                                <i class="fas fa-object-group"></i> Group By Columns:
+                                            </label>
+                                            <input type="text" class="form-control" id="groupby_cols" name="groupby_cols" 
+                                                   value="TEST_NAME" placeholder="e.g., TEST_NAME,MACRO">
+                                            <small class="form-text text-muted">
+                                                Comma-separated column names for mean calculation
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Section -->
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="submit" class="btn btn-success btn-lg px-5">
+                                    <i class="fas fa-chart-area"></i> Run Original Analysis
+                                </button>
+                                <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg ml-3 px-4">
+                                    <i class="fas fa-arrow-left"></i> Back to Home
+                                </a>
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> Processing time: ~10-30 seconds depending on data size and filters
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize with default filters
+    updateFilters();
+    updateModeVisibility();
+    
+    // Set up mode change handlers
+    const modeRadios = document.querySelectorAll('input[name="original_analysis_mode"]');
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', updateModeVisibility);
+    });
+});
+
+function updateModeVisibility() {
+    const selectedMode = document.querySelector('input[name="original_analysis_mode"]:checked').value;
+    const groupbySection = document.getElementById('groupby-section');
+    
+    // Show/hide groupby section based on mode
+    if (selectedMode === 'mean') {
+        groupbySection.style.display = 'block';
+    } else {
+        groupbySection.style.display = 'none';
+    }
+}
+
+function updateFilters() {
+    const numFilters = parseInt(document.getElementById('num_filters').value);
+    const container = document.getElementById('filters-container');
+    const badge = document.getElementById('filter-count-badge');
+    
+    // Update badge
+    badge.textContent = `${numFilters} filter${numFilters !== 1 ? 's' : ''}`;
+    
+    // Clear existing filters
+    container.innerHTML = '';
+    
+    if (numFilters === 0) {
+        container.innerHTML = '<div class="alert alert-info"><em>No filters applied - all data will be retrieved.</em></div>';
+        return;
+    }
+    
+    // Generate filter inputs
+    for (let i = 1; i <= numFilters; i++) {
+        const filterDiv = document.createElement('div');
+        filterDiv.className = 'card mb-3';
+        filterDiv.innerHTML = `
+            <div class="card-header">
+                <h6 class="mb-0">Filter ${i}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filter_column_${i}">Column:</label>
+                            <select class="form-control" id="filter_column_${i}" name="filter_column_${i}">
+                                <option value="">-- Select Column --</option>
+                                <option value="DIE_ID">DIE_ID</option>
+                                <option value="TEST_NAME">TEST_NAME</option>
+                                <option value="MACRO">MACRO</option>
+                                <option value="IO">IO</option>
+                                <option value="RUN_NAME">RUN_NAME</option>
+                                <option value="STEPPING">STEPPING</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filter_operator_${i}">Operator:</label>
+                            <select class="form-control" id="filter_operator_${i}" name="filter_operator_${i}">
+                                <option value="equals">Equals (=)</option>
+                                <option value="contains">Contains (LIKE %value%)</option>
+                                <option value="not_equals">Not Equals (!=)</option>
+                                <option value="greater_than">Greater Than (&gt;)</option>
+                                <option value="less_than">Less Than (&lt;)</option>
+                                <option value="in_list">In List (comma separated)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filter_value_${i}">Value:</label>
+                            <input type="text" class="form-control" id="filter_value_${i}" name="filter_value_${i}" 
+                                   placeholder="Enter filter value">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(filterDiv);
+    }
+}
+
+function applyTTU4Preset() {
+    // Apply TTU4 example from notebook: DIE_ID=TTU4, TEST_NAME contains -r21, MACRO=7
+    document.getElementById('num_filters').value = '3';
+    updateFilters();
+    
+    setTimeout(() => {
+        document.getElementById('filter_column_1').value = 'DIE_ID';
+        document.getElementById('filter_operator_1').value = 'equals';
+        document.getElementById('filter_value_1').value = 'TTU4';
+        
+        document.getElementById('filter_column_2').value = 'TEST_NAME';
+        document.getElementById('filter_operator_2').value = 'contains';
+        document.getElementById('filter_value_2').value = '-r21';
+        
+        document.getElementById('filter_column_3').value = 'MACRO';
+        document.getElementById('filter_operator_3').value = 'equals';
+        document.getElementById('filter_value_3').value = '7';
+        
+        // Set plot mode
+        document.getElementById('mode_plot').checked = true;
+        updateModeVisibility();
+        
+        // Set overlay
+        document.getElementById('overlay_col').value = 'IO';
+    }, 100);
+}
+
+function applyMeanPreset() {
+    // Apply mean calculation example: same filters but with mean mode
+    applyTTU4Preset();
+    
+    setTimeout(() => {
+        document.getElementById('mode_mean').checked = true;
+        updateModeVisibility();
+        document.getElementById('groupby_cols').value = 'TEST_NAME';
+    }, 200);
+}
+
+function clearFilters() {
+    document.getElementById('num_filters').value = '0';
+    updateFilters();
+}
+</script>
+
+<style>
+/* Analysis mode selection styling */
+.analysis-mode-option {
+    margin-bottom: 15px;
+}
+
+.analysis-mode-option .form-check-input {
+    transform: scale(1.1);
+    margin-top: 0.2rem;
+}
+
+.analysis-mode-card {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    height: 100%;
+    min-height: 140px;
+    cursor: pointer;
+}
+
+.analysis-mode-option input:checked + label .analysis-mode-card {
+    border-color: #007bff;
+    background: #f0f8ff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+}
+
+.analysis-mode-card:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.analysis-mode-card h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.analysis-mode-card ul li {
+    margin-bottom: 3px;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+/* Table selection styling */
+.table-selection-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.table-option {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.table-option:hover {
+    background-color: #e3f2fd;
+}
+
+.table-option .form-check-input {
+    margin-top: 2px;
+}
+
+.table-option .form-check-label {
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
+.table-option .form-check-label strong {
+    color: #495057;
+}
+
+.table-option .text-muted {
+    font-size: 0.85em;
+}
+
+/* Card hover effects */
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Badge styling */
+.badge-sm {
+    font-size: 0.75em;
+}
+
+/* Filter count badge */
+#filter-count-badge {
+    background-color: #6c757d !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .analysis-mode-card {
+        margin-bottom: 15px;
+        min-height: 120px;
+    }
+    
+    .table-option {
+        margin-bottom: 10px;
+    }
+    
+    .btn-block {
+        margin-bottom: 8px;
+    }
+}
+</style>
+
+{% endblock %}
+

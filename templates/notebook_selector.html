@@ -25,6 +25,9 @@
                     <h4 class="mb-0">Create a New Notebook</h4>
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-info mb-3">
+                        <small><strong>Location:</strong> New notebooks will be created in <code>/home/admin2/agate_mpw5_testing/tests/postprocess</code> directory.</small>
+                    </div>
                     <form action="{{ url_for('create_notebook') }}" method="post">
                         <div class="form-group">
                             <label for="notebook_name">New Notebook Name:</label>
@@ -51,6 +54,12 @@
                     <h4 class="mb-0">Existing Notebooks</h4>
                 </div>
                 <div class="card-body">
+                    <!-- Files are extracted from /home/admin2/agate_mpw5_testing/tests/postprocess directory.
+                         Only .ipynb (Jupyter Notebook) files are included in this list.
+                         Files are sorted alphabetically and displayed with their last modification dates. -->
+                    <div class="alert alert-info mb-3">
+                        <small><strong>Source:</strong> Files are loaded from <code>/home/admin2/agate_mpw5_testing/tests/postprocess</code> directory. Only <code>.ipynb</code> files are shown, sorted alphabetically with modification dates.</small>
+                    </div>
                     {% if notebooks %}
                         <div class="list-group">
                             {% for notebook in notebooks %}

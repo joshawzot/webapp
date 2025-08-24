@@ -41,6 +41,85 @@ def get_pattern_files():
             "256x32_pr0": "/home/admin2/webapp_2/State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "/home/admin2/webapp_2/State_pattern_files/256x32_pr1.npy",
             "test_chin": "/home/admin2/webapp_2/State_pattern_files/ecc_new.npy",
+            # ECC 2048x32 IO files
+            "ecc_2048x32_IO0": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO0.npy",
+            "ecc_2048x32_IO1": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO1.npy",
+            "ecc_2048x32_IO2": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO2.npy",
+            "ecc_2048x32_IO3": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO3.npy",
+            "ecc_2048x32_IO4": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO4.npy",
+            "ecc_2048x32_IO5": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO5.npy",
+            "ecc_2048x32_IO6": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO6.npy",
+            "ecc_2048x32_IO7": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO7.npy",
+            "ecc_2048x32_IO8": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO8.npy",
+            "ecc_2048x32_IO9": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO9.npy",
+            "ecc_2048x32_IO10": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO10.npy",
+            "ecc_2048x32_IO11": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO11.npy",
+            "ecc_2048x32_IO12": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO12.npy",
+            "ecc_2048x32_IO13": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO13.npy",
+            "ecc_2048x32_IO14": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO14.npy",
+            "ecc_2048x32_IO15": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO15.npy",
+            "ecc_2048x32_IO16": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO16.npy",
+            "ecc_2048x32_IO17": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO17.npy",
+            "ecc_2048x32_IO18": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO18.npy",
+            "ecc_2048x32_IO19": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO19.npy",
+            "ecc_2048x32_IO20": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO20.npy",
+            "ecc_2048x32_IO21": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO21.npy",
+            "ecc_2048x32_IO22": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO22.npy",
+            "ecc_2048x32_IO23": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO23.npy",
+            "ecc_2048x32_IO24": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO24.npy",
+            "ecc_2048x32_IO25": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO25.npy",
+            "ecc_2048x32_IO26": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO26.npy",
+            "ecc_2048x32_IO27": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO27.npy",
+            "ecc_2048x32_IO28": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO28.npy",
+            "ecc_2048x32_IO29": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO29.npy",
+            "ecc_2048x32_IO30": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO30.npy",
+            "ecc_2048x32_IO31": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO31.npy",
+            "ecc_2048x32_IO32": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO32.npy",
+            "ecc_2048x32_IO33": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO33.npy",
+            "ecc_2048x32_IO34": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO34.npy",
+            "ecc_2048x32_IO35": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO35.npy",
+            "ecc_2048x32_IO36": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO36.npy",
+            "ecc_2048x32_IO37": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO37.npy",
+            "ecc_2048x32_IO38": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO38.npy",
+            "ecc_2048x32_IO39": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO39.npy",
+            "ecc_2048x32_IO40": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO40.npy",
+            "ecc_2048x32_IO41": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO41.npy",
+            "ecc_2048x32_IO42": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO42.npy",
+            "ecc_2048x32_IO43": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO43.npy",
+            "ecc_2048x32_IO44": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO44.npy",
+            "ecc_2048x32_IO45": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO45.npy",
+            "ecc_2048x32_IO46": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO46.npy",
+            "ecc_2048x32_IO47": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO47.npy",
+            "ecc_2048x32_IO48": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO48.npy",
+            "ecc_2048x32_IO49": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO49.npy",
+            "ecc_2048x32_IO50": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO50.npy",
+            "ecc_2048x32_IO51": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO51.npy",
+            "ecc_2048x32_IO52": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO52.npy",
+            "ecc_2048x32_IO53": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO53.npy",
+            "ecc_2048x32_IO54": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO54.npy",
+            "ecc_2048x32_IO55": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO55.npy",
+            "ecc_2048x32_IO56": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO56.npy",
+            "ecc_2048x32_IO57": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO57.npy",
+            "ecc_2048x32_IO58": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO58.npy",
+            "ecc_2048x32_IO59": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO59.npy",
+            "ecc_2048x32_IO60": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO60.npy",
+            "ecc_2048x32_IO61": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO61.npy",
+            "ecc_2048x32_IO62": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO62.npy",
+            "ecc_2048x32_IO63": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO63.npy",
+            "ecc_2048x32_IO64": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO64.npy",
+            "ecc_2048x32_IO65": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO65.npy",
+            "ecc_2048x32_IO66": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO66.npy",
+            "ecc_2048x32_IO67": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO67.npy",
+            "ecc_2048x32_IO68": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO68.npy",
+            "ecc_2048x32_IO69": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO69.npy",
+            "ecc_2048x32_IO70": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO70.npy",
+            "ecc_2048x32_IO71": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO71.npy",
+            "ecc_2048x32_IO72": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO72.npy",
+            "ecc_2048x32_IO73": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO73.npy",
+            "ecc_2048x32_IO74": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO74.npy",
+            "ecc_2048x32_IO75": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO75.npy",
+            "ecc_2048x32_IO76": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO76.npy",
+            "ecc_2048x32_IO77": "/home/admin2/webapp_2/State_pattern_files/ecc_2048x32_IO77.npy",
         }
     else:
         # Relative paths dictionary
@@ -64,6 +143,85 @@ def get_pattern_files():
             "256x32_pr0": "State_pattern_files/256x32_pr0.npy",
             "256x32_pr1": "State_pattern_files/256x32_pr1.npy",
             "test_chin": "State_pattern_files/ecc_new.npy",
+            # ECC 2048x32 IO files
+            "ecc_2048x32_IO0": "State_pattern_files/ecc_2048x32_IO0.npy",
+            "ecc_2048x32_IO1": "State_pattern_files/ecc_2048x32_IO1.npy",
+            "ecc_2048x32_IO2": "State_pattern_files/ecc_2048x32_IO2.npy",
+            "ecc_2048x32_IO3": "State_pattern_files/ecc_2048x32_IO3.npy",
+            "ecc_2048x32_IO4": "State_pattern_files/ecc_2048x32_IO4.npy",
+            "ecc_2048x32_IO5": "State_pattern_files/ecc_2048x32_IO5.npy",
+            "ecc_2048x32_IO6": "State_pattern_files/ecc_2048x32_IO6.npy",
+            "ecc_2048x32_IO7": "State_pattern_files/ecc_2048x32_IO7.npy",
+            "ecc_2048x32_IO8": "State_pattern_files/ecc_2048x32_IO8.npy",
+            "ecc_2048x32_IO9": "State_pattern_files/ecc_2048x32_IO9.npy",
+            "ecc_2048x32_IO10": "State_pattern_files/ecc_2048x32_IO10.npy",
+            "ecc_2048x32_IO11": "State_pattern_files/ecc_2048x32_IO11.npy",
+            "ecc_2048x32_IO12": "State_pattern_files/ecc_2048x32_IO12.npy",
+            "ecc_2048x32_IO13": "State_pattern_files/ecc_2048x32_IO13.npy",
+            "ecc_2048x32_IO14": "State_pattern_files/ecc_2048x32_IO14.npy",
+            "ecc_2048x32_IO15": "State_pattern_files/ecc_2048x32_IO15.npy",
+            "ecc_2048x32_IO16": "State_pattern_files/ecc_2048x32_IO16.npy",
+            "ecc_2048x32_IO17": "State_pattern_files/ecc_2048x32_IO17.npy",
+            "ecc_2048x32_IO18": "State_pattern_files/ecc_2048x32_IO18.npy",
+            "ecc_2048x32_IO19": "State_pattern_files/ecc_2048x32_IO19.npy",
+            "ecc_2048x32_IO20": "State_pattern_files/ecc_2048x32_IO20.npy",
+            "ecc_2048x32_IO21": "State_pattern_files/ecc_2048x32_IO21.npy",
+            "ecc_2048x32_IO22": "State_pattern_files/ecc_2048x32_IO22.npy",
+            "ecc_2048x32_IO23": "State_pattern_files/ecc_2048x32_IO23.npy",
+            "ecc_2048x32_IO24": "State_pattern_files/ecc_2048x32_IO24.npy",
+            "ecc_2048x32_IO25": "State_pattern_files/ecc_2048x32_IO25.npy",
+            "ecc_2048x32_IO26": "State_pattern_files/ecc_2048x32_IO26.npy",
+            "ecc_2048x32_IO27": "State_pattern_files/ecc_2048x32_IO27.npy",
+            "ecc_2048x32_IO28": "State_pattern_files/ecc_2048x32_IO28.npy",
+            "ecc_2048x32_IO29": "State_pattern_files/ecc_2048x32_IO29.npy",
+            "ecc_2048x32_IO30": "State_pattern_files/ecc_2048x32_IO30.npy",
+            "ecc_2048x32_IO31": "State_pattern_files/ecc_2048x32_IO31.npy",
+            "ecc_2048x32_IO32": "State_pattern_files/ecc_2048x32_IO32.npy",
+            "ecc_2048x32_IO33": "State_pattern_files/ecc_2048x32_IO33.npy",
+            "ecc_2048x32_IO34": "State_pattern_files/ecc_2048x32_IO34.npy",
+            "ecc_2048x32_IO35": "State_pattern_files/ecc_2048x32_IO35.npy",
+            "ecc_2048x32_IO36": "State_pattern_files/ecc_2048x32_IO36.npy",
+            "ecc_2048x32_IO37": "State_pattern_files/ecc_2048x32_IO37.npy",
+            "ecc_2048x32_IO38": "State_pattern_files/ecc_2048x32_IO38.npy",
+            "ecc_2048x32_IO39": "State_pattern_files/ecc_2048x32_IO39.npy",
+            "ecc_2048x32_IO40": "State_pattern_files/ecc_2048x32_IO40.npy",
+            "ecc_2048x32_IO41": "State_pattern_files/ecc_2048x32_IO41.npy",
+            "ecc_2048x32_IO42": "State_pattern_files/ecc_2048x32_IO42.npy",
+            "ecc_2048x32_IO43": "State_pattern_files/ecc_2048x32_IO43.npy",
+            "ecc_2048x32_IO44": "State_pattern_files/ecc_2048x32_IO44.npy",
+            "ecc_2048x32_IO45": "State_pattern_files/ecc_2048x32_IO45.npy",
+            "ecc_2048x32_IO46": "State_pattern_files/ecc_2048x32_IO46.npy",
+            "ecc_2048x32_IO47": "State_pattern_files/ecc_2048x32_IO47.npy",
+            "ecc_2048x32_IO48": "State_pattern_files/ecc_2048x32_IO48.npy",
+            "ecc_2048x32_IO49": "State_pattern_files/ecc_2048x32_IO49.npy",
+            "ecc_2048x32_IO50": "State_pattern_files/ecc_2048x32_IO50.npy",
+            "ecc_2048x32_IO51": "State_pattern_files/ecc_2048x32_IO51.npy",
+            "ecc_2048x32_IO52": "State_pattern_files/ecc_2048x32_IO52.npy",
+            "ecc_2048x32_IO53": "State_pattern_files/ecc_2048x32_IO53.npy",
+            "ecc_2048x32_IO54": "State_pattern_files/ecc_2048x32_IO54.npy",
+            "ecc_2048x32_IO55": "State_pattern_files/ecc_2048x32_IO55.npy",
+            "ecc_2048x32_IO56": "State_pattern_files/ecc_2048x32_IO56.npy",
+            "ecc_2048x32_IO57": "State_pattern_files/ecc_2048x32_IO57.npy",
+            "ecc_2048x32_IO58": "State_pattern_files/ecc_2048x32_IO58.npy",
+            "ecc_2048x32_IO59": "State_pattern_files/ecc_2048x32_IO59.npy",
+            "ecc_2048x32_IO60": "State_pattern_files/ecc_2048x32_IO60.npy",
+            "ecc_2048x32_IO61": "State_pattern_files/ecc_2048x32_IO61.npy",
+            "ecc_2048x32_IO62": "State_pattern_files/ecc_2048x32_IO62.npy",
+            "ecc_2048x32_IO63": "State_pattern_files/ecc_2048x32_IO63.npy",
+            "ecc_2048x32_IO64": "State_pattern_files/ecc_2048x32_IO64.npy",
+            "ecc_2048x32_IO65": "State_pattern_files/ecc_2048x32_IO65.npy",
+            "ecc_2048x32_IO66": "State_pattern_files/ecc_2048x32_IO66.npy",
+            "ecc_2048x32_IO67": "State_pattern_files/ecc_2048x32_IO67.npy",
+            "ecc_2048x32_IO68": "State_pattern_files/ecc_2048x32_IO68.npy",
+            "ecc_2048x32_IO69": "State_pattern_files/ecc_2048x32_IO69.npy",
+            "ecc_2048x32_IO70": "State_pattern_files/ecc_2048x32_IO70.npy",
+            "ecc_2048x32_IO71": "State_pattern_files/ecc_2048x32_IO71.npy",
+            "ecc_2048x32_IO72": "State_pattern_files/ecc_2048x32_IO72.npy",
+            "ecc_2048x32_IO73": "State_pattern_files/ecc_2048x32_IO73.npy",
+            "ecc_2048x32_IO74": "State_pattern_files/ecc_2048x32_IO74.npy",
+            "ecc_2048x32_IO75": "State_pattern_files/ecc_2048x32_IO75.npy",
+            "ecc_2048x32_IO76": "State_pattern_files/ecc_2048x32_IO76.npy",
+            "ecc_2048x32_IO77": "State_pattern_files/ecc_2048x32_IO77.npy",
         }
 
 def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array):
@@ -314,6 +472,60 @@ def extract_number_from_table_name(table_name):
         return match.group(1)
     else:
         return table_name
+
+def extract_io_number_from_table_name(table_name):
+    """
+    Extract the IO number from a table name.
+    For example: "agate_tt165_m1_IO0_1" -> 0, "agate_tt165_m1_IO77_1" -> 77
+    """
+    import re
+    match = re.search(r'IO(\d+)', table_name, re.IGNORECASE)
+    if match:
+        return int(match.group(1))
+    else:
+        return None
+
+def get_pattern_for_io_table(table_name, pattern_files):
+    """
+    Get the appropriate pattern file for an IO table.
+    Returns the pattern array for the corresponding IO number.
+    Handles tables with fewer than 4 states by adjusting the pattern accordingly.
+    """
+    io_number = extract_io_number_from_table_name(table_name)
+    if io_number is None:
+        raise Exception(f"Could not extract IO number from table name: {table_name}")
+    
+    if io_number < 0 or io_number > 77:
+        raise Exception(f"IO number {io_number} is out of range (0-77) for table: {table_name}")
+    
+    # Get the corresponding pattern file
+    pattern_name = f"ecc_2048x32_IO{io_number}"
+    file_path = pattern_files.get(pattern_name)
+    
+    if not file_path:
+        raise Exception(f"Pattern file not found for {pattern_name}")
+    
+    try:
+        pattern_array = np.load(file_path)
+        print(f"DEBUG: Loaded pattern for {table_name} -> {pattern_name} with shape {pattern_array.shape}")
+        
+        # The pattern files are already transposed to (2048, 32), so no need to transpose again
+        
+        # Check for special cases with fewer states (like IO68 with 2 states)
+        unique_states = np.unique(pattern_array)
+        num_states = len(unique_states)
+        
+        print(f"DEBUG: Pattern {pattern_name} has {num_states} unique states: {unique_states}")
+        
+        # Handle tables with fewer than 4 states
+        if num_states < 4:
+            print(f"DEBUG: Table {table_name} (IO{io_number}) has only {num_states} states - this will be handled properly in the analysis")
+            # Note: The analysis functions will automatically handle patterns with fewer states
+            # by only processing the states that exist in the pattern
+        
+        return pattern_array
+    except Exception as e:
+        raise Exception(f"Error loading pattern file '{file_path}' for table '{table_name}': {str(e)}")
 
 def analyze_coordinate_correlations(outlier_coordinates):
     """Analyze correlations between outlier coordinates across different tables."""
@@ -602,8 +814,13 @@ def generate_plot(table_names, database_name, form_data):
         # Fetch the file path based on the state pattern using a dictionary lookup
         file_path = pattern_files.get(state_pattern)
 
+        # Special handling for 78-table pattern
+        if state_pattern == "ecc_2048x32_78tables":
+            print("DEBUG: Processing 78-table pattern - will match each table with its corresponding IO pattern")
+            # This will be handled later in the processing loop
+            pattern_file_array = "SPECIAL_78TABLES"  # Special marker
         # Load the pattern file array if the file path is found
-        if file_path:
+        elif file_path:
             try:
                 pattern_file_array = np.load(file_path)
                 print(f"DEBUG: Loaded pattern_file_array with shape {pattern_file_array.shape}")
@@ -612,11 +829,19 @@ def generate_plot(table_names, database_name, form_data):
                     # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
                     pattern_file_array = pattern_file_array.reshape(78, 82944).T
                     print(f"DEBUG: Reshaped 82944x78_ecc_fuxi to {pattern_file_array.shape}")
-                            # Special handling for 65536x78_ecc.npy which is actually (78, 32, 2048)
-                if state_pattern == "65536x78_ecc":
+                # Special handling for 65536x78_ecc.npy which is actually (78, 32, 2048)
+                elif state_pattern == "65536x78_ecc":
                     # Reshape the 3D array to 2D (78, 65536) and then transpose to (65536, 78)
                     pattern_file_array = pattern_file_array.reshape(78, 65536).T
                     print(f"DEBUG: Reshaped 65536x78_ecc to {pattern_file_array.shape}")
+                # Special handling for ecc_2048x32_IO files which are actually (32, 2048)
+                elif state_pattern.startswith("ecc_2048x32_IO"):
+                    # Transpose from (32, 2048) to (2048, 32) to match expected dimensions
+                    if len(pattern_file_array.shape) == 2 and pattern_file_array.shape == (32, 2048):
+                        pattern_file_array = pattern_file_array.T
+                        print(f"DEBUG: Transposed {state_pattern} from (32, 2048) to {pattern_file_array.shape}")
+                    else:
+                        print(f"DEBUG: Warning - {state_pattern} has unexpected shape: {pattern_file_array.shape}")
                 print(f"DEBUG: Final pattern_file_array after loading: {pattern_file_array is not None}")
             except Exception as e:
                 raise Exception(f"Error loading pattern file '{file_path}': {str(e)}")
@@ -825,26 +1050,40 @@ def generate_plot(table_names, database_name, form_data):
                 groups, stats, selected_groups = get_group_data_new_from_matrix(
                     data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
-                # Ensure pattern_file_array is loaded before using it
-                print(f"DEBUG: Before predefined processing (target_range_flag=0) - pattern_file_array is None: {pattern_file_array is None}")
-                if pattern_file_array is None:
-                    raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups = get_group_data_from_matrix(
-                    data_matrix, selected_groups, pattern_file_array)
+                # Special handling for 78-table pattern
+                if pattern_file_array == "SPECIAL_78TABLES":
+                    # Load the specific pattern for this table
+                    table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
+                    groups, stats, selected_groups = get_group_data_from_matrix(
+                        data_matrix, selected_groups, table_pattern_array)
+                else:
+                    # Ensure pattern_file_array is loaded before using it
+                    print(f"DEBUG: Before predefined processing (target_range_flag=0) - pattern_file_array is None: {pattern_file_array is None}")
+                    if pattern_file_array is None:
+                        raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
+                    # Modify to use the data matrix directly
+                    groups, stats, selected_groups = get_group_data_from_matrix(
+                        data_matrix, selected_groups, pattern_file_array)
         elif target_range_flag == 1:
             if form_data['state_pattern_type'] == '1D':
                 # Modify to use the data matrix directly with table-specific settings
                 groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
                     target_ranges, data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
-                # Ensure pattern_file_array is loaded before using it
-                print(f"DEBUG: Before predefined processing (target_range_flag=1) - pattern_file_array is None: {pattern_file_array is None}")
-                if pattern_file_array is None:
-                    raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
-                # Modify to use the data matrix directly
-                groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                    target_ranges, data_matrix, selected_groups, pattern_file_array)
+                # Special handling for 78-table pattern
+                if pattern_file_array == "SPECIAL_78TABLES":
+                    # Load the specific pattern for this table
+                    table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
+                    groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                        target_ranges, data_matrix, selected_groups, table_pattern_array)
+                else:
+                    # Ensure pattern_file_array is loaded before using it
+                    print(f"DEBUG: Before predefined processing (target_range_flag=1) - pattern_file_array is None: {pattern_file_array is None}")
+                    if pattern_file_array is None:
+                        raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
+                    # Modify to use the data matrix directly
+                    groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                        target_ranges, data_matrix, selected_groups, pattern_file_array)
             miao_ber.append(table_miao_ber)
 
         # Extract average and standard deviation values for each selected group
@@ -1402,36 +1641,45 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
     else:
         selected_groups = group_indices
 
-    # Filter out selected_groups that don't exist in the dataset
-    selected_groups = [g for g in selected_groups if g in group_indices]
+    # Keep track of original selected_groups for consistent structure
+    original_selected_groups = selected_groups.copy()
+    
+    # Filter out selected_groups that don't exist in the dataset for processing
+    available_selected_groups = [g for g in selected_groups if g in group_indices]
 
-    for group_idx in selected_groups:
-        # Find positions where pattern_file_array equals the current group index
-        positions = np.where(pattern_file_array == group_idx)
-        values = [data_np[pos] for pos in zip(positions[0], positions[1])]
-        
-        # Filter out NaN values (from data range filtering)
-        values = [v for v in values if not np.isnan(v)]
-        print(f"Group {group_idx}: {len(values)} valid values after filtering NaN")
-        
-        # Store the group data for later use
-        groups.append(values)
-        
-        # Compute statistics for the group
-        if values:
-            min_val = np.min(values)
-            max_val = np.max(values)
-            avg_val = np.mean(values)
-            std_val = np.std(values)
-            groups_stats.append((min_val, max_val, avg_val, std_val))
+    for group_idx in original_selected_groups:
+        if group_idx in group_indices:
+            # Find positions where pattern_file_array equals the current group index
+            positions = np.where(pattern_file_array == group_idx)
+            values = [data_np[pos] for pos in zip(positions[0], positions[1])]
+            
+            # Filter out NaN values (from data range filtering)
+            values = [v for v in values if not np.isnan(v)]
+            print(f"Group {group_idx}: {len(values)} valid values after filtering NaN")
+            
+            # Store the group data for later use
+            groups.append(values)
+            
+            # Compute statistics for the group
+            if values:
+                min_val = np.min(values)
+                max_val = np.max(values)
+                avg_val = np.mean(values)
+                std_val = np.std(values)
+                groups_stats.append((min_val, max_val, avg_val, std_val))
+            else:
+                # Default values if the group has no data points
+                groups_stats.append((0, 0, 0, 0))
         else:
-            # Default values if the group has no data points
-            groups_stats.append((0, 0, 0, 0))
+            # Group doesn't exist in this pattern - add empty data to maintain structure
+            print(f"Group {group_idx}: Not available in this pattern, adding empty data")
+            groups.append([])  # Empty group
+            groups_stats.append((0, 0, 0, 0))  # Default stats
             
         # Map group index to its position in the selected_groups list
         group_idx_to_position[group_idx] = len(groups) - 1
 
-    return groups, groups_stats, selected_groups
+    return groups, groups_stats, original_selected_groups
 
 def get_group_data_new_from_matrix(data_matrix, selected_groups, number_of_states, custom_division=False, custom_division_values=None):
     """Modified version of get_group_data_new that works with a data matrix directly."""

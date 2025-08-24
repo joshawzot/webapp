@@ -9,159 +9,491 @@
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">rwb analysis</h3>
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> RWB Analysis
+                    </h3>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('process_rwb_analysis') }}">
                         
-                        <!-- Data Fetching Parameters -->
-                        <h4>Data Fetching Parameters</h4>
-                        <div class="form-group">
-                            <label for="regex">Regex Pattern:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="regex" name="regex" 
-                                       value="" placeholder="Type to search or select from dropdown">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
-                                            id="regexDropdownButton" data-toggle="dropdown" disabled>
-                                        <span id="regexDropdownText">Select Column First</span>
-                                    </button>
-                                    <div class="dropdown-menu" id="regexDropdownMenu" style="max-height: 300px; overflow-y: auto;">
-                                        <div class="dropdown-item-text">Select a column first</div>
+                        <!-- Analysis Template Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-cogs"></i> Analysis Template Selection
+                                </h4>
                                     </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check analysis-template-option">
+                                            <input class="form-check-input" type="radio" id="template_agate_rev1" name="analysis_template" value="AGATE_REV1_analysis" checked>
+                                            <label class="form-check-label" for="template_agate_rev1">
+                                                <div class="template-card">
+                                                    <h5 class="mb-1">
+                                                        <i class="fas fa-rocket"></i> AGATE_REV1_analysis
+                                                    </h5>
+                                                    <p class="mb-2 text-muted">Advanced pipeline with data stitching and mean calculation</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li><i class="fas fa-check text-success"></i> rwb_stitch_ios() - Combines macros</li>
+                                                        <li><i class="fas fa-check text-success"></i> rwb_calc_io_mean() - IO averaging</li>
+                                                        <li><i class="fas fa-check text-success"></i> Deduplication support</li>
+                                                        <li><i class="fas fa-check text-success"></i> Conditioning scale (150,664)</li>
+                                                        <li><i class="fas fa-check text-success"></i> 'Readout' overlay column</li>
+                                                    </ul>
+                                </div>
+                                            </label>
+                            </div>
+                        </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check analysis-template-option">
+                                            <input class="form-check-input" type="radio" id="template_agate_original" name="analysis_template" value="agate_analysis_template">
+                                            <label class="form-check-label" for="template_agate_original">
+                                                <div class="template-card">
+                                                    <h5 class="mb-1">
+                                                        <i class="fas fa-chart-area"></i> agate_analysis_template
+                                                    </h5>
+                                                    <p class="mb-2 text-muted">Original analysis with direct plotting</p>
+                                                    <ul class="list-unstyled small">
+                                                        <li><i class="fas fa-check text-success"></i> Direct rwb_groupby_level_nqplot()</li>
+                                                        <li><i class="fas fa-check text-success"></i> Custom overlay column selection</li>
+                                                        <li><i class="fas fa-check text-success"></i> Flexible plot parameters</li>
+                                                        <li><i class="fas fa-check text-success"></i> Simple processing pipeline</li>
+                                                        <li><i class="fas fa-check text-success"></i> Legacy compatibility</li>
+                                                    </ul>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="alert alert-info mt-3">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <strong>Source Files:</strong> Both templates use functions from 
+                                    <code>core_post_processing_functions.py</code> located in 
+                                    <code>/home/admin2/agate_mpw5_testing/tests/postprocess/</code>
                                 </div>
                             </div>
                         </div>
                         
+                        <!-- Database/Table Selection -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-database"></i> Database/Table Selection
+                                </h4>
+                            </div>
+                            <div class="card-body">
                         <div class="form-group">
-                            <label for="regex_col">Regex Column:</label>
-                            <select class="form-control" id="regex_col" name="regex_col">
-                                <option value="">-- Select Column --</option>
-                                {% if available_columns %}
-                                    {% for col in available_columns %}
-                                    <option value="{{ col }}" {% if col == 'DIE_ID' %}selected{% endif %}>{{ col }}</option>
-                                    {% endfor %}
-                                {% else %}
-                                    <option value="DIE_ID" selected>DIE_ID</option>
-                                    <option value="TEST_NAME">TEST_NAME</option>
-                                    <option value="MACRO">MACRO</option>
-                                    <option value="TEST_START_DATETIME">TEST_START_DATETIME</option>
-                                {% endif %}
-                            </select>
-                        </div>
-                        
-                        
-                        <div class="form-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="skip_rwb_2" name="skip_rwb_2" checked>
-                                <label class="form-check-label" for="skip_rwb_2">
-                                    Skip RWB_2 Database
+                                    <label>Select Table for Analysis:</label>
+                                    <div class="table-selection-container">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_3" name="selected_table" value="rwb_db_3" checked>
+                                                    <label class="form-check-label" for="table_rwb_db_3">
+                                                        <strong>rwb_db_3</strong> <span class="text-muted">(81,893 × 456)</span>
+                                                        <small class="d-block text-success">Recommended for AGATE_REV1</small>
                                 </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_4" name="selected_table" value="rwb_db_4">
+                                                    <label class="form-check-label" for="table_rwb_db_4">
+                                                        <strong>rwb_db_4</strong> <span class="text-muted">(18,111 × 381)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_2" name="selected_table" value="rwb_db_2">
+                                                    <label class="form-check-label" for="table_rwb_db_2">
+                                                        <strong>rwb_db_2</strong> <span class="text-muted">(3,522 × 1,017)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_postec_db_die92" name="selected_table" value="postec_db_die92">
+                                                    <label class="form-check-label" for="table_postec_db_die92">
+                                                        <strong>postec_db_die92</strong> <span class="text-muted">(2,406 × 16)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_postec_db_die89" name="selected_table" value="postec_db_die89">
+                                                    <label class="form-check-label" for="table_postec_db_die89">
+                                                        <strong>postec_db_die89</strong> <span class="text-muted">(7,516 × 16)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_postec_db_0" name="selected_table" value="postec_db_0">
+                                                    <label class="form-check-label" for="table_postec_db_0">
+                                                        <strong>postec_db_0</strong> <span class="text-muted">(5,682 × 14)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_magcal_db_0" name="selected_table" value="magcal_db_0">
+                                                    <label class="form-check-label" for="table_magcal_db_0">
+                                                        <strong>magcal_db_0</strong> <span class="text-muted">(5,709 × 29)</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_cal_db_0" name="selected_table" value="cal_db_0">
+                                                    <label class="form-check-label" for="table_cal_db_0">
+                                                        <strong>cal_db_0</strong> <span class="text-muted">(0 × 579)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_aparam_db_0" name="selected_table" value="aparam_db_0">
+                                                    <label class="form-check-label" for="table_aparam_db_0">
+                                                        <strong>aparam_db_0</strong> <span class="text-muted">(1,194 × 617)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_aparam_db_1" name="selected_table" value="aparam_db_1">
+                                                    <label class="form-check-label" for="table_aparam_db_1">
+                                                        <strong>aparam_db_1</strong> <span class="text-muted">(156 × 8)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_test2" name="selected_table" value="rwb_db_test2">
+                                                    <label class="form-check-label" for="table_rwb_db_test2">
+                                                        <strong>rwb_db_test2</strong> <span class="text-muted">(5 × 3)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_temp_table" name="selected_table" value="temp_table">
+                                                    <label class="form-check-label" for="table_temp_table">
+                                                        <strong>temp_table</strong> <span class="text-muted">(4 × 3)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db_test" name="selected_table" value="rwb_db_test">
+                                                    <label class="form-check-label" for="table_rwb_db_test">
+                                                        <strong>rwb_db_test</strong> <span class="text-muted">(6 × 4)</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check table-option">
+                                                    <input class="form-check-input" type="radio" id="table_rwb_db" name="selected_table" value="rwb_db">
+                                                    <label class="form-check-label" for="table_rwb_db">
+                                                        <strong>rwb_db</strong> <span class="text-muted">(0 × 1,017)</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Select one table for analysis. Numbers show (rows × columns). rwb_db_3 is recommended for AGATE_REV1 analysis.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Data Filtering Parameters -->
-                        <h4>Data Filtering Parameters</h4>
-                        <div class="form-group">
-                            <label for="test_name_filter">TEST_NAME Filter:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="test_name_filter" name="test_name_filter" 
-                                       placeholder="Type to search or select from dropdown (empty = no filter)">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
-                                            id="testNameDropdownButton" data-toggle="dropdown">
-                                        <span id="testNameDropdownText">Loading...</span>
+                        <div class="card mb-4">
+                            <div class="card-header bg-warning text-dark">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-filter"></i> Data Filtering 
+                                    <span id="table-column-status" class="badge badge-info ml-2" style="display: none;">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading columns...
+                                    </span>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Quick Filter Presets Based on Selected Template -->
+                                <div class="alert alert-light border">
+                                    <h6 class="mb-2">
+                                        <i class="fas fa-magic"></i> Quick Filter Presets (Based on Selected Template):
+                                    </h6>
+                                    
+                                    <!-- AGATE_REV1_analysis.ipynb presets -->
+                                    <div class="mb-3" id="agate-rev1-presets">
+                                        <small class="text-muted font-weight-bold">📓 AGATE_REV1_analysis.ipynb workflows:</small>
+                                        <div class="btn-group-toggle mt-1" data-toggle="buttons">
+                                            <button type="button" class="btn btn-outline-primary btn-sm mr-2 mb-2" onclick="applyQuickFilter('agate_rev1_t0')">
+                                                <i class="fas fa-star"></i> T0 Analysis (pr1-r0, MACRO 1,2,3,5)
                                     </button>
-                                    <div class="dropdown-menu" id="testNameDropdownMenu" style="max-height: 300px; overflow-y: auto;">
-                                        <div class="dropdown-item-text">Loading values...</div>
+                                            <button type="button" class="btn btn-outline-warning btn-sm mr-2 mb-2" onclick="applyQuickFilter('agate_rev1_1st_bake')">
+                                                <i class="fas fa-fire"></i> 1st Bake Retention (1stBake-r0)
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm mr-2 mb-2" onclick="applyQuickFilter('agate_rev1_2nd_bake')">
+                                                <i class="fas fa-burn"></i> 2nd Bake Retention (1stBake-r0)
+                                            </button>
                                     </div>
                                 </div>
+                                    
+                                    <!-- agate_analysis_template.ipynb presets -->
+                                    <div class="mb-3" id="original-template-presets" style="display: none;">
+                                        <small class="text-muted font-weight-bold">📒 agate_analysis_template.ipynb workflows:</small>
+                                        <div class="btn-group-toggle mt-1" data-toggle="buttons">
+                                            <button type="button" class="btn btn-outline-success btn-sm mr-2 mb-2" onclick="applyQuickFilter('original_ttu4_r21')">
+                                                <i class="fas fa-chart-line"></i> TTU4 r21 (DIE_ID=TTU4, TEST_NAME=-r21)
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info btn-sm mr-2 mb-2" onclick="applyQuickFilter('original_mean_calc')">
+                                                <i class="fas fa-calculator"></i> Mean Calc (r21|r23, with groupby)
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm mr-2 mb-2" onclick="applyQuickFilter('original_scatter')">
+                                                <i class="fas fa-dot-circle"></i> Scatter Plot (r21|r23)
+                                            </button>
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="macro_filter">MACRO Filter:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="macro_filter" name="macro_filter" 
-                                       placeholder="Type values (e.g., 1,4~5,7,10~11) or select from dropdown (empty = no filter)">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
-                                            id="macroDropdownButton" data-toggle="dropdown">
-                                        <span id="macroDropdownText">Loading...</span>
+                                    <!-- General options -->
+                                    <div>
+                                        <small class="text-muted font-weight-bold">⚙️ General:</small>
+                                        <div class="btn-group-toggle mt-1" data-toggle="buttons">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm mr-2 mb-2" onclick="applyQuickFilter('custom')">
+                                                <i class="fas fa-cog"></i> Custom Filters
                                     </button>
-                                    <div class="dropdown-menu" id="macroDropdownMenu" style="max-height: 300px; overflow-y: auto;">
-                                        <div class="dropdown-item-text">Loading values...</div>
+                                            <button type="button" class="btn btn-outline-danger btn-sm mr-2 mb-2" onclick="clearAllFilters()">
+                                                <i class="fas fa-times"></i> Clear All
+                                            </button>
+                                    </div>
+                                </div>
+                            </div>
+                                
+                                <!-- Number of Filters Selection -->
+                        <div class="form-group">
+                                    <label for="num_filters">Number of Filters to Apply:</label>
+                                    <select class="form-control" id="num_filters" name="num_filters" onchange="updateFilterInputs()">
+                                        <option value="0">No Filters</option>
+                                        <option value="1">1 Filter</option>
+                                        <option value="2">2 Filters</option>
+                                        <option value="3">3 Filters</option>
+                                        <option value="4" selected>4 Filters</option>
+                                        <option value="5">5 Filters</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                        Choose how many column filters you want to apply to the data.
+                            </small>
+                        </div>
+                        
+                                <!-- Dynamic Filter Inputs Container -->
+                                <div id="dynamic-filters-container">
+                                    <!-- Filter inputs will be generated here by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+
+                        <!-- Template-Specific Configuration -->
+                        <div class="card mb-4" id="template-config-container">
+                            <!-- AGATE_REV1 Analysis Type Selection -->
+                            <div id="agate-rev1-analysis-types" class="template-specific-config">
+                                <div class="card-header bg-purple text-white">
+                                    <h4 class="mb-0">
+                                        <i class="fas fa-flask"></i> AGATE_REV1 Analysis Type
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                        <div class="form-group">
+                                        <label>Select Analysis Type:</label>
+                                        <div class="analysis-type-container">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <div class="form-check analysis-type-option">
+                                                        <input class="form-check-input" type="radio" id="analysis_type_t0" name="analysis_type" value="t0" checked>
+                                                        <label class="form-check-label" for="analysis_type_t0">
+                                                            <div class="analysis-type-card">
+                                                                <h6 class="mb-1">
+                                                                    <i class="fas fa-star text-primary"></i> T0 Analysis
+                                                                </h6>
+                                                                <p class="mb-1 small text-muted">Initial characterization</p>
+                                                                <ul class="list-unstyled small">
+                                                                    <li>• TEST_NAME: pr1-r0</li>
+                                                                    <li>• MACRO: [1,2,3,5]</li>
+                                                                    <li>• Readout: 'T0'</li>
+                                                                </ul>
+                                    </div>
+                                </label>
+                                </div>
+                            </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-check analysis-type-option">
+                                                        <input class="form-check-input" type="radio" id="analysis_type_1st_bake" name="analysis_type" value="1st_bake">
+                                                        <label class="form-check-label" for="analysis_type_1st_bake">
+                                                            <div class="analysis-type-card">
+                                                                <h6 class="mb-1">
+                                                                    <i class="fas fa-fire text-warning"></i> 1st Bake Retention
+                                                                </h6>
+                                                                <p class="mb-1 small text-muted">Post-bake retention</p>
+                                                                <ul class="list-unstyled small">
+                                                                    <li>• TEST_NAME: 1stBake-r0</li>
+                                                                    <li>• MACRO: [1,2,3,5]</li>
+                                                                    <li>• Readout: 'Retention 1st Bake'</li>
+                                                                </ul>
+                                    </div>
+                                                        </label>
+                                </div>
+                            </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-check analysis-type-option">
+                                                        <input class="form-check-input" type="radio" id="analysis_type_2nd_bake" name="analysis_type" value="2nd_bake">
+                                                        <label class="form-check-label" for="analysis_type_2nd_bake">
+                                                            <div class="analysis-type-card">
+                                                                <h6 class="mb-1">
+                                                                    <i class="fas fa-burn text-danger"></i> 2nd Bake Retention
+                                                                </h6>
+                                                                <p class="mb-1 small text-muted">Extended retention</p>
+                                                                <ul class="list-unstyled small">
+                                                                    <li>• TEST_NAME: 1stBake-r0</li>
+                                                                    <li>• MACRO: [1,2,3,5]</li>
+                                                                    <li>• Readout: 'Retention 2nd Bake'</li>
+                                                                </ul>
+                        </div>
+                                                        </label>
+                                                    </div>
                                     </div>
                                 </div>
                             </div>
                             <small class="form-text text-muted">
-                                Enter single values (1,2,3), ranges (4~6), or combinations (1,4~6,8). Use comma to separate. Leave empty for no filter.
+                                            Choose the type of AGATE_REV1 analysis to run. Each type uses different filters and readout labels as defined in the original notebook.
                             </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="datetime_filter">TEST_START_DATETIME Filter:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="datetime_filter" name="datetime_filter" 
-                                       placeholder="Type to search or select from dropdown (empty = no filter)">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
-                                            id="datetimeDropdownButton" data-toggle="dropdown">
-                                        <span id="datetimeDropdownText">Loading...</span>
-                                    </button>
-                                    <div class="dropdown-menu" id="datetimeDropdownMenu" style="max-height: 300px; overflow-y: auto;">
-                                        <div class="dropdown-item-text">Loading values...</div>
                                     </div>
                                 </div>
-                            </div>
+                        </div>
+                        
+
                         </div>
                         
                         <!-- Plot Parameters -->
-                        <h4>Plot Parameters</h4>
+                        <div class="card mb-4">
+                            <div class="card-header bg-secondary text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-chart-line"></i> Plot Parameters
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                
+                                <!-- Template-specific plotting options -->
+                                <div id="plot-config-agate-rev1" class="template-plot-config">
+                                    <div class="alert alert-info">
+                                        <strong>AGATE_REV1 Pipeline:</strong> Uses advanced processing with data stitching and mean calculation.
+                                        Overlay column will be automatically set to 'Readout' with conditioning scale (150,664).
+                                    </div>
+                                </div>
+                                
+                                <div id="plot-config-agate-original" class="template-plot-config" style="display: none;">
                         <div class="form-group">
-                            <label for="overlay_col">Overlay Column:</label>
+                                        <label for="overlay_col">
+                                            <i class="fas fa-layer-group"></i> Overlay Column:
+                                        </label>
                             <select class="form-control" id="overlay_col" name="overlay_col">
                                 <option value="IO" selected>IO</option>
                                 <option value="DIE_ID">DIE_ID</option>
                                 <option value="MACRO">MACRO</option>
                                 <option value="TEST_NAME">TEST_NAME</option>
+                                            <!-- Will be populated dynamically based on selected table -->
                             </select>
+                                        <small class="form-text text-muted">
+                                            Column to use for plot overlay/grouping
+                                        </small>
+                                    </div>
                         </div>
                         
                         <div class="form-group">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="legend" name="legend">
                                 <label class="form-check-label" for="legend">
-                                    Show Legend
+                                            <i class="fas fa-list"></i> Show Legend
                                 </label>
                             </div>
                         </div>
                         
                         <div class="form-group">
-                            <label for="plot_title">Plot Title:</label>
+                                    <label for="plot_title">
+                                        <i class="fas fa-heading"></i> Plot Title:
+                                    </label>
                             <input type="text" class="form-control" id="plot_title" name="plot_title" 
-                                   value="" placeholder="Enter plot title">
+                                           value="" placeholder="Enter custom plot title (auto-generated if empty)">
                         </div>
                         
-                        <!-- Mean Calculation Parameters -->
-                        <h4>Mean Calculation Parameters</h4>
+                                <!-- Mean Calculation Parameters (for original template) -->
+                                <div id="mean-calc-params" class="template-specific-config">
+                                    <h6 class="mt-3 mb-2">
+                                        <i class="fas fa-calculator"></i> Mean Calculation Parameters:
+                                    </h6>
                         <div class="form-group">
                             <label for="groupby_cols">Group By Columns:</label>
                             <input type="text" class="form-control" id="groupby_cols" name="groupby_cols" 
                                    value="TEST_NAME" placeholder="Enter column names separated by commas (empty = no grouping)">
+                                        <small class="form-text text-muted">
+                                            For original template only. AGATE_REV1 uses fixed grouping logic.
+                                        </small>
+                                    </div>
                         </div>
                         
-                        <div class="form-group text-center">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options (AGATE_REV1 specific) -->
+                        <div class="card mb-4" id="advanced-options-card">
+                            <div class="card-header bg-dark text-white">
+                                <h4 class="mb-0">
+                                    <i class="fas fa-cogs"></i> Advanced Data Processing
+                                    <small class="text-muted">(AGATE_REV1 only)</small>
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="deduplication_mode">
+                                        <i class="fas fa-filter"></i> Deduplication Mode:
+                                    </label>
+                                    <select class="form-control" id="deduplication_mode" name="deduplication_mode">
+                                        <option value="none">No deduplication (use all records)</option>
+                                        <option value="latest_datetime" selected>Keep latest record per group (by TEST_START_DATETIME)</option>
+                                        <option value="first_datetime">Keep first record per group (by TEST_START_DATETIME)</option>
+                                        <option value="custom_column">Keep max/min by custom column</option>
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        Choose how to handle duplicate records within groups. Recommended: latest_datetime for T0 analysis.
+                                    </small>
+                                </div>
+                                
+                                <div class="form-group" id="groupby_columns_container">
+                                    <label for="groupby_columns">
+                                        <i class="fas fa-layer-group"></i> Group By Columns:
+                                    </label>
+                                    <input type="text" class="form-control" id="groupby_columns" name="groupby_columns" 
+                                           placeholder="e.g., DIE_ID,MACRO,IO,TEST_NAME" 
+                                           value="DIE_ID,MACRO,IO,TEST_NAME">
+                                    <small class="form-text text-muted">
+                                        Comma-separated list of columns to group by for deduplication
+                                    </small>
+                                </div>
+                                
+                                <div class="row" id="custom_dedup_options" style="display: none;">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="custom_dedup_column">Custom Column:</label>
+                                            <select class="form-control" id="custom_dedup_column" name="custom_dedup_column">
+                                                <option value="TEST_START_DATETIME">TEST_START_DATETIME</option>
+                                                <!-- Will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="custom_dedup_method">Method:</label>
+                                            <select class="form-control" id="custom_dedup_method" name="custom_dedup_method">
+                                                <option value="max" selected>Keep Maximum Value</option>
+                                                <option value="min">Keep Minimum Value</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Section -->
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
                                 <i class="fas fa-play"></i> Run Analysis
                             </button>
-
-                            <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg ml-2">
+                                <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg ml-3 px-4">
                                 <i class="fas fa-arrow-left"></i> Back to Home
                             </a>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -172,114 +504,578 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Load values for the filter dropdowns
-    loadSearchableDropdown('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter');
-    loadSearchableDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
-    loadSearchableDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
+    // Set up template selection handlers
+    setupTemplateSelectionHandlers();
     
-    // Set up regex column change event
-    const regexColSelect = document.getElementById('regex_col');
-    regexColSelect.addEventListener('change', function() {
-        const selectedColumn = this.value;
-        if (selectedColumn) {
-            loadRegexDropdown(selectedColumn);
-        } else {
-            // Reset regex dropdown
-            document.getElementById('regexDropdownButton').disabled = true;
-            document.getElementById('regexDropdownText').textContent = 'Select Column First';
-            document.getElementById('regexDropdownMenu').innerHTML = '<div class="dropdown-item-text">Select a column first</div>';
-            // Clear regex data
-            delete window.dropdownData['regexDropdownMenu'];
-        }
+    // Set up table selection change handler
+    setupTableSelectionHandler();
+    
+    // Initialize with default template and table
+    updateTemplateConfig();
+    loadTableColumns();
+    
+    // Apply default preset for AGATE_REV1
+    setTimeout(() => {
+        applyQuickFilter('agate_rev1_t0');
+    }, 1000);
+});
+
+// Available columns for filtering (will be dynamically updated)
+let availableColumns = [
+    'DIE_ID', 'TEST_NAME', 'MACRO', 'IO', 'TEST_START_DATETIME',
+    'RUN_NAME', 'STEPPING', 'TEMPERATURE', 'VOLTAGE', 'CURRENT', 
+    'DEVICE_ID', 'WAFER_ID', 'LOT_ID', 'STATUS', 'ERROR_CODE', 'OPERATOR'
+];
+
+function setupTemplateSelectionHandlers() {
+    const templateRadios = document.querySelectorAll('input[name="analysis_template"]');
+    
+    templateRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                console.log('Analysis template changed to:', this.value);
+                updateTemplateConfig();
+            }
+        });
     });
+}
+
+function updateTemplateConfig() {
+    const selectedTemplate = document.querySelector('input[name="analysis_template"]:checked').value;
     
-    // Initialize regex dropdown if a column is already selected
-    if (regexColSelect.value) {
-        loadRegexDropdown(regexColSelect.value);
+    // Show/hide template-specific plot configurations
+    const rev1Config = document.getElementById('plot-config-agate-rev1');
+    const originalConfig = document.getElementById('plot-config-agate-original');
+    const advancedCard = document.getElementById('advanced-options-card');
+    const meanCalcParams = document.getElementById('mean-calc-params');
+    
+    // Show/hide template-specific configuration sections
+    const rev1AnalysisTypes = document.getElementById('agate-rev1-analysis-types');
+    
+    // Show/hide quick filter presets based on selected template
+    const rev1Presets = document.getElementById('agate-rev1-presets');
+    const originalPresets = document.getElementById('original-template-presets');
+    
+    if (selectedTemplate === 'AGATE_REV1_analysis') {
+        rev1Config.style.display = 'block';
+        originalConfig.style.display = 'none';
+        advancedCard.style.display = 'block';
+        meanCalcParams.style.display = 'none';
+        rev1AnalysisTypes.style.display = 'block';
+        
+        // Show only AGATE_REV1 presets
+        rev1Presets.style.display = 'block';
+        originalPresets.style.display = 'none';
+    } else {
+        rev1Config.style.display = 'none';
+        originalConfig.style.display = 'block';
+        advancedCard.style.display = 'none';
+        meanCalcParams.style.display = 'block';
+        rev1AnalysisTypes.style.display = 'none';
+        
+        // Show only original template presets
+        rev1Presets.style.display = 'none';
+        originalPresets.style.display = 'block';
+    }
+}
+
+function applyQuickFilter(presetType) {
+    console.log('Applying quick filter preset:', presetType);
+    
+    switch(presetType) {
+        // AGATE_REV1_analysis.ipynb workflows
+        case 'agate_rev1_t0':
+            // T0 Analysis: RUN_NAME=KPIRev1, STEPPING=AGATE, TEST_NAME contains pr1-r0, MACRO in [1,2,3,5]
+            document.getElementById('num_filters').value = '4';
+            updateFilterInputs();
+            
+            setTimeout(() => {
+                applyCommonAGATEREV1Filters();
+                document.getElementById('filter_column_3').value = 'TEST_NAME';
+                document.getElementById('filter_operator_3').value = 'contains';
+                document.getElementById('filter_value_3').value = 'pr1-r0';
+                
+                // Set AGATE_REV1 template and T0 analysis type
+                document.getElementById('template_agate_rev1').checked = true;
+                document.getElementById('analysis_type_t0').checked = true;
+                updateTemplateConfig();
+                
+                loadFiltersForRange(1, 4);
+            }, 500);
+            break;
+            
+        case 'agate_rev1_1st_bake':
+            // 1st Bake Retention: RUN_NAME=KPIRev1, STEPPING=AGATE, TEST_NAME contains 1stBake-r0, MACRO in [1,2,3,5]
+            document.getElementById('num_filters').value = '4';
+            updateFilterInputs();
+            
+            setTimeout(() => {
+                applyCommonAGATEREV1Filters();
+                document.getElementById('filter_column_3').value = 'TEST_NAME';
+                document.getElementById('filter_operator_3').value = 'contains';
+                document.getElementById('filter_value_3').value = '1stBake-r0';
+                
+                // Set AGATE_REV1 template and 1st Bake analysis type
+                document.getElementById('template_agate_rev1').checked = true;
+                document.getElementById('analysis_type_1st_bake').checked = true;
+                updateTemplateConfig();
+                
+                loadFiltersForRange(1, 4);
+            }, 500);
+            break;
+            
+        case 'agate_rev1_2nd_bake':
+            // 2nd Bake Retention: RUN_NAME=KPIRev1, STEPPING=AGATE, TEST_NAME contains 1stBake-r0, MACRO in [1,2,3,5]
+            document.getElementById('num_filters').value = '4';
+            updateFilterInputs();
+            
+            setTimeout(() => {
+                applyCommonAGATEREV1Filters();
+                document.getElementById('filter_column_3').value = 'TEST_NAME';
+                document.getElementById('filter_operator_3').value = 'contains';
+                document.getElementById('filter_value_3').value = '1stBake-r0';
+                
+                // Set AGATE_REV1 template and 2nd Bake analysis type
+                document.getElementById('template_agate_rev1').checked = true;
+                document.getElementById('analysis_type_2nd_bake').checked = true;
+                updateTemplateConfig();
+                
+                loadFiltersForRange(1, 4);
+            }, 500);
+            break;
+            
+        // agate_analysis_template.ipynb workflows
+        case 'original_ttu4_r21':
+            // TTU4 r21: DIE_ID=TTU4, TEST_NAME contains -r21, MACRO=7
+            document.getElementById('num_filters').value = '3';
+            updateFilterInputs();
+            
+            setTimeout(() => {
+                document.getElementById('filter_column_1').value = 'DIE_ID';
+                document.getElementById('filter_operator_1').value = 'equals';
+                document.getElementById('filter_value_1').value = 'TTU4';
+                
+                document.getElementById('filter_column_2').value = 'TEST_NAME';
+                document.getElementById('filter_operator_2').value = 'contains';
+                document.getElementById('filter_value_2').value = '-r21';
+                
+                document.getElementById('filter_column_3').value = 'MACRO';
+                document.getElementById('filter_operator_3').value = 'equals';
+                document.getElementById('filter_value_3').value = '7';
+                
+                // Set original template
+                document.getElementById('template_agate_original').checked = true;
+                updateTemplateConfig();
+                
+                loadFiltersForRange(1, 3);
+            }, 500);
+            break;
+            
+        case 'original_mean_calc':
+            // Mean Calculation: DIE_ID=TTU4, TEST_NAME contains r(21|23), MACRO=7, with groupby
+            document.getElementById('num_filters').value = '3';
+            updateFilterInputs();
+            
+            setTimeout(() => {
+                document.getElementById('filter_column_1').value = 'DIE_ID';
+                document.getElementById('filter_operator_1').value = 'equals';
+                document.getElementById('filter_value_1').value = 'TTU4';
+                
+                document.getElementById('filter_column_2').value = 'TEST_NAME';
+                document.getElementById('filter_operator_2').value = 'contains';
+                document.getElementById('filter_value_2').value = 'r21';  // Simplified from regex
+                
+                document.getElementById('filter_column_3').value = 'MACRO';
+                document.getElementById('filter_operator_3').value = 'equals';
+                document.getElementById('filter_value_3').value = '7';
+                
+                // Set original template with groupby for mean calculation
+                document.getElementById('template_agate_original').checked = true;
+                document.getElementById('groupby_cols').value = 'TEST_NAME';
+                updateTemplateConfig();
+                
+                loadFiltersForRange(1, 3);
+            }, 500);
+            break;
+            
+        case 'original_scatter':
+            // Scatter Plot: Same filters but will generate scatter plot automatically
+            document.getElementById('num_filters').value = '3';
+            updateFilterInputs();
+            
+            setTimeout(() => {
+                document.getElementById('filter_column_1').value = 'DIE_ID';
+                document.getElementById('filter_operator_1').value = 'equals';
+                document.getElementById('filter_value_1').value = 'TTU4';
+                
+                document.getElementById('filter_column_2').value = 'TEST_NAME';
+                document.getElementById('filter_operator_2').value = 'contains';
+                document.getElementById('filter_value_2').value = 'r21';
+                
+                document.getElementById('filter_column_3').value = 'MACRO';
+                document.getElementById('filter_operator_3').value = 'equals';
+                document.getElementById('filter_value_3').value = '7';
+                
+                // Set original template
+                document.getElementById('template_agate_original').checked = true;
+                updateTemplateConfig();
+                
+                loadFiltersForRange(1, 3);
+            }, 500);
+            break;
+            
+        case 'custom':
+            document.getElementById('num_filters').value = '1';
+            updateFilterInputs();
+            break;
+    }
+}
+
+// Helper function for common AGATE_REV1 filters
+function applyCommonAGATEREV1Filters() {
+    // Filter 1: RUN_NAME equals KPIRev1
+    document.getElementById('filter_column_1').value = 'RUN_NAME';
+    document.getElementById('filter_operator_1').value = 'equals';
+    document.getElementById('filter_value_1').value = 'KPIRev1';
+    
+    // Filter 2: STEPPING equals AGATE
+    document.getElementById('filter_column_2').value = 'STEPPING';
+    document.getElementById('filter_operator_2').value = 'equals';
+    document.getElementById('filter_value_2').value = 'AGATE';
+    
+    // Filter 4: MACRO in_list 1,2,3,5
+    document.getElementById('filter_column_4').value = 'MACRO';
+    document.getElementById('filter_operator_4').value = 'in_list';
+    document.getElementById('filter_value_4').value = '1,2,3,5';
+}
+
+// Helper function to load column values for a range of filters
+function loadFiltersForRange(start, end) {
+    for (let i = start; i <= end; i++) {
+        loadColumnValues(i);
+    }
+}
+
+function clearAllFilters() {
+    document.getElementById('num_filters').value = '0';
+    updateFilterInputs();
+}
+
+function setupTableSelectionHandler() {
+    // Get all table radio buttons
+    const tableRadios = document.querySelectorAll('input[name="selected_table"]');
+    
+    // Add change event listener to each radio button
+    tableRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                console.log('Table selection changed to:', this.value);
+                loadTableColumns();
+            }
+        });
+    });
+}
+
+function loadTableColumns() {
+    // Get the currently selected table
+    const selectedTableRadio = document.querySelector('input[name="selected_table"]:checked');
+    if (!selectedTableRadio) {
+        console.log('No table selected');
+        return Promise.resolve();
     }
     
-    // Set up search functionality for all input fields
-    setupSearchableInput('test_name_filter', 'testNameDropdownMenu');
-    setupSearchableInput('macro_filter', 'macroDropdownMenu');
-    setupSearchableInput('datetime_filter', 'datetimeDropdownMenu');
-    setupSearchableInput('regex', 'regexDropdownMenu');
+    const selectedTable = selectedTableRadio.value;
+    console.log('Loading columns for table:', selectedTable);
     
-    // Set up cascading filter updates
-    setupCascadingFilters();
+    // Show loading state
+    showColumnLoadingState();
     
-    // Set up regex-based filter updates
-    setupRegexCascadingFilters();
-});
+    // Fetch columns for the selected table
+    return fetch('{{ url_for("get_table_columns") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            database: 'rwb',  // Assuming rwb database
+            tableName: selectedTable
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+        if (data.success) {
+            availableColumns = data.columns;
+            console.log(`Loaded ${availableColumns.length} columns for ${selectedTable}:`, availableColumns);
+            
+            // Update filter inputs with new columns
+            updateFilterInputs();
+            hideColumnLoadingState();
+            
+            return Promise.resolve();
+        } else {
+            console.error('Error loading columns:', data.message);
+            // Fall back to default columns
+            availableColumns = [
+                'DIE_ID', 'TEST_NAME', 'MACRO', 'IO', 'TEST_START_DATETIME',
+                'RUN_NAME', 'STEPPING', 'TEMPERATURE', 'VOLTAGE', 'CURRENT', 
+                'DEVICE_ID', 'WAFER_ID', 'LOT_ID', 'STATUS', 'ERROR_CODE', 'OPERATOR'
+            ];
+            updateFilterInputs();
+            hideColumnLoadingState();
+            
+            return Promise.resolve();
+            }
+        })
+        .catch(error => {
+        console.error('Error fetching columns:', error);
+        // Fall back to default columns
+        availableColumns = [
+            'DIE_ID', 'TEST_NAME', 'MACRO', 'IO', 'TEST_START_DATETIME',
+            'RUN_NAME', 'STEPPING', 'TEMPERATURE', 'VOLTAGE', 'CURRENT', 
+            'DEVICE_ID', 'WAFER_ID', 'LOT_ID', 'STATUS', 'ERROR_CODE', 'OPERATOR'
+        ];
+        updateFilterInputs();
+        hideColumnLoadingState();
+        
+        return Promise.resolve();
+    });
+}
+
+function showColumnLoadingState() {
+    const statusBadge = document.getElementById('table-column-status');
+    if (statusBadge) {
+        statusBadge.style.display = 'inline-block';
+    }
+    
+    const container = document.getElementById('dynamic-filters-container');
+    if (container) {
+        container.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Loading table columns...</div>';
+    }
+}
+
+function hideColumnLoadingState() {
+    const statusBadge = document.getElementById('table-column-status');
+    if (statusBadge) {
+        statusBadge.style.display = 'none';
+    }
+}
 
 // Global storage for dropdown data
 window.dropdownData = {};
 
-function loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId) {
-    const dropdownMenu = document.getElementById(dropdownMenuId);
-    const dropdownText = document.getElementById(dropdownTextId);
+function updateFilterInputs() {
+    const numFilters = parseInt(document.getElementById('num_filters').value);
+    const container = document.getElementById('dynamic-filters-container');
     
-    dropdownText.textContent = 'Loading...';
-    dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading values...</div>';
+    // Store existing filter values to preserve them when possible
+    const existingFilters = {};
+    for (let i = 1; i <= 10; i++) { // Check up to 10 filters
+        const columnSelect = document.getElementById(`filter_column_${i}`);
+        const operatorSelect = document.getElementById(`filter_operator_${i}`);
+        const valueInput = document.getElementById(`filter_value_${i}`);
+        
+        if (columnSelect && operatorSelect && valueInput) {
+            existingFilters[i] = {
+                column: columnSelect.value,
+                operator: operatorSelect.value,
+                value: valueInput.value
+            };
+        }
+    }
     
-    fetch(`{{ url_for('get_rwb_column_values', column_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', columnName))
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                dropdownText.textContent = 'Error';
-                dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
-                console.error('Error loading values for ' + columnName + ':', data.error);
-            } else {
-                // Store data globally for search functionality
-                window.dropdownData[dropdownMenuId] = data.values;
-                
-                dropdownText.textContent = `${data.values.length} items`;
-                renderDropdownItems(dropdownMenuId, inputId, data.values);
-                
-                console.log(`Loaded ${data.values.length} values for ${columnName}`);
+    // Clear existing filters
+    container.innerHTML = '';
+    
+    if (numFilters === 0) {
+        container.innerHTML = '<div class="alert alert-info"><em><i class="fas fa-info-circle"></i> No filters selected. All data will be retrieved from the selected table.</em></div>';
+        return;
+    }
+    
+    // Generate filter inputs
+    for (let i = 1; i <= numFilters; i++) {
+        const filterDiv = document.createElement('div');
+        filterDiv.className = 'card mb-3';
+        
+        // Determine the default column selection
+        let defaultColumn = '';
+        if (existingFilters[i] && availableColumns.includes(existingFilters[i].column)) {
+            defaultColumn = existingFilters[i].column;
+        }
+        
+        filterDiv.innerHTML = `
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-filter"></i> Filter ${i} 
+                    <small class="text-muted">(Table: ${getSelectedTable()})</small>
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filter_column_${i}">Column:</label>
+                            <select class="form-control" id="filter_column_${i}" name="filter_column_${i}" onchange="loadColumnValues(${i})">
+                                <option value="">-- Select Column --</option>
+                                ${availableColumns.map(col => 
+                                    `<option value="${col}" ${col === defaultColumn ? 'selected' : ''}>${col}</option>`
+                                ).join('')}
+                            </select>
+                            <small class="form-text text-muted">
+                                ${availableColumns.length} columns available
+                            </small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filter_operator_${i}">Operator:</label>
+                            <select class="form-control" id="filter_operator_${i}" name="filter_operator_${i}">
+                                <option value="equals" ${!existingFilters[i] || existingFilters[i].operator === 'equals' ? 'selected' : ''}>Equals (=)</option>
+                                <option value="not_equals" ${existingFilters[i] && existingFilters[i].operator === 'not_equals' ? 'selected' : ''}>Not Equals (!=)</option>
+                                <option value="contains" ${existingFilters[i] && existingFilters[i].operator === 'contains' ? 'selected' : ''}>Contains (LIKE %value%)</option>
+                                <option value="starts_with" ${existingFilters[i] && existingFilters[i].operator === 'starts_with' ? 'selected' : ''}>Starts With (LIKE value%)</option>
+                                <option value="ends_with" ${existingFilters[i] && existingFilters[i].operator === 'ends_with' ? 'selected' : ''}>Ends With (LIKE %value)</option>
+                                <option value="greater_than" ${existingFilters[i] && existingFilters[i].operator === 'greater_than' ? 'selected' : ''}>Greater Than (&gt;)</option>
+                                <option value="less_than" ${existingFilters[i] && existingFilters[i].operator === 'less_than' ? 'selected' : ''}>Less Than (&lt;)</option>
+                                <option value="in_list" ${existingFilters[i] && existingFilters[i].operator === 'in_list' ? 'selected' : ''}>In List (comma separated)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="filter_value_${i}">Value:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="filter_value_${i}" name="filter_value_${i}" 
+                                       placeholder="Enter filter value" value="${existingFilters[i] ? existingFilters[i].value : ''}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                            id="filterDropdownButton_${i}" data-toggle="dropdown" disabled>
+                                        <span id="filterDropdownText_${i}">Select Column First</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="filterDropdownMenu_${i}" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="dropdown-item-text">Select a column first</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">
+                                For "In List" operator, separate values with commas. For ranges, use "1,4~6,8" format for MACRO.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(filterDiv);
+        
+        // Set up cascading for this filter
+        setTimeout(() => {
+            setupCascadingForFilter(i);
+            
+            // Load values for the default selected column
+            if (defaultColumn) {
+                loadColumnValues(i);
             }
-        })
-        .catch(error => {
-            dropdownText.textContent = 'Error';
-            dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
-            console.error('Error fetching values for ' + columnName + ':', error);
-        });
+        }, 100);
+    }
 }
 
-function loadRegexDropdown(columnName) {
-    const dropdownButton = document.getElementById('regexDropdownButton');
-    const dropdownText = document.getElementById('regexDropdownText');
-    const dropdownMenu = document.getElementById('regexDropdownMenu');
+function getSelectedTable() {
+    const selectedTableRadio = document.querySelector('input[name="selected_table"]:checked');
+    return selectedTableRadio ? selectedTableRadio.value : 'none';
+}
+
+function loadColumnValues(filterIndex) {
+    const columnSelect = document.getElementById(`filter_column_${filterIndex}`);
+    const dropdownButton = document.getElementById(`filterDropdownButton_${filterIndex}`);
+    const dropdownText = document.getElementById(`filterDropdownText_${filterIndex}`);
+    const dropdownMenu = document.getElementById(`filterDropdownMenu_${filterIndex}`);
+    
+    const selectedColumn = columnSelect.value;
+    const selectedTable = getSelectedTable();
+    
+    if (!selectedColumn) {
+        dropdownButton.disabled = true;
+        dropdownText.textContent = 'Select Column First';
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text">Select a column first</div>';
+        return;
+    }
+    
+    if (!selectedTable || selectedTable === 'none') {
+        dropdownButton.disabled = true;
+        dropdownText.textContent = 'Select Table First';
+        dropdownMenu.innerHTML = '<div class="dropdown-item-text">Select a table first</div>';
+        return;
+    }
     
     dropdownButton.disabled = false;
     dropdownText.textContent = 'Loading...';
     dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading values...</div>';
     
-    fetch(`{{ url_for('get_rwb_column_values', column_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', columnName))
+    // Get applied filters for cascading (only filters before this one)
+    const appliedFilters = getPreviousFilters(filterIndex);
+    
+    // Use cascading endpoint for better filtering
+    fetch('{{ url_for("get_cascaded_column_values") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            table: selectedTable,
+            column: selectedColumn,
+            filters: appliedFilters
+        })
+    })
         .then(response => response.json())
         .then(data => {
             if (data.error) {
                 dropdownText.textContent = 'Error';
                 dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
-                console.error('Error loading regex values for ' + columnName + ':', data.error);
+                console.error('Error loading cascaded values for ' + selectedColumn + ':', data.error);
             } else {
                 // Store data globally for search functionality
-                window.dropdownData['regexDropdownMenu'] = data.values;
+                const menuId = `filterDropdownMenu_${filterIndex}`;
+                window.dropdownData[menuId] = data.values;
                 
-                dropdownText.textContent = `${data.values.length} items`;
-                renderDropdownItems('regexDropdownMenu', 'regex', data.values);
+                const filterCount = appliedFilters.length;
+                const cascadeText = filterCount > 0 ? ` (filtered by ${filterCount} previous filters)` : '';
+                dropdownText.textContent = `${data.values.length} items${cascadeText}`;
+                renderFilterDropdownItems(filterIndex, data.values);
                 
-                console.log(`Loaded ${data.values.length} regex values for ${columnName}`);
+                console.log(`Loaded ${data.values.length} cascaded values for ${selectedColumn} from ${selectedTable} with ${filterCount} previous filters`);
             }
         })
         .catch(error => {
             dropdownText.textContent = 'Error';
             dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
-            console.error('Error fetching regex values for ' + columnName + ':', error);
+            console.error('Error fetching cascaded values for ' + selectedColumn + ':', error);
         });
 }
 
-function renderDropdownItems(dropdownMenuId, inputId, values, searchTerm = '') {
-    const dropdownMenu = document.getElementById(dropdownMenuId);
+function getPreviousFilters(currentFilterIndex) {
+    const appliedFilters = [];
+    
+    // Get all filters before the current one
+    for (let i = 1; i < currentFilterIndex; i++) {
+        const columnSelect = document.getElementById(`filter_column_${i}`);
+        const operatorSelect = document.getElementById(`filter_operator_${i}`);
+        const valueInput = document.getElementById(`filter_value_${i}`);
+        
+        if (columnSelect && operatorSelect && valueInput && 
+            columnSelect.value && valueInput.value.trim()) {
+            appliedFilters.push({
+                column: columnSelect.value,
+                operator: operatorSelect.value,
+                value: valueInput.value.trim()
+            });
+        }
+    }
+    
+    return appliedFilters;
+}
+
+function renderFilterDropdownItems(filterIndex, values, searchTerm = '') {
+    const dropdownMenu = document.getElementById(`filterDropdownMenu_${filterIndex}`);
+    const inputId = `filter_value_${filterIndex}`;
     
     // Filter values based on search term
     let filteredValues = values;
@@ -294,37 +1090,40 @@ function renderDropdownItems(dropdownMenuId, inputId, values, searchTerm = '') {
         return;
     }
     
-    // Limit to first 100 items for performance
-    const itemsToShow = filteredValues.slice(0, 100);
-    
     let html = '';
     
-    // Add "Clear" option for non-regex fields
-    if (inputId !== 'regex') {
-        html += '<a class="dropdown-item" href="#" onclick="selectDropdownValue(\'' + inputId + '\', \'\')">-- Clear --</a>';
+    // Add "Clear" option
+    html += `<a class="dropdown-item" href="#" onclick="selectFilterValue(${filterIndex}, '')"><i class="fas fa-times text-danger"></i> Clear</a>`;
         html += '<div class="dropdown-divider"></div>';
-    }
     
-    // Add filtered items
+    // Add filtered items (show all)
+    const itemsToShow = filteredValues.slice(0, 100); // Limit to 100 for performance
     itemsToShow.forEach(value => {
         const displayValue = value === null ? 'NULL' : value;
         const safeValue = value === null ? '' : value.toString().replace(/'/g, "\\'");
-        html += `<a class="dropdown-item" href="#" onclick="selectDropdownValue('${inputId}', '${safeValue}')">${displayValue}</a>`;
+        html += `<a class="dropdown-item" href="#" onclick="selectFilterValue(${filterIndex}, '${safeValue}')">${displayValue}</a>`;
     });
     
-    if (filteredValues.length > 100) {
+    // Show total count
+    if (filteredValues.length > 0) {
         html += '<div class="dropdown-divider"></div>';
-        html += '<div class="dropdown-item-text text-muted">Showing first 100 of ' + filteredValues.length + ' matches</div>';
+        const showCount = Math.min(filteredValues.length, 100);
+        const totalText = filteredValues.length > 100 ? `Showing first ${showCount} of ${filteredValues.length}` : `Showing all ${filteredValues.length}`;
+        html += `<div class="dropdown-item-text text-muted">${totalText} options</div>`;
     }
     
     dropdownMenu.innerHTML = html;
+    
+    // Set up search functionality for this filter
+    setupFilterSearch(filterIndex);
 }
 
-function selectDropdownValue(inputId, value) {
-    const input = document.getElementById(inputId);
+function selectFilterValue(filterIndex, value) {
+    const input = document.getElementById(`filter_value_${filterIndex}`);
+    const operator = document.getElementById(`filter_operator_${filterIndex}`).value;
     
-    if (inputId === 'macro_filter' && input.value && value) {
-        // For MACRO filter, append to existing value
+    if (operator === 'in_list' && input.value && value) {
+        // For in_list operator, append to existing value
         const currentValue = input.value.trim();
         if (currentValue && currentValue !== value) {
             input.value = currentValue + ',' + value;
@@ -335,17 +1134,72 @@ function selectDropdownValue(inputId, value) {
         input.value = value;
     }
     
-    // Trigger input event to update any dependent functionality
+    // Trigger input event
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    
+    // Trigger cascading update for subsequent filters
+    updateSubsequentFilters(filterIndex);
 }
 
-function setupSearchableInput(inputId, dropdownMenuId) {
-    const input = document.getElementById(inputId);
+function updateSubsequentFilters(changedFilterIndex) {
+    // Get the total number of filters
+    const numFilters = parseInt(document.getElementById('num_filters').value);
+    
+    // Update all filters after the changed one
+    for (let i = changedFilterIndex + 1; i <= numFilters; i++) {
+        const columnSelect = document.getElementById(`filter_column_${i}`);
+        if (columnSelect && columnSelect.value) {
+            console.log(`Cascading update: refreshing filter ${i} due to change in filter ${changedFilterIndex}`);
+            loadColumnValues(i);
+        }
+    }
+}
+
+// Add event listener for column selection changes to trigger cascading
+function setupCascadingForFilter(filterIndex) {
+    const columnSelect = document.getElementById(`filter_column_${filterIndex}`);
+    const operatorSelect = document.getElementById(`filter_operator_${filterIndex}`);
+    const valueInput = document.getElementById(`filter_value_${filterIndex}`);
+    
+    // When column or operator changes, update subsequent filters
+    if (columnSelect) {
+        columnSelect.addEventListener('change', () => {
+            updateSubsequentFilters(filterIndex);
+        });
+    }
+    
+    if (operatorSelect) {
+        operatorSelect.addEventListener('change', () => {
+            updateSubsequentFilters(filterIndex);
+        });
+    }
+    
+    // When value changes (with debounce), update subsequent filters
+    if (valueInput) {
+        let timeoutId;
+        valueInput.addEventListener('input', () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                if (valueInput.value.trim()) {
+                    updateSubsequentFilters(filterIndex);
+                }
+            }, 500); // Wait 500ms after user stops typing
+        });
+    }
+}
+
+function setupFilterSearch(filterIndex) {
+    const input = document.getElementById(`filter_value_${filterIndex}`);
+    const menuId = `filterDropdownMenu_${filterIndex}`;
     let searchTimeout;
     
-    input.addEventListener('input', function() {
+    // Remove any existing event listener
+    input.removeEventListener('input', input._searchHandler);
+    
+    // Add new search handler
+    input._searchHandler = function() {
         const searchTerm = this.value;
-        const values = window.dropdownData[dropdownMenuId];
+        const values = window.dropdownData[menuId];
         
         // Clear previous timeout
         if (searchTimeout) {
@@ -355,205 +1209,261 @@ function setupSearchableInput(inputId, dropdownMenuId) {
         // Debounce search for better performance
         searchTimeout = setTimeout(() => {
             if (values) {
-                renderDropdownItems(dropdownMenuId, inputId, values, searchTerm);
+                renderFilterDropdownItems(filterIndex, values, searchTerm);
             }
-        }, 150); // 150ms delay
-    });
+        }, 150);
+    };
+    
+    input.addEventListener('input', input._searchHandler);
 }
 
-function setupCascadingFilters() {
-    let testNameTimeout, macroTimeout;
+// Setup deduplication mode handlers
+function setupDeduplicationHandlers() {
+    const dedupModeSelect = document.getElementById('deduplication_mode');
+    const customOptions = document.getElementById('custom_dedup_options');
+    const groupbyContainer = document.getElementById('groupby_columns_container');
     
-        // When TEST_NAME changes, update MACRO filter
-    document.getElementById('test_name_filter').addEventListener('input', function() {
-        const testNameValue = this.value.trim();
+    dedupModeSelect.addEventListener('change', function() {
+        const mode = this.value;
         
-        // Clear previous timeout
-        if (testNameTimeout) {
-            clearTimeout(testNameTimeout);
-        }
-        
-        // Debounce to avoid too many requests
-        testNameTimeout = setTimeout(() => {
-            if (testNameValue && testNameValue.length >= 2) {
-                const filters = buildCompleteFilterSet();
-                filters['TEST_NAME'] = testNameValue;
-                updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', filters);
-            } else {
-                // Reset MACRO dropdown to show all values when TEST_NAME is cleared
-                const filters = buildCompleteFilterSet();
-                if (Object.keys(filters).length > 0) {
-                    updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', filters);
-                } else {
-                    resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
-                }
-                // Also reset datetime filter
-                resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
-                // Clear the macro input field too
-                document.getElementById('macro_filter').value = '';
-                // Clear the datetime input field too
-                document.getElementById('datetime_filter').value = '';
-            }
-        }, 300);
-    });
-    
-    // When MACRO changes, update DATETIME filter
-    document.getElementById('macro_filter').addEventListener('input', function() {
-        const macroValue = this.value.trim();
-        const testNameValue = document.getElementById('test_name_filter').value.trim();
-        
-        // Clear previous timeout
-        if (macroTimeout) {
-            clearTimeout(macroTimeout);
-        }
-        
-        // Debounce to avoid too many requests
-        macroTimeout = setTimeout(() => {
-            const filters = buildCompleteFilterSet();
-            if (testNameValue && testNameValue.length >= 2) filters['TEST_NAME'] = testNameValue;
-            if (macroValue) filters['MACRO'] = macroValue;
-            
-            if (Object.keys(filters).length > 0) {
-                updateFilteredDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', filters);
-            } else {
-                // Reset datetime filter to show all values when macro is cleared
-                resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
-                // Clear the datetime input field if macro was cleared
-                if (!macroValue) {
-                    document.getElementById('datetime_filter').value = '';
-                }
-            }
-        }, 300);
-    });
-}
-
-function setupRegexCascadingFilters() {
-    let regexTimeout;
-    
-    // When regex column or regex pattern changes, update all filter dropdowns
-    function handleRegexChange() {
-        const regexCol = document.getElementById('regex_col').value.trim();
-        const regexPattern = document.getElementById('regex').value.trim();
-        
-        // Clear previous timeout
-        if (regexTimeout) {
-            clearTimeout(regexTimeout);
-        }
-        
-        // Debounce to avoid too many requests
-        regexTimeout = setTimeout(() => {
-            if (regexCol && regexPattern && regexPattern.length >= 2) {
-                // When regex is specified, update all other filters
-                updateAllFiltersWithRegex(regexCol, regexPattern);
-            } else {
-                // When regex is cleared, reset all filters to unfiltered state
-                resetAllFiltersToOriginal();
-            }
-        }, 300);
-    }
-    
-    // Set up event listeners
-    document.getElementById('regex_col').addEventListener('change', handleRegexChange);
-    document.getElementById('regex').addEventListener('input', handleRegexChange);
-}
-
-function buildCompleteFilterSet() {
-    const filters = {};
-    const regexCol = document.getElementById('regex_col').value.trim();
-    const regexPattern = document.getElementById('regex').value.trim();
-    
-    // Include regex filter if both column and pattern are specified
-    if (regexCol && regexPattern && regexPattern.length >= 2) {
-        filters[regexCol] = regexPattern;
-    }
-    
-    return filters;
-}
-
-function updateAllFiltersWithRegex(regexCol, regexPattern) {
-    // Build base filter with regex
-    const baseFilters = {};
-    baseFilters[regexCol] = regexPattern;
-    
-    // Update all filter dropdowns
-    updateFilteredDropdown('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter', baseFilters);
-    updateFilteredDropdown('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter', baseFilters);
-    updateFilteredDropdown('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter', baseFilters);
-    
-    // Clear existing filter values since they may no longer be valid
-    document.getElementById('test_name_filter').value = '';
-    document.getElementById('macro_filter').value = '';
-    document.getElementById('datetime_filter').value = '';
-}
-
-function resetAllFiltersToOriginal() {
-    resetDropdownToOriginal('TEST_NAME', 'testNameDropdownMenu', 'testNameDropdownText', 'test_name_filter');
-    resetDropdownToOriginal('MACRO', 'macroDropdownMenu', 'macroDropdownText', 'macro_filter');
-    resetDropdownToOriginal('TEST_START_DATETIME', 'datetimeDropdownMenu', 'datetimeDropdownText', 'datetime_filter');
-}
-
-function updateFilteredDropdown(columnName, dropdownMenuId, dropdownTextId, inputId, filters) {
-    const dropdownMenu = document.getElementById(dropdownMenuId);
-    const dropdownText = document.getElementById(dropdownTextId);
-    const dropdownButton = dropdownText.parentElement;
-    
-    // Add loading state
-    dropdownButton.classList.add('loading');
-    dropdownText.textContent = 'Loading...';
-    dropdownMenu.innerHTML = '<div class="dropdown-item-text">Loading filtered values...</div>';
-    
-    fetch('{{ url_for("get_rwb_filtered_values") }}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            column_name: columnName,
-            filters: filters
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Remove loading state
-        dropdownButton.classList.remove('loading');
-        
-        if (data.error) {
-            dropdownText.textContent = 'Error';
-            dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
-            console.error('Error loading filtered values for ' + columnName + ':', data.error);
+        if (mode === 'custom_column') {
+            customOptions.style.display = 'block';
+            populateCustomDedupColumn();
         } else {
-            // Store filtered data globally for search functionality
-            window.dropdownData[dropdownMenuId] = data.values;
-            
-            // Add filtered styling
-            dropdownButton.classList.add('filtered');
-            dropdownText.textContent = `${data.values.length} items (filtered)`;
-            renderDropdownItems(dropdownMenuId, inputId, data.values);
-            
-            console.log(`Loaded ${data.values.length} filtered values for ${columnName}`, 'Filters:', data.filters_applied);
+            customOptions.style.display = 'none';
         }
-    })
-    .catch(error => {
-        // Remove loading state
-        dropdownButton.classList.remove('loading');
-        dropdownText.textContent = 'Error';
-        dropdownMenu.innerHTML = '<div class="dropdown-item-text text-danger">Error loading values</div>';
-        console.error('Error fetching filtered values for ' + columnName + ':', error);
+        
+        // Show/hide groupby columns based on mode
+        if (mode === 'none') {
+            groupbyContainer.style.display = 'none';
+            } else {
+            groupbyContainer.style.display = 'block';
+        }
     });
 }
 
-function resetDropdownToOriginal(columnName, dropdownMenuId, dropdownTextId, inputId) {
-    const dropdownButton = document.getElementById(dropdownTextId).parentElement;
+// Populate custom deduplication column dropdown with table columns
+function populateCustomDedupColumn() {
+    const customDedupSelect = document.getElementById('custom_dedup_column');
     
-    // Remove filtered styling
-    dropdownButton.classList.remove('filtered');
+    // Clear existing options except default
+    while (customDedupSelect.children.length > 1) {
+        customDedupSelect.removeChild(customDedupSelect.lastChild);
+    }
     
-    // Load original unfiltered data
-    loadSearchableDropdown(columnName, dropdownMenuId, dropdownTextId, inputId);
+    // Add columns from availableColumns
+    if (window.availableColumns && window.availableColumns.length > 0) {
+        window.availableColumns.forEach(column => {
+            if (column !== 'TEST_START_DATETIME') { // Already exists as default
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                customDedupSelect.appendChild(option);
+            }
+        });
+    }
 }
- </script>
- 
- <style>
+
+// Update overlay column options when table changes
+function updateOverlayColumnOptions() {
+    const overlaySelect = document.getElementById('overlay_col');
+    if (!overlaySelect) return; // Only for original template
+    
+    const currentValue = overlaySelect.value;
+    
+    // Clear existing options
+    overlaySelect.innerHTML = '';
+    
+    // Add default options
+    const defaultOptions = ['IO', 'DIE_ID', 'MACRO', 'TEST_NAME'];
+    defaultOptions.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        if (option === currentValue) {
+            optionElement.selected = true;
+        }
+        overlaySelect.appendChild(optionElement);
+    });
+    
+    // Add other available columns if they exist
+    if (window.availableColumns && window.availableColumns.length > 0) {
+        window.availableColumns.forEach(column => {
+            if (!defaultOptions.includes(column)) {
+                const option = document.createElement('option');
+                option.value = column;
+                option.textContent = column;
+                if (column === currentValue) {
+                    option.selected = true;
+                }
+                overlaySelect.appendChild(option);
+            }
+        });
+    }
+    
+    // If current value is not in the new options, select first option
+    if (!overlaySelect.querySelector(`option[value="${currentValue}"]`)) {
+        overlaySelect.selectedIndex = 0;
+    }
+}
+
+// Initialize all handlers when document loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupDeduplicationHandlers();
+    
+    // Update overlay options when table changes (for original template)
+    const originalLoadTableColumns = window.loadTableColumns;
+    window.loadTableColumns = function() {
+        return originalLoadTableColumns().then(() => {
+            updateOverlayColumnOptions();
+            populateCustomDedupColumn();
+        });
+    };
+});
+</script>
+
+<style>
+/* Template selection styling */
+.analysis-template-option {
+    margin-bottom: 15px;
+}
+
+.analysis-template-option .form-check-input {
+    transform: scale(1.2);
+    margin-top: 0.3rem;
+}
+
+.template-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.analysis-template-option input:checked + label .template-card {
+    border-color: #007bff;
+    background: #e7f3ff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.template-card:hover {
+    border-color: #007bff;
+    background: #f0f8ff;
+}
+
+.template-card h5 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.template-card ul li {
+    margin-bottom: 4px;
+    font-size: 0.9em;
+}
+
+/* Analysis type selection styling */
+.analysis-type-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.analysis-type-option {
+    margin-bottom: 15px;
+}
+
+.analysis-type-option .form-check-input {
+    transform: scale(1.1);
+    margin-top: 0.2rem;
+}
+
+.analysis-type-card {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    height: 100%;
+    min-height: 120px;
+}
+
+.analysis-type-option input:checked + label .analysis-type-card {
+    border-color: #28a745;
+    background: #f8fff9;
+    box-shadow: 0 0 0 0.15rem rgba(40, 167, 69, 0.15);
+}
+
+.analysis-type-card:hover {
+    border-color: #28a745;
+    background: #f0fff0;
+}
+
+.analysis-type-card h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.analysis-type-card ul li {
+    margin-bottom: 2px;
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+/* Purple header for AGATE_REV1 analysis types */
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+/* Quick filter preset buttons */
+.btn-group-toggle .btn {
+    margin-bottom: 5px;
+}
+
+/* Table selection styling */
+.table-selection-container {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.table-option {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.table-option:hover {
+    background-color: #e3f2fd;
+}
+
+.table-option .form-check-input {
+    margin-top: 2px;
+}
+
+.table-option .form-check-label {
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    margin-left: 5px;
+}
+
+.table-option .form-check-label strong {
+    color: #495057;
+}
+
+.table-option .text-muted {
+    font-size: 0.85em;
+}
+
+/* Filter dropdown styling */
  .dropdown-menu {
      max-width: 400px;
  }
@@ -601,6 +1511,36 @@ function resetDropdownToOriginal(columnName, dropdownMenuId, dropdownTextId, inp
  .dropdown-item.highlighted {
      background-color: #fff3cd;
      border-left: 3px solid #ffc107;
+ }
+
+/* Card styling improvements */
+.card-header {
+    font-weight: 600;
+}
+
+.card-header h4 {
+    margin-bottom: 0;
+}
+
+/* Template-specific configuration sections */
+.template-plot-config {
+    transition: all 0.3s ease;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .template-card {
+        margin-bottom: 15px;
+    }
+    
+    .table-option {
+        margin-bottom: 10px;
+    }
+    
+    .btn-group-toggle .btn {
+        width: 100%;
+        margin-bottom: 8px;
+    }
  }
  </style>
  

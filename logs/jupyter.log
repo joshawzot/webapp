@@ -164,3 +164,513 @@
 [I 2025-08-19 15:46:17.600 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
 [I 2025-08-19 15:48:17.612 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
 [I 2025-08-19 15:50:18.545 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:02:17.689 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:04:17.611 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:06:17.581 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:08:17.588 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:10:17.577 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:12:02.288 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.34ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:12:02.440 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.51ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:12:02.589 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.41ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:12:06.420 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.91ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-19 16:12:17.576 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:12:18.432 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:1b9a11a2387d48ca9a52a1bcaa094576
+[W 2025-08-19 16:13:17.741 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.08ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:13:17.890 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 0.71ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:13:18.039 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 0.81ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:13:23.071 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 4.24ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:13:23.227 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 3.86ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:13:23.378 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 4.18ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:13:26.240 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.67ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:14:18.518 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:15:17.429 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.98ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:15:27.184 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.14ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:16:05.351 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.29ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:16:20.512 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.28ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:16:54.022 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.87ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:17:35.072 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 1.08ms
+[I 2025-08-19 16:18:17.577 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 16:20:17.607 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-19 16:22:27.082 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.57ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:22:27.231 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 2.87ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:22:27.379 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.25ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:22:32.853 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.38ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:22:33.011 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 4.06ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:22:33.160 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.97ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:22:35.905 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
+[W 2025-08-19 16:22:36.063 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.65ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
+[I 2025-08-19 16:23:01.786 ServerApp] Starting buffering for 8ed283db-43bb-4787-bcc0-b7ee4d612651:b40310510ae34cb6b56b3b3cb87315eb
+[W 2025-08-19 16:29:15.643 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.14ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:29:15.789 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 0.72ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:29:15.937 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 0.78ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:31:31.807 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.14ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:31:31.960 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.98ms referer=http://192.168.68.215:3001/
+[W 2025-08-19 16:31:32.118 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.96ms referer=http://192.168.68.215:3001/
+[I 2025-08-19 17:52:17.633 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 17:54:17.524 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 17:56:17.515 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 20:50:17.486 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 20:52:17.362 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 20:54:17.348 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 20:57:12.350 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 20:57:41.013 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:b799165392004fc3bc6d593bc1ab505e
+[W 2025-08-19 20:59:02.430 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.12ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 20:59:02.455 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 2.95ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 20:59:02.478 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 2.92ms referer=http://192.168.68.215:3000/
+[W 2025-08-19 20:59:07.684 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.11ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:01:07.935 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:03:07.927 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:05:07.928 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:07:07.927 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:39:08.035 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:41:07.919 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:43:08.013 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 21:45:07.913 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 22:21:07.960 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:21:07.930 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:25:07.827 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:45:08.229 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:47:08.148 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:55:07.883 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:57:07.786 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-19 23:59:07.773 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 00:22:41.492 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[I 2025-08-20 08:45:18.702 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[I 2025-08-20 08:47:12.656 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 08:51:18.703 ServerApp] WebSocket ping timeout after 119958 ms.
+[I 2025-08-20 08:51:23.706 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[I 2025-08-20 08:51:26.448 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[I 2025-08-20 08:57:06.939 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 08:59:07.322 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:01:07.089 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 09:03:26.450 ServerApp] WebSocket ping timeout after 119843 ms.
+[I 2025-08-20 09:03:31.452 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[I 2025-08-20 09:14:32.850 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[I 2025-08-20 09:14:39.501 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
+[W 2025-08-20 09:14:39.691 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.51ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:14:51.194 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:16:40.869 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:18:39.874 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:20:39.859 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:22:40.835 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:24:39.905 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:26:39.885 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:28:39.876 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:30:40.827 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 09:38:39.880 ServerApp] WebSocket ping timeout after 119992 ms.
+[I 2025-08-20 09:38:44.883 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 09:39:05.390 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 09:42:39.898 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:44:39.954 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:46:39.856 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:48:39.878 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:56:40.020 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 09:58:39.860 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:00:39.853 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:02:39.901 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:04:39.856 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:36:39.867 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:42:39.857 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:44:39.817 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 10:56:39.930 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 11:00:39.866 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 11:18:39.832 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 11:20:39.863 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 11:22:39.814 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 12:03:41.104 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:03:42.648 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:06:48.610 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:29:08.394 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:34:40.174 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 12:40:08.396 ServerApp] WebSocket ping timeout after 119813 ms.
+[W 2025-08-20 12:40:10.322 ServerApp] Replacing stale connection: dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:40:13.400 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:40:13.402 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 12:50:41.727 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 12:52:41.041 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 12:54:39.959 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 13:01:50.659 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 13:34:28.675 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-20 14:50:40.585 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 14:52:39.529 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 14:54:39.512 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 14:56:39.519 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 14:58:39.516 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:00:39.520 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:02:39.530 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:04:39.509 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:06:39.511 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:08:39.520 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:14:39.627 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:16:39.511 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:18:39.509 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:20:39.516 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:24:39.492 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:32:39.628 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:34:39.507 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:38:39.496 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:40:40.447 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:42:39.532 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:42:51.281 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 11.78ms
+[E 2025-08-20 15:42:51.629 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 15:44:40.445 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:46:39.480 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 15:56:28.589 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 2.26ms
+[E 2025-08-20 15:56:28.887 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 15:56:39.606 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:02:39.568 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:02:48.058 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 2.69ms
+[E 2025-08-20 16:02:48.412 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 16:04:39.482 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:22:39.565 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:24:39.484 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:30:39.547 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:32:39.443 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:36:39.449 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 16:36:41.006 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.68ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 16:36:41.158 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.74ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 16:36:41.307 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 3.57ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 16:36:44.224 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-20 16:36:44.377 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.24ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-20 16:38:39.449 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:40:39.442 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 16:41:33.055 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.08ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 16:41:33.199 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 0.99ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 16:41:33.345 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.33ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 16:41:35.770 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.77ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-20 16:42:40.386 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:43:37.996 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
+[W 2025-08-20 16:46:32.359 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.97ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-20 16:46:39.448 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:46:41.057 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:28b78cc5d36f4aba8c08f180322c6a50
+[I 2025-08-20 16:46:41.909 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:595b609a827941ed835659f448314802
+[I 2025-08-20 16:48:39.438 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:50:40.487 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:54:39.437 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 16:56:40.372 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:04:39.542 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:06:39.412 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 17:07:40.560 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.00ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:07:40.707 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 3.06ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:07:40.854 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.96ms referer=http://192.168.68.215:3000/
+[I 2025-08-20 17:08:39.429 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 17:10:35.948 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 2.75ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:10:36.096 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 2.31ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:10:36.244 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 2.14ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:10:38.599 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
+[W 2025-08-20 17:10:38.752 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.03ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
+[I 2025-08-20 17:10:39.403 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:12:39.423 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:12:41.016 ServerApp] Saving file at /agate_analysis_template_KPIRev0.ipynb
+[W 2025-08-20 17:12:41.016 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
+[I 2025-08-20 17:14:39.401 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:14:45.847 ServerApp] Starting buffering for 8ed283db-43bb-4787-bcc0-b7ee4d612651:91e56d88ad524cbd94c4dbf55d1fe103
+[I 2025-08-20 17:18:39.399 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:20:39.409 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:22:39.419 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:24:39.407 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:26:39.385 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-20 17:28:31.038 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.35ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:28:31.189 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 1.82ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:28:31.334 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.25ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 17:28:33.768 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.79ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-20 17:28:40.350 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:30:39.398 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:32:39.404 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:34:39.387 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:36:39.421 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:38:39.400 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 17:44:40.471 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 18:15:26.954 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:c97e786137a14f03b4d3c138d543fc15
+[W 2025-08-20 18:17:06.436 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.27ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:17:06.579 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.12ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:17:06.727 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.01ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:17:08.890 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-20 18:17:09.041 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.99ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[W 2025-08-20 18:17:45.201 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.95ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:17:45.348 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.53ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:17:45.496 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.75ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:17:48.222 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-20 18:17:48.384 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.62ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-20 18:19:49.853 ServerApp] Saving file at /agate_analysis_template.ipynb
+[W 2025-08-20 18:19:49.853 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[I 2025-08-20 18:21:49.915 ServerApp] Saving file at /agate_analysis_template.ipynb
+[W 2025-08-20 18:21:49.915 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[I 2025-08-20 18:36:40.422 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 18:38:26.156 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 2.24ms
+[E 2025-08-20 18:38:26.504 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 18:38:39.342 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 18:42:22.176 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:dc37b7a1b7784c3989c5b06b87c9e14e
+[W 2025-08-20 18:43:01.494 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.29ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:43:01.641 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.04ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:43:01.790 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.21ms referer=http://192.168.68.215:3000/
+[W 2025-08-20 18:43:04.381 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.99ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-20 18:54:39.431 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 18:55:03.615 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 1.36ms
+[E 2025-08-20 18:55:04.162 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 18:56:40.300 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 18:59:11.105 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:8c0c0e873e6d43bbae46ceb67f1de5c3
+[I 2025-08-20 19:08:39.447 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 19:10:39.330 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 19:12:39.318 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 19:14:39.303 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 19:16:39.294 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 19:18:39.289 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 19:20:40.264 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 20:52:40.283 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 20:54:39.232 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 20:54:44.307 NotebookApp] 302 GET /notebooks/TT89-92-150-151_T0_ECC.csv (192.168.68.251) 12.52ms
+[E 2025-08-20 20:54:44.823 ServerApp] Uncaught exception GET /notebooks/TT89-92-150-151_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT89-92-150-151_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 20:56:39.234 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 21:42:39.313 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 21:44:39.200 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 21:45:57.737 NotebookApp] 302 GET /notebooks/TT89-92-150-151-97_T0_ECC.csv (192.168.68.251) 1.75ms
+[E 2025-08-20 21:45:58.077 ServerApp] Uncaught exception GET /notebooks/TT89-92-150-151-97_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT89-92-150-151-97_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-20 21:46:39.179 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-20 23:37:10.561 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[W 2025-08-21 00:22:14.325 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 4.50ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 00:22:14.477 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 3.10ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 00:22:14.630 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 3.23ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 00:22:30.720 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.89ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 00:22:30.872 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.66ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 00:22:31.020 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.79ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 00:22:33.520 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-21 00:22:33.666 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.32ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[W 2025-08-21 00:39:34.571 ServerApp] WebSocket ping timeout after 119857 ms.
+[I 2025-08-21 00:39:39.573 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e529c391d59b4633ab23d7807f740ccd
+[W 2025-08-21 08:39:49.978 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-21 08:39:50.131 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.23ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-21 09:01:20.223 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-21 09:01:31.710 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 09:02:38.316 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 09:04:28.872 NotebookApp] 302 GET /notebooks/TT89-92-97to102-150-151_T0_ECC.csv (192.168.68.251) 2.73ms
+[E 2025-08-21 09:04:29.223 ServerApp] Uncaught exception GET /notebooks/TT89-92-97to102-150-151_T0_ECC.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT89-92-97to102-150-151_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-21 09:04:38.210 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 09:13:52.029 ServerApp] Saving file at /agate_analysis_template.ipynb
+[W 2025-08-21 09:13:52.029 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-21 09:20:20.225 ServerApp] WebSocket ping timeout after 119795 ms.
+[I 2025-08-21 09:20:25.227 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
+[I 2025-08-21 14:28:37.383 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-21 14:28:42.725 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.22ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 14:30:43.359 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 14:32:43.004 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 14:34:43.190 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 14:38:43.062 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 14:40:42.973 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 14:46:43.002 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 15:26:42.986 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 15:52:30.000 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 15:52:32.221 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 16:48:42.896 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 16:50:42.870 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-21 16:51:51.025 ServerApp] WebSocket ping timeout after 119856 ms.
+[I 2025-08-21 16:51:56.026 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e4d4582115a54bb8b11315f9e47c346f
+[I 2025-08-21 16:52:42.878 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 16:54:42.885 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 16:56:42.871 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 16:58:42.866 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 17:00:42.865 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-21 17:02:21.790 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e4d4582115a54bb8b11315f9e47c346f
+[W 2025-08-21 17:02:42.017 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.74ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:02:42.164 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.05ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:02:42.313 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.01ms referer=http://192.168.68.215:3000/
+[I 2025-08-21 17:02:42.870 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-21 17:02:44.916 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.77ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-21 17:03:18.928 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e4d4582115a54bb8b11315f9e47c346f
+[I 2025-08-21 17:04:42.918 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-21 17:09:16.472 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.94ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:09:16.619 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.86ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:09:16.768 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.99ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:09:18.978 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-21 17:09:19.132 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.78ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-21 17:26:15.433 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:ecedd2e42a6a4015b6c82230bd5c6e6e
+[W 2025-08-21 17:26:20.929 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.73ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:26:21.075 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.87ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:26:21.224 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.51ms referer=http://192.168.68.215:3000/
+[W 2025-08-21 17:26:23.630 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.12ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-21 17:28:25.036 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
+[W 2025-08-21 17:49:32.221 ServerApp] WebSocket ping timeout after 119984 ms.
+[I 2025-08-21 17:49:37.224 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 18:24:06.549 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[W 2025-08-21 18:27:39.214 ServerApp] Replacing stale connection: dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 18:27:44.215 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 18:27:44.217 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[W 2025-08-21 18:29:14.218 ServerApp] WebSocket ping timeout after 90000 ms.
+[I 2025-08-21 18:29:19.221 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 18:30:08.176 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[W 2025-08-21 18:31:38.177 ServerApp] WebSocket ping timeout after 90001 ms.
+[I 2025-08-21 18:31:40.968 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
+[I 2025-08-21 21:03:57.555 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:8df5ef4b5ed34ba6867c30b9f333f911
+[W 2025-08-21 21:04:01.080 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.91ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-21 21:06:02.994 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
+[I 2025-08-21 21:12:10.283 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:26369b2315dd45608cb85c69cdbedd05
+[W 2025-08-21 21:12:10.902 ServerApp] Notebook AGATE_REV1_analysis.ipynb is not trusted
+[W 2025-08-21 21:12:11.055 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.24ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
+[I 2025-08-21 21:14:12.978 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
+[W 2025-08-21 21:14:12.978 ServerApp] Notebook AGATE_REV1_analysis.ipynb is not trusted
+[I 2025-08-22 00:23:09.831 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:dbedafe7004640faa755537c9897190b
+[W 2025-08-22 00:23:10.458 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
+[W 2025-08-22 00:23:10.611 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.31ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-22 00:24:36.912 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
+[I 2025-08-22 00:24:37.626 ServerApp] Kernel restarted: bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd
+[I 2025-08-22 00:24:37.913 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
+[I 2025-08-22 00:24:38.025 ServerApp] Replaying 3 buffered messages
+[I 2025-08-22 00:25:11.245 ServerApp] Saving file at /agate_analysis_template.ipynb
+[I 2025-08-22 00:28:51.176 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:cc9b3debc44d491e84d7580ca2e5cbd3
+[I 2025-08-22 00:28:51.685 ServerApp] Kernel restarted: 27e6e3e8-cc5e-4413-a595-f06cb58cea12
+[I 2025-08-22 00:28:51.974 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:cc9b3debc44d491e84d7580ca2e5cbd3
+[I 2025-08-22 00:28:52.483 ServerApp] Replaying 3 buffered messages
+[I 2025-08-22 00:30:12.438 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
+[I 2025-08-22 01:21:11.990 ServerApp] Saving file at /agate_analysis_template.ipynb
+[I 2025-08-22 02:19:12.132 ServerApp] Saving file at /agate_analysis_template.ipynb
+[I 2025-08-22 03:48:44.331 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
+[I 2025-08-22 03:48:44.887 ServerApp] Kernel restarted: bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd
+[I 2025-08-22 03:48:45.176 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
+[I 2025-08-22 03:48:45.372 ServerApp] Replaying 3 buffered messages
+[I 2025-08-22 03:48:51.229 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
+[W 2025-08-22 04:07:09.832 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 4.91ms referer=http://192.168.68.215:3000/
+[W 2025-08-22 04:07:09.980 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.94ms referer=http://192.168.68.215:3000/
+[W 2025-08-22 04:07:10.133 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.19ms referer=http://192.168.68.215:3000/
+[W 2025-08-22 04:07:12.289 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.10ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
+[I 2025-08-22 04:44:57.896 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:cc9b3debc44d491e84d7580ca2e5cbd3
+[I 2025-08-22 04:44:58.517 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:5fca3346b29145db8486160427735177
+[W 2025-08-22 10:48:24.206 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.49ms referer=http://192.168.68.215:3000/
+[W 2025-08-22 10:48:24.606 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 3.31ms referer=http://192.168.68.215:3000/
+[W 2025-08-22 10:48:24.628 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.01ms referer=http://192.168.68.215:3000/
+[W 2025-08-22 10:48:36.328 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 5.16ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[W 2025-08-22 11:04:55.401 ServerApp] Replacing stale connection: dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 11:05:00.402 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 11:05:00.403 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 11:06:34.573 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:08:35.515 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:10:34.584 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:12:38.804 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:13:19.001 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 11:13:20.729 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 11:30:34.506 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:32:34.467 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:34:34.482 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:36:34.483 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:38:34.475 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-22 11:49:01.501 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.2) 6.41ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 11:52:34.483 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-22 14:44:50.731 ServerApp] WebSocket ping timeout after 117755 ms.
+[I 2025-08-22 14:44:55.733 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 15:48:35.616 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-22 15:50:18.784 NotebookApp] 302 GET /notebooks/all_aparam.csv (192.168.68.251) 13.82ms
+[E 2025-08-22 15:50:19.067 ServerApp] Uncaught exception GET /notebooks/all_aparam.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/all_aparam.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-22 15:50:34.310 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 15:54:23.790 NotebookApp] 302 GET /notebooks/all_aparam.csv (192.168.68.251) 2.22ms
+[E 2025-08-22 15:54:24.046 ServerApp] Uncaught exception GET /notebooks/all_aparam.csv (192.168.68.251)
+    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/all_aparam.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+    Traceback (most recent call last):
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
+        result = await result
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
+        yielded = self.gen.send(value)
+      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
+        self.write(self.render_template('notebook.html',
+      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
+        raise RuntimeError("Cannot write() after finish()")
+    RuntimeError: Cannot write() after finish()
+[I 2025-08-22 15:54:34.265 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-22 18:30:28.014 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d

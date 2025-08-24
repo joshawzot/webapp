@@ -1,22 +1,150 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-</head>
-<body>
-    <!-- Template: login.html -->
-    <div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
-        📄 <strong>Template:</strong> login.html
+{% extends "base.html" %}
+
+{% block title %}Login - Tetramem Device Testing Webapp{% endblock %}
+
+{% block content %}
+
+<!-- Template: login.html -->
+<div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+    📄 <strong>Template:</strong> login.html
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post" id="loginForm">
+                        <div class="form-group">
+                            <label for="username">
+                                <i class="fas fa-user"></i> Select User:
+                            </label>
+                            <select class="form-control" id="username" name="username" required>
+                                <option value="">-- Select a user --</option>
+                                <option value="others" data-port="3000">others (Port 3000)</option>
+                                <option value="alisa" data-port="3001">alisa (Port 3001)</option>
+                                <option value="adrien" data-port="3002">adrien (Port 3002)</option>
+                                <option value="chin" data-port="3003">chin (Port 3003)</option>
+                                <option value="yan" data-port="3004">yan (Port 3004)</option>
+                                <option value="mingyi" data-port="3005">mingyi (Port 3005)</option>
+                                <option value="max" data-port="3006">max (Port 3006)</option>
+                            </select>
+                        </div>
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loginForm');
+    const usernameSelect = document.getElementById('username');
+    const loginBtn = document.getElementById('loginBtn');
     
-    <h2>Login</h2>
-    <form method="post">
-        Username: <input type="text" name="username" required>
-        <button type="submit">Login</button>
-    </form>
-    {% if error %}
-    <p style="color: red;">{{ error }}</p>
-    {% endif %}
-</body>
-</html>
+    // Get current port from URL
+    const currentPort = window.location.port || '80';
+    
+    // User-port mapping
+    const userPortMapping = {
+        'others': '3000',
+        'alisa': '3001', 
+        'adrien': '3002',
+        'chin': '3003',
+        'yan': '3004',
+        'mingyi': '3005',
+        'max': '3006'
+    };
+    
+    // Function to show port warning
+    function showPortWarning(username, requiredPort) {
+        // Remove existing warning
+        const existingWarning = document.querySelector('.port-warning');
+        if (existingWarning) {
+            existingWarning.remove();
+        }
+        
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning port-warning mt-3';
+        warningDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle"></i> 
+            <strong>Port Mismatch!</strong> User "${username}" can only access through port ${requiredPort}. 
+            <br>Current port: ${currentPort}. Please access: 
+            <a href="http://${window.location.hostname}:${requiredPort}" class="alert-link">
+                http://${window.location.hostname}:${requiredPort}
+            </a>
+        `;
+        
+        // Insert warning after the form
+        form.parentNode.insertBefore(warningDiv, form.nextSibling);
+    }
+    
+    // Function to remove port warning
+    function removePortWarning() {
+        const existingWarning = document.querySelector('.port-warning');
+        if (existingWarning) {
+            existingWarning.remove();
+        }
+    }
+    
+    // Check port on user selection
+    usernameSelect.addEventListener('change', function() {
+        const selectedUser = this.value;
+        
+        if (selectedUser && userPortMapping[selectedUser]) {
+            const requiredPort = userPortMapping[selectedUser];
+            
+            if (currentPort !== requiredPort) {
+                showPortWarning(selectedUser, requiredPort);
+                loginBtn.disabled = true;
+                loginBtn.classList.add('btn-secondary');
+                loginBtn.classList.remove('btn-primary');
+            } else {
+                removePortWarning();
+                loginBtn.disabled = false;
+                loginBtn.classList.add('btn-primary');
+                loginBtn.classList.remove('btn-secondary');
+            }
+        } else {
+            removePortWarning();
+            loginBtn.disabled = false;
+            loginBtn.classList.add('btn-primary');
+            loginBtn.classList.remove('btn-secondary');
+        }
+    });
+    
+    // Prevent form submission if port doesn't match
+    form.addEventListener('submit', function(e) {
+        const selectedUser = usernameSelect.value;
+        
+        if (selectedUser && userPortMapping[selectedUser]) {
+            const requiredPort = userPortMapping[selectedUser];
+            
+            if (currentPort !== requiredPort) {
+                e.preventDefault();
+                showPortWarning(selectedUser, requiredPort);
+                return false;
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

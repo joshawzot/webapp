@@ -474,6 +474,13 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                 if label:
                     added_to_legend.add(label)
 
+                # Skip empty subgroups (missing states)
+                if len(subgroup) == 0:
+                    print(f"Skipping empty subgroup for table {table_name}, state {state_index}")
+                    sigma_intersections[table_name].append([np.nan] * 9)  # Add NaN values for missing state
+                    transformed_data.append((np.array([]), np.array([])))  # Add empty arrays to maintain structure
+                    continue
+
                 # Use more efficient sorting and min/max finding
                 sorted_data = np.sort(subgroup)
                 subgroup_min = sorted_data[0]
@@ -542,6 +549,11 @@ def plot_transformed_cdf_2(data, table_names, selected_groups, colors, target_x_
                 for k in range(len(transformed_data) - 1):
                     x1, y1 = transformed_data[k]
                     x2, y2 = transformed_data[k + 1]
+
+                    # Skip if either array is empty (missing states)
+                    if len(x1) == 0 or len(x2) == 0:
+                        print(f"Skipping BER calculation between states {selected_groups[k]} and {selected_groups[k + 1]} due to missing data")
+                        continue
 
                     # No perturbation - let vertical lines remain as they are
                     x1_processed, x2_processed = x1, x2

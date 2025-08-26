@@ -15,7 +15,7 @@ from collections import defaultdict
 from run import app, cache, redis_client
 from db_operations import *
 from db_operations import get_schema_storage_type
-from tools_for_plots import get_full_table_data, plot_individual_points_map, plot_colormap  # Add plot_individual_points_map and plot_colormap to the import
+from tools_for_plots import get_full_table_data, plot_colormap  # Add plot_colormap to the import
 from flask_caching import Cache
 from conductance_calculator import run_flint_conductance_calculator, convert_table_to_conductance, get_unique_original_values_and_conductance, get_unique_original_values_and_linear_conversion, update_linear_conversion_params
 from sqlalchemy import text
@@ -827,7 +827,6 @@ def render_plot(database, table_name, plot_function):
                 sorted_table_names = sorted_table_names_100ppm = \
                     sorted_table_names_200ppm = sorted_table_names_500ppm = \
                     sorted_table_names_1000ppm = best_32 = best_32_with_io = \
-                    outlier_coordinates = correlation_analysis = cluster_map = \
                     sigma_distances = num_states = table_names = sigma_table = sigma_points = None
 
             # Clean up all figures created during this request
@@ -835,44 +834,6 @@ def render_plot(database, table_name, plot_function):
 
             if plot_data is None:
                 return "Failed to generate plot data", 400
-
-            # Get the dimensions from the first table's data matrix
-            first_table_name = table_name.split(',')[0]
-            
-            # Check if we're in combine analysis mode (virtual table name)
-            analysis_mode = form_data.get('analysis_mode', 'individual')
-            if analysis_mode == 'combine' and first_table_name.startswith('Combined_'):
-                # For combine analysis, we need to get dimensions from the plot_data itself
-                # since the combined table doesn't exist in the database
-                try:
-                    # Try to extract dimensions from the plot data or use reasonable defaults
-                    if 'correlation_analysis' in locals() and correlation_analysis:
-                        # If correlation analysis was done, use those dimensions
-                        rows, cols = 2048, 32  # Default dimensions for combined analysis
-                    else:
-                        # Use default dimensions for combined tables
-                        rows, cols = 2048, 32
-                    print(f"Using default dimensions for combined table: {rows}x{cols}")
-                except:
-                    # Fallback to standard dimensions
-                    rows, cols = 2048, 32
-                    print(f"Using fallback dimensions for combined table: {rows}x{cols}")
-            else:
-                # For individual analysis, get dimensions from the database
-                data_matrix, data_matrix_size = get_full_table_data(first_table_name, database)
-                rows, cols = data_matrix_size
-            
-            # Generate individual points map
-            print("Generating points map...")
-            print("Outlier coordinates:", outlier_coordinates)
-            points_map = plot_individual_points_map(outlier_coordinates, (rows, cols))
-            print("Points map generated:", points_map is not None)
-
-            # Debug print for template variables
-            print("Template variables:")
-            print("- cluster_map present:", points_map is not None)
-            print("- outlier_coordinates present:", bool(outlier_coordinates))
-            print("- outlier_coordinates length:", len(outlier_coordinates) if outlier_coordinates else 0)
             
             # Extract BER filter values from form_data
             ber_lower_limit = form_data.get('ber_lower_limit')
@@ -917,9 +878,9 @@ def render_plot(database, table_name, plot_function):
                                      sorted_table_names_1000ppm=sorted_table_names_1000ppm,  # Now None
                                      best_32=best_32,
                                      best_32_with_io=best_32_with_io,
-                                     outlier_coordinates=outlier_coordinates,
-                                     correlation_analysis=correlation_analysis,
-                                     cluster_map=points_map,
+                                     outlier_coordinates=[],  # Outlier analysis removed
+                                     correlation_analysis=None,  # Outlier analysis removed
+                                     cluster_map=None,  # Outlier analysis removed
                                      sigma_distances=sigma_distances,
                                      num_states=num_states,
                                      table_names=table_names,
@@ -4161,7 +4122,7 @@ def get_form_data_generate_plot(form):
             'selected_groups_1D', 'pass_range_1D', 'state_pattern',
             'selected_groups_predefined', 'pass_range_predefined',
             'custom_selected_groups_predefined', 'custom_pass_range_predefined',
-            'color_map_flag', 'outlier_analysis_flag', 'target_values', 'custom_division_type', 'color_group_keywords',
+            'color_map_flag', 'target_values', 'custom_division_type', 'color_group_keywords',
             'target_x_diff', 'num_interp_points', 'ber_lower_limit', 'ber_upper_limit', 'top_ios_count', 'ber_display_option',  # Added ber_display_option field
             'data_min_value', 'data_max_value',  # Added data range filter fields
             'filter_negative_values',  # Added negative value filter field
@@ -4170,6 +4131,7 @@ def get_form_data_generate_plot(form):
             'analysis_mode',  # Added analysis mode field for combine analysis
             'column_selection_type', 'custom_column_selection', 'yanCullinan_flag',  # Added column selection fields
             'location_dots_flag', 'location_dots_value',  # Added location dots fields
+            'exclude_ranges_type', 'exclude_ranges_input',  # Added exclude ranges fields
             'enable_sigma_analysis'  # Added sigma analysis control field
         ]
     }
@@ -4207,7 +4169,7 @@ def get_form_data_generate_plot(form):
     # Convert checkbox flags to boolean
     form_data['color_map_flag'] = form_data.get('color_map_flag', 'False') == 'True'
     form_data['yanCullinan_flag'] = form_data.get('yanCullinan_flag', 'False') == 'True'
-    form_data['outlier_analysis_flag'] = form_data.get('outlier_analysis_flag', 'False') == 'True'
+
     form_data['filter_negative_values'] = form_data.get('filter_negative_values', 'False') == 'True'
     form_data['generate_bitmap_mask'] = form_data.get('generate_bitmap_mask', 'False') == 'True'
     form_data['location_dots_flag'] = form_data.get('location_dots_flag', 'False') == 'True'
@@ -4222,6 +4184,36 @@ def get_form_data_generate_plot(form):
             form_data['location_dots_value'] = None
     else:
         form_data['location_dots_value'] = None
+    
+    # Process exclude ranges
+    exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+    exclude_ranges_input = form_data.get('exclude_ranges_input', '').strip()
+    
+    if exclude_ranges_type and exclude_ranges_input:
+        # Parse the exclude ranges input
+        exclude_ranges = []
+        try:
+            parts = exclude_ranges_input.replace(' ', '').split(',')
+            for part in parts:
+                if '-' in part:
+                    # Handle range (e.g., "5-20")
+                    start, end = map(int, part.split('-'))
+                    range_values = list(range(start, end + 1))
+                    exclude_ranges.extend(range_values)
+                else:
+                    # Handle single number
+                    exclude_ranges.append(int(part))
+            
+            form_data['exclude_ranges_type'] = exclude_ranges_type
+            form_data['exclude_ranges'] = list(set(exclude_ranges))  # Remove duplicates
+            print(f"✅ Parsed exclude ranges: {exclude_ranges_type} - {len(form_data['exclude_ranges'])} indices")
+        except (ValueError, TypeError) as e:
+            print(f"❌ Error parsing exclude ranges: {e}")
+            form_data['exclude_ranges_type'] = ''
+            form_data['exclude_ranges'] = []
+    else:
+        form_data['exclude_ranges_type'] = ''
+        form_data['exclude_ranges'] = []
     
     # Handle per-table custom division for 1D pattern type
     if form_data['state_pattern_type'] == '1D':

@@ -224,7 +224,7 @@ def get_pattern_files():
             "ecc_2048x32_IO77": "State_pattern_files/ecc_2048x32_IO77.npy",
         }
 
-def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array):
+def get_group_data_1124(table_name, selected_groups, database_name, pattern_file_array, exclude_ranges_type='', exclude_ranges=[]):
     connection = create_connection(database_name)
     query = f"SELECT * FROM {table_name}"
     cursor = connection.cursor()
@@ -256,6 +256,14 @@ def get_group_data_1124(table_name, selected_groups, database_name, pattern_file
     else:
         print(f"✅ DIMENSION CHECK PASSED: shapes match {pattern_file_array.shape}")
 
+    # Create exclude mask if exclude ranges are specified
+    exclude_mask = create_exclude_mask(data_np.shape, exclude_ranges_type, exclude_ranges)
+    if exclude_ranges_type and exclude_ranges:
+        print(f"Applied exclude mask: {exclude_ranges_type} {exclude_ranges}")
+        excluded_count = np.sum(~exclude_mask)
+        total_count = exclude_mask.size
+        print(f"Excluding {excluded_count} out of {total_count} data points ({excluded_count/total_count*100:.1f}%)")
+
     unique_groups = np.unique(pattern_file_array)
     group_indices = unique_groups.tolist()
     print("group_indices:", group_indices)  # e.g., [0, 1, 2, 3]
@@ -264,7 +272,9 @@ def get_group_data_1124(table_name, selected_groups, database_name, pattern_file
         if group_idx in selected_groups:
             # Get the mask where pattern_file_array equals group_idx
             group_mask = np.equal(pattern_file_array, group_idx)  # Use np.equal instead of == for better array handling
-            group_data = data_np[group_mask]
+            # Combine group mask with exclude mask
+            combined_mask = group_mask & exclude_mask
+            group_data = data_np[combined_mask]
             
             # Filter out negative values - use np.greater_equal for safer comparison
             positive_group_data = group_data[np.greater_equal(group_data, 0)]
@@ -543,154 +553,47 @@ def get_pattern_for_io_table(table_name, pattern_files):
     except Exception as e:
         raise Exception(f"Error loading pattern file '{file_path}' for table '{table_name}': {str(e)}")
 
-def analyze_coordinate_correlations(outlier_coordinates):
-    """Analyze correlations between outlier coordinates across different tables."""
-    try:
-        if not outlier_coordinates or not isinstance(outlier_coordinates, list):
-            print("No outlier coordinates to analyze or invalid input type")
-            return {
-                'exact_matches': [],
-                'region_clusters': [],
-                'summary': {
-                    'total_outliers': 0,
-                    'unique_coordinates': 0,
-                    'coordinates_in_multiple_tables': 0,
-                    'number_of_clusters': 0
-                }
-            }
 
-        # Group outliers by coordinates
-        coord_map = {}
-        for outlier in outlier_coordinates:
-            try:
-                # Ensure outlier is a dictionary with required keys
-                if not isinstance(outlier, dict) or 'coordinates' not in outlier:
-                    print(f"Invalid outlier format: {outlier}")
-                    continue
-                
-                # Get coordinates and ensure they are a list/tuple of 2 integers
-                coords = outlier.get('coordinates', [])
-                if not isinstance(coords, (list, tuple)) or len(coords) != 2:
-                    print(f"Invalid coordinates format: {coords}")
-                    continue
-                
-                # Convert coordinates to tuple for dictionary key
-                try:
-                    coord = (int(coords[0]), int(coords[1]))
-                except (TypeError, ValueError) as e:
-                    print(f"Error converting coordinates to integers: {e}")
-                    continue
-                
-                # Store in coord_map
-                if coord not in coord_map:
-                    coord_map[coord] = []
-                coord_map[coord].append(outlier)
-            except Exception as e:
-                print(f"Error processing outlier: {e}")
-                continue
-        
-        # Initialize results structure
-        correlation_results = {
-            'exact_matches': [],
-            'region_clusters': [],
-            'summary': {}
-        }
-        
-        # Find exact matches
-        for coord, outliers in coord_map.items():
-            if len(outliers) > 1:
-                try:
-                    match_entry = {
-                        'coordinate': list(coord),  # Convert tuple to list
-                        'tables': [],
-                        'values': [],
-                    }
-                    
-                    for o in outliers:
-                        try:
-                            match_entry['tables'].append(str(o.get('table', '')))
-                            match_entry['values'].append(float(o.get('value', 0.0)))
-                        except (ValueError, TypeError) as e:
-                            print(f"Error processing outlier values: {e}")
-                            continue
-                    
-                    if match_entry['tables']:
-                        correlation_results['exact_matches'].append(match_entry)
-                except Exception as e:
-                    print(f"Error creating match entry: {e}")
-                    continue
-        
-        # Find nearby coordinates (within 5 units)
-        def distance(coord1, coord2):
-            try:
-                return ((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)**0.5
-            except (TypeError, IndexError):
-                return float('inf')
-        
-        # Group coordinates into clusters
-        coords = list(coord_map.keys())
-        clusters = []
-        used_coords = set()
-        
-        for i, coord1 in enumerate(coords):
-            if coord1 in used_coords:
-                continue
-            
-            cluster = {coord1}
-            used_coords.add(coord1)
-            
-            # Find all coordinates within 5 units of this coordinate
-            for coord2 in coords[i+1:]:
-                if coord2 not in used_coords and distance(coord1, coord2) <= 5:
-                    cluster.add(coord2)
-                    used_coords.add(coord2)
-            
-            if len(cluster) > 1:
-                try:
-                    cluster_outliers = []
-                    for coord in cluster:
-                        for o in coord_map[coord]:
-                            try:
-                                cluster_outliers.append({
-                                    'table': str(o.get('table', '')),
-                                    'coordinates': list(coord),  # Convert tuple to list
-                                    'value': float(o.get('value', 0.0))
-                                })
-                            except (ValueError, TypeError, KeyError) as e:
-                                print(f"Error processing cluster outlier: {e}")
-                                continue
-                    
-                    if cluster_outliers:
-                        correlation_results['region_clusters'].append({
-                            'coordinates': [list(c) for c in cluster],  # Convert tuples to lists
-                            'outliers': cluster_outliers
-                        })
-                except Exception as e:
-                    print(f"Error creating cluster: {e}")
-                    continue
-        
-        # Generate summary
-        correlation_results['summary'] = {
-            'total_outliers': len(outlier_coordinates),
-            'unique_coordinates': len(coord_map),
-            'coordinates_in_multiple_tables': len(correlation_results['exact_matches']),
-            'number_of_clusters': len(correlation_results['region_clusters'])
-        }
-        
-        return correlation_results
+def create_exclude_mask(data_shape, exclude_type, exclude_indices):
+    """
+    Create a boolean mask for excluding specified rows or columns during analysis.
     
+    Args:
+        data_shape (tuple): Shape of the data matrix (rows, cols)
+        exclude_type (str): Either 'rows' or 'columns'
+        exclude_indices (list): List of indices to exclude
+    
+    Returns:
+        numpy.ndarray: Boolean mask where True means include, False means exclude
+    """
+    try:
+        if not exclude_indices:
+            return np.ones(data_shape, dtype=bool)  # Include all data
+        
+        rows, cols = data_shape
+        mask = np.ones(data_shape, dtype=bool)
+        
+        if exclude_type == 'rows':
+            # Exclude specified rows
+            valid_row_indices = [i for i in exclude_indices if 0 <= i < rows]
+            if valid_row_indices:
+                mask[valid_row_indices, :] = False
+                print(f"Created exclusion mask for {len(valid_row_indices)} rows")
+        elif exclude_type == 'columns':
+            # Exclude specified columns
+            valid_col_indices = [i for i in exclude_indices if 0 <= i < cols]
+            if valid_col_indices:
+                mask[:, valid_col_indices] = False
+                print(f"Created exclusion mask for {len(valid_col_indices)} columns")
+        else:
+            print(f"Warning: Unknown exclude_type '{exclude_type}', including all data")
+            
+        return mask
+            
     except Exception as e:
-        print(f"Error in analyze_coordinate_correlations: {e}")
-        return {
-            'exact_matches': [],
-            'region_clusters': [],
-            'summary': {
-                'total_outliers': len(outlier_coordinates) if isinstance(outlier_coordinates, list) else 0,
-                'unique_coordinates': 0,
-                'coordinates_in_multiple_tables': 0,
-                'number_of_clusters': 0
-            }
-        }
+        print(f"Error creating exclude mask: {str(e)}")
+        return np.ones(data_shape, dtype=bool)  # Include all data on error
+
 
 def calculate_sigma_distances(data, target_values, table_names, selected_groups=None):
     print("Entering calculate_sigma_distances")
@@ -754,7 +657,7 @@ def generate_plot(table_names, database_name, form_data):
     print("🚨 END FORM_DATA DEBUG")
     color_map_flag = form_data['color_map_flag']  # This is now a boolean
     yanCullinan_flag = form_data.get('yanCullinan_flag', False)  # PLACEHOLDER CHIN EDIT HERE
-    outlier_analysis_flag = form_data.get('outlier_analysis_flag', False)  # Default to False if not provided
+
     target_values = form_data.get('target_values', [])  # Get target values from form_data
     custom_division = form_data.get('custom_division', False)  # Get custom_division flag, default to False
     
@@ -786,7 +689,7 @@ def generate_plot(table_names, database_name, form_data):
     color_group_keywords = form_data.get('color_group_keywords', [])
     
     print("color_map_flag:", color_map_flag)
-    print("outlier_analysis_flag:", outlier_analysis_flag)
+
     print("target_values:", target_values)  # Print target values for debugging
     print("custom_division:", custom_division)  # Print custom_division for debugging
     print("using_conductance:", using_conductance)  # Print using_conductance for debugging
@@ -798,11 +701,6 @@ def generate_plot(table_names, database_name, form_data):
 
     selected_groups = form_data.get('selected_groups', "")
     print("selected_groups:", selected_groups)
-    
-    # Initialize variables for outlier analysis
-    outlier_coordinates = []
-    correlation_analysis = None
-    cluster_map = None
     
     # Initialize pattern_file_array to avoid 'referenced before assignment' error
     pattern_file_array = None
@@ -1389,16 +1287,20 @@ def generate_plot(table_names, database_name, form_data):
                         # In combine mode, pattern_file_array should already be the combined pattern
                         if pattern_file_array is None or isinstance(pattern_file_array, str):
                             raise Exception("Combined ECC pattern not properly loaded in combine analysis mode")
+                        exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                        exclude_ranges = form_data.get('exclude_ranges', [])
                         groups, stats, selected_groups = get_group_data_from_matrix(
-                            data_matrix, selected_groups, pattern_file_array)
+                            data_matrix, selected_groups, pattern_file_array, exclude_ranges_type, exclude_ranges)
                     else:
                         # Load the specific pattern for this table (individual analysis)
                         print(f"DEBUG: Individual analysis - loading pattern for table {table_name}")
                         table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
                         print(f"DEBUG: Individual analysis - pattern shape for {table_name}: {table_pattern_array.shape}")
                         print(f"DEBUG: Individual analysis - pattern unique values for {table_name}: {np.unique(table_pattern_array)}")
+                        exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                        exclude_ranges = form_data.get('exclude_ranges', [])
                         groups, stats, selected_groups = get_group_data_from_matrix(
-                            data_matrix, selected_groups, table_pattern_array)
+                            data_matrix, selected_groups, table_pattern_array, exclude_ranges_type, exclude_ranges)
                 else:
                     # Ensure pattern_file_array is loaded before using it
                     print(f"DEBUG: Before predefined processing (target_range_flag=0) - pattern_file_array is None: {pattern_file_array is None}")
@@ -1409,8 +1311,10 @@ def generate_plot(table_names, database_name, form_data):
                         else:
                             raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                     # Modify to use the data matrix directly
+                    exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                    exclude_ranges = form_data.get('exclude_ranges', [])
                     groups, stats, selected_groups = get_group_data_from_matrix(
-                        data_matrix, selected_groups, pattern_file_array)
+                        data_matrix, selected_groups, pattern_file_array, exclude_ranges_type, exclude_ranges)
         elif target_range_flag == 1:
             if form_data['state_pattern_type'] == '1D':
                 # Modify to use the data matrix directly with table-specific settings
@@ -1424,16 +1328,20 @@ def generate_plot(table_names, database_name, form_data):
                         # In combine mode, pattern_file_array should already be the combined pattern
                         if pattern_file_array is None or isinstance(pattern_file_array, str):
                             raise Exception("Combined ECC pattern not properly loaded in combine analysis mode")
+                        exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                        exclude_ranges = form_data.get('exclude_ranges', [])
                         groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                            target_ranges, data_matrix, selected_groups, pattern_file_array)
+                            target_ranges, data_matrix, selected_groups, pattern_file_array, exclude_ranges_type, exclude_ranges)
                     else:
                         # Load the specific pattern for this table (individual analysis)
                         print(f"DEBUG: Individual analysis (target_range) - loading pattern for table {table_name}")
                         table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
                         print(f"DEBUG: Individual analysis (target_range) - pattern shape for {table_name}: {table_pattern_array.shape}")
                         print(f"DEBUG: Individual analysis (target_range) - pattern unique values for {table_name}: {np.unique(table_pattern_array)}")
+                        exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                        exclude_ranges = form_data.get('exclude_ranges', [])
                         groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                            target_ranges, data_matrix, selected_groups, table_pattern_array)
+                            target_ranges, data_matrix, selected_groups, table_pattern_array, exclude_ranges_type, exclude_ranges)
                 else:
                     # Ensure pattern_file_array is loaded before using it
                     print(f"DEBUG: Before predefined processing (target_range_flag=1) - pattern_file_array is None: {pattern_file_array is None}")
@@ -1444,8 +1352,10 @@ def generate_plot(table_names, database_name, form_data):
                         else:
                             raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                     # Modify to use the data matrix directly
+                    exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                    exclude_ranges = form_data.get('exclude_ranges', [])
                     groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                        target_ranges, data_matrix, selected_groups, pattern_file_array)
+                        target_ranges, data_matrix, selected_groups, pattern_file_array, exclude_ranges_type, exclude_ranges)
             miao_ber.append(table_miao_ber)
 
         # Extract average and standard deviation values for each selected group
@@ -1696,169 +1606,6 @@ def generate_plot(table_names, database_name, form_data):
         else:
             print("Failed to generate location dots map")
     
-    # Only perform outlier analysis if the flag is enabled and state_pattern_type is predefined
-    if outlier_analysis_flag and form_data['state_pattern_type'] == 'predefined':
-        try:
-            # Process each filtered table's data for outliers
-            for table_idx, table_name in enumerate(filtered_table_names):
-                try:
-                    # Initialize variables
-                    data_matrix = None
-                    data_matrix_size = None
-                    
-                    # Get the data matrix for this table from already processed matrices
-                    if analysis_mode == 'combine':
-                        # For combine analysis, use the combined data matrix
-                        if data_matrices and len(data_matrices) > 0:
-                            data_matrix = data_matrices[0][1]  # Combined matrix is the first (and only) entry
-                            data_matrix_size = data_matrix.shape
-                        else:
-                            print(f"Warning: No data matrices available for combine analysis")
-                            continue
-                    else:
-                        # For individual analysis, get the data matrix for this specific table
-                        # Find the index of this table in the original table list
-                        original_table_idx = None
-                        for idx, (stored_table_name, stored_matrix) in enumerate(data_matrices):
-                            if stored_table_name == table_name:
-                                original_table_idx = idx
-                                break
-                        
-                        if original_table_idx is not None:
-                            data_matrix = data_matrices[original_table_idx][1]
-                            data_matrix_size = data_matrix.shape
-                        else:
-                            # Fallback to database if not found in processed matrices
-                            print(f"Warning: Table {table_name} not found in processed matrices, fetching from database")
-                            data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
-                    
-                    # Validate data_matrix_size
-                    if data_matrix_size is None or not isinstance(data_matrix_size, tuple) or len(data_matrix_size) != 2:
-                        print(f"Warning: Invalid data_matrix_size for table {table_name}: {data_matrix_size}")
-                        continue
-                        
-                    rows, cols = data_matrix_size
-                    print(f"Table {table_name} dimensions: {rows}x{cols}")
-                    
-                    # Get the last group's data
-                    if len(filtered_group_data) > 0 and len(filtered_group_data[table_idx]) > 0:
-                        last_group_idx = len(selected_groups) - 1 if selected_groups else 0
-                        if last_group_idx >= len(filtered_group_data[table_idx]):
-                            print(f"Warning: last_group_idx {last_group_idx} exceeds group_data length")
-                            continue
-                            
-                        last_group = np.array(filtered_group_data[table_idx][last_group_idx], dtype=float)
-                        last_group = np.ravel(last_group)
-                        
-                        if len(last_group) == 0:
-                            print(f"Warning: Empty last_group for table {table_name}")
-                            continue
-                            
-                        # Find outliers (values < 50)
-                        outlier_mask = (last_group < 50)  # Use direct value threshold
-                        outlier_indices = np.where(outlier_mask)[0]
-                        outlier_values = last_group[outlier_mask]
-                        
-                        print(f"Found {len(outlier_indices)} outliers (value < 50) in table {table_name}")
-                        
-                        # Process each outlier
-                        for i, (idx, value) in enumerate(zip(outlier_indices, outlier_values)):
-                            try:
-                                # Convert linear index to 2D coordinates
-                                # Invert the row calculation to ensure last level appears at higher row indices
-                                row = (rows - 1) - (int(idx) // int(cols))  # Invert row calculation
-                                col = int(idx) % int(cols)
-                                
-                                # Validate coordinates
-                                if not (0 <= row < rows and 0 <= col < cols):
-                                    print(f"Warning: Invalid coordinates ({row}, {col}) for dimensions {rows}x{cols}")
-                                    continue
-                                
-                                # Create outlier entry with explicit type conversion
-                                outlier_entry = {
-                                    'table': str(table_name),
-                                    'coordinates': [int(row), int(col)],
-                                    'value': float(value)
-                                }
-                                outlier_coordinates.append(outlier_entry)
-                            except Exception as e:
-                                print(f"Error processing outlier at index {idx}: {str(e)}")
-                                continue
-                except Exception as e:
-                    print(f"Error processing table {table_name}: {str(e)}")
-                    continue
-
-            # Sort outliers by value if we have any outliers
-            if outlier_coordinates:
-                outlier_coordinates.sort(key=lambda x: float(x.get('value', 0)), reverse=False)  # Sort by value, lowest first
-
-            # Analyze correlations between outlier coordinates
-            try:
-                correlation_analysis = analyze_coordinate_correlations(outlier_coordinates)
-                print("correlation_analysis:", correlation_analysis)
-                # Generate cluster map if we have correlation analysis
-                if correlation_analysis:
-                    # Initialize dimensions
-                    rows, cols = None, None
-                    
-                    # Get the dimensions from the first table's data matrix
-                    if analysis_mode == 'combine':
-                        # For combine analysis, use the combined data matrix dimensions
-                        if data_matrices and len(data_matrices) > 0:
-                            data_matrix = data_matrices[0][1]  # Combined matrix is the first (and only) entry
-                            rows, cols = data_matrix.shape
-                        else:
-                            print("Warning: No data matrices available for combine analysis in correlation")
-                            rows, cols = 2048, 32  # Default fallback dimensions
-                    else:
-                        # For individual analysis, get dimensions from the first filtered table
-                        if filtered_table_names:
-                            first_table_name = filtered_table_names[0]
-                            # Find this table in the processed matrices
-                            first_table_matrix = None
-                            for stored_table_name, stored_matrix in data_matrices:
-                                if stored_table_name == first_table_name:
-                                    first_table_matrix = stored_matrix
-                                    break
-                            
-                            if first_table_matrix is not None:
-                                rows, cols = first_table_matrix.shape
-                            else:
-                                # Fallback to database if not found
-                                try:
-                                    data_matrix, data_matrix_size = get_full_table_data(first_table_name, database_name)
-                                    rows, cols = data_matrix_size
-                                except Exception as e:
-                                    print(f"Error getting dimensions for {first_table_name}: {e}")
-                                    rows, cols = 2048, 32  # Default fallback dimensions
-                        else:
-                            print("Warning: No filtered table names for correlation analysis")
-                            rows, cols = 2048, 32  # Default fallback dimensions
-                    
-                    # Ensure we have valid dimensions
-                    if rows is None or cols is None:
-                        print("Warning: Could not determine table dimensions, using defaults")
-                        rows, cols = 2048, 32
-                        
-                    cluster_map = plot_individual_points_map(correlation_analysis, table_dimensions=(rows, cols))
-                    print("cluster_map generated:", cluster_map is not None)
-            except Exception as e:
-                print(f"Error in correlation analysis: {str(e)}")
-                correlation_analysis = {
-                    'exact_matches': [],
-                    'region_clusters': [],
-                    'summary': {
-                        'total_outliers': len(outlier_coordinates),
-                        'unique_coordinates': 0,
-                        'coordinates_in_multiple_tables': 0,
-                        'number_of_clusters': 0
-                    }
-                }
-
-        except Exception as e:
-            print(f"Error in outlier analysis: {str(e)}")
-            outlier_coordinates = []
-            correlation_analysis = None
 
     if len(selected_groups) != 1:
         # Generate plots for BER results and get sorted table names
@@ -1954,9 +1701,9 @@ def generate_plot(table_names, database_name, form_data):
                 None,  # Placeholder for sorted_table_names_1000ppm (removed)
                 best_top_n,
                 best_top_n_with_io,
-                outlier_coordinates if outlier_analysis_flag else [],  # Only return outlier coordinates if flag is True
-                correlation_analysis if outlier_analysis_flag else None,  # Only return correlation analysis if flag is True
-                cluster_map if outlier_analysis_flag else None,
+                [],  # Outlier coordinates (removed)
+                None,  # Correlation analysis (removed)
+                None,  # Cluster map (removed)
                 filtered_sigma_distances,
                 num_states,
                 filtered_table_names,
@@ -2024,9 +1771,9 @@ def generate_plot(table_names, database_name, form_data):
             None,
             best_top_n,
             best_top_n_with_io,
-            outlier_coordinates if outlier_analysis_flag else [],
-            correlation_analysis if outlier_analysis_flag else None,
-            cluster_map if outlier_analysis_flag else None,
+            [],  # Outlier coordinates (removed)
+            None,  # Correlation analysis (removed)
+            None,  # Cluster map (removed)
             filtered_sigma_distances,
             num_states,
             filtered_table_names,
@@ -2041,7 +1788,7 @@ def generate_plot(table_names, database_name, form_data):
 
 # Add helper functions to work with matrices directly instead of fetching from database
 
-def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array):
+def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array, exclude_ranges_type='', exclude_ranges=[]):
     """Modified version of get_group_data_1124 that works with a data matrix directly."""
     # Replace zeros with a small value to avoid issues - use np.where for safer comparison
     data_np = np.where(data_matrix == 0, 0.001, data_matrix)
@@ -2061,6 +1808,27 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
         raise ValueError(f"pattern_file_array shape {pattern_file_array.shape} must have the same shape as the data array {data_np.shape}.")
     else:
         print(f"✅ DIMENSION CHECK PASSED: shapes match {pattern_file_array.shape}")
+
+    # Create exclude mask if exclude ranges are specified
+    exclude_mask = create_exclude_mask(data_np.shape, exclude_ranges_type, exclude_ranges)
+    print(f"🔍 EXCLUDE RANGES DEBUG:")
+    print(f"   exclude_ranges_type: '{exclude_ranges_type}'")
+    print(f"   exclude_ranges: {exclude_ranges}")
+    print(f"   data shape: {data_np.shape}")
+    if exclude_ranges_type and exclude_ranges:
+        print(f"Applied exclude mask: {exclude_ranges_type} {exclude_ranges}")
+        excluded_count = np.sum(~exclude_mask)
+        total_count = exclude_mask.size
+        print(f"Excluding {excluded_count} out of {total_count} data points ({excluded_count/total_count*100:.1f}%)")
+        # Also show which specific rows/columns are being excluded
+        if exclude_ranges_type == 'rows':
+            excluded_rows = [i for i in range(data_np.shape[0]) if not exclude_mask[i, 0]]
+            print(f"   Excluded row indices: {excluded_rows[:10]}{'...' if len(excluded_rows) > 10 else ''}")
+        elif exclude_ranges_type == 'columns':
+            excluded_cols = [i for i in range(data_np.shape[1]) if not exclude_mask[0, i]]
+            print(f"   Excluded column indices: {excluded_cols[:10]}{'...' if len(excluded_cols) > 10 else ''}")
+    else:
+        print(f"No exclude ranges specified - including all data points")
 
     unique_groups = np.unique(pattern_file_array)
     group_indices = unique_groups.tolist()
@@ -2087,12 +1855,26 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
     for group_idx in original_selected_groups:
         if group_idx in group_indices:
             # Find positions where pattern_file_array equals the current group index
-            positions = np.where(pattern_file_array == group_idx)
-            values = [data_np[pos] for pos in zip(positions[0], positions[1])]
+            group_positions = np.where(pattern_file_array == group_idx)
+            total_group_positions = len(group_positions[0])
+            print(f"Group {group_idx}: Found {total_group_positions} positions in pattern")
+            
+            # Apply exclude mask to filter out excluded positions
+            valid_positions = []
+            excluded_positions_count = 0
+            for i, (row, col) in enumerate(zip(group_positions[0], group_positions[1])):
+                if exclude_mask[row, col]:  # Only include if not excluded
+                    valid_positions.append((row, col))
+                else:
+                    excluded_positions_count += 1
+            
+            print(f"Group {group_idx}: {excluded_positions_count} positions excluded by mask, {len(valid_positions)} positions remaining")
+            values = [data_np[pos] for pos in valid_positions]
             
             # Filter out NaN values (from data range filtering)
+            values_before_nan_filter = len(values)
             values = [v for v in values if not np.isnan(v)]
-            print(f"Group {group_idx}: {len(values)} valid values after filtering NaN")
+            print(f"Group {group_idx}: {len(values)} valid values after filtering NaN (was {values_before_nan_filter} before NaN filter)")
             
             # Store the group data for later use
             groups.append(values)
@@ -2304,10 +2086,10 @@ def calculate_ber_with_target_ranges(groups, target_ranges):
 
     return ber_values
 
-def get_group_data_1124_2_from_matrix(target_ranges, data_matrix, selected_groups, pattern_file_array):
+def get_group_data_1124_2_from_matrix(target_ranges, data_matrix, selected_groups, pattern_file_array, exclude_ranges_type='', exclude_ranges=[]):
     """Modified version of get_group_data_1124_2 that works with a data matrix directly."""
     # Get groups data using existing function
-    groups, groups_stats, selected_groups = get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
+    groups, groups_stats, selected_groups = get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array, exclude_ranges_type, exclude_ranges)
     
     # Calculate BER using target ranges
     table_miao_ber = calculate_ber_with_target_ranges(groups, target_ranges)
@@ -2381,12 +2163,16 @@ def generate_column_by_column_analysis(table_names, database_name, form_data, da
             
             if target_range_flag == 0:
                 # Use the matrix-based function for this column
+                exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                exclude_ranges = form_data.get('exclude_ranges', [])
                 groups, stats, selected_groups_col = get_group_data_from_matrix(
-                    column_data_reshaped, selected_groups, column_pattern)
+                    column_data_reshaped, selected_groups, column_pattern, exclude_ranges_type, exclude_ranges)
             elif target_range_flag == 1:
                 # Use the matrix-based function with target ranges for this column
+                exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                exclude_ranges = form_data.get('exclude_ranges', [])
                 groups, stats, selected_groups_col, table_miao_ber = get_group_data_1124_2_from_matrix(
-                    target_ranges, column_data_reshaped, selected_groups, column_pattern)
+                    target_ranges, column_data_reshaped, selected_groups, column_pattern, exclude_ranges_type, exclude_ranges)
                 all_column_miao_ber.append(table_miao_ber)
             
             # Extract average and standard deviation values for each selected group

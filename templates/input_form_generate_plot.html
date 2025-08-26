@@ -258,6 +258,27 @@
 
         <!-- More Options Section (Hidden by default) -->
         <div id="moreOptionsSection" style="display: none;">
+            <!-- Exclude Ranges Section -->
+            <div class="form-group">
+                <label for="exclude_ranges_type">Exclude Data Points (Optional):</label>
+                <select class="form-control" name="exclude_ranges_type" id="exclude_ranges_type" onchange="toggleExcludeRangesInput()">
+                    <option value="">None - include all data points</option>
+                    <option value="rows">Exclude specific rows</option>
+                    <option value="columns">Exclude specific columns</option>
+                </select>
+                <div id="exclude_ranges_input_section" style="display:none;">
+                    <label for="exclude_ranges_input" class="mt-2">Ranges to exclude:</label>
+                    <input type="text" class="form-control" name="exclude_ranges_input" id="exclude_ranges_input" placeholder="e.g., 1,4,5-20,39,13,100-120,0">
+                    <small class="form-text text-muted">
+                        <strong>Format examples:</strong><br>
+                        • <strong>Single values:</strong> 1,4,39,13<br>
+                        • <strong>Ranges:</strong> 5-20, 100-120<br>
+                        • <strong>Mixed:</strong> 1,4,5-20,39,13,100-120,0<br>
+                        • <strong>Note:</strong> Applies to all selected tables
+                    </small>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label for="color_group_keywords">Color Grouping Keywords (comma-separated, optional):</label>
                 <input type="text" class="form-control" name="color_group_keywords" id="color_group_keywords" placeholder="e.g., T-1,gsof2">
@@ -392,10 +413,7 @@
                 </small>
             </div>
 
-            <div class="form-group">
-                <label for="outlier_analysis_flag">Enable last level Outlier Analysis:</label>
-                <input type="checkbox" name="outlier_analysis_flag" id="outlier_analysis_flag" value="True">
-            </div>
+
 
             <div class="form-group">
                 <label for="location_dots_flag">Enable Dots indicate locations, filtered by value:</label>
@@ -518,7 +536,6 @@
         
         // Since we only use predefined patterns now, show predefined fields and set defaults
         var fieldsPredefined = document.getElementById('predefined-fields');
-        var outlierAnalysis = document.getElementById('outlier_analysis_flag');
         
         // Show predefined fields (they should always be visible now)
         fieldsPredefined.style.display = 'block';
@@ -540,7 +557,6 @@
         }
         
         // Set default checkbox states
-        outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
         document.getElementById('yanCullinan_flag').checked = false;
         document.getElementById('enable_sigma_analysis').checked = false;
@@ -569,6 +585,11 @@
         // Set default analysis mode
         document.getElementById('analysis_mode').value = 'individual';
         toggleAnalysisModeInfo();
+        
+        // Set default exclude ranges options
+        document.getElementById('exclude_ranges_type').value = '';
+        document.getElementById('exclude_ranges_input').value = '';
+        toggleExcludeRangesInput();
         
         // Set default column selection options
         document.getElementById('column_selection_type').value = 'all';
@@ -819,6 +840,19 @@
                 return;
             }
         }
+
+        // Add validation for exclude ranges feature
+        const excludeRangesType = document.getElementById('exclude_ranges_type').value;
+        const excludeRangesInput = document.getElementById('exclude_ranges_input').value.trim();
+        
+        if (excludeRangesType && excludeRangesInput) {
+            if (!validateExcludeRanges(excludeRangesInput)) {
+                alert('Exclude Ranges Error: Invalid format. Use formats like:\n• Single values: 1,4,39,13\n• Ranges: 5-20, 100-120\n• Mixed: 1,4,5-20,39,13,100-120,0');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('exclude_ranges_input').focus();
+                return;
+            }
+        }
     });
 
     function updateCustomInput(select, inputId) {
@@ -983,6 +1017,36 @@
         
         return true;
     }
+    
+    function validateExcludeRanges(input) {
+        // Remove spaces and split by commas
+        const parts = input.replace(/\s/g, '').split(',');
+        
+        for (const part of parts) {
+            if (part === '') continue; // Skip empty parts
+            
+            if (part.includes('-')) {
+                // Handle range (e.g., "5-20")
+                const rangeParts = part.split('-');
+                if (rangeParts.length !== 2) return false;
+                
+                const start = parseInt(rangeParts[0]);
+                const end = parseInt(rangeParts[1]);
+                
+                if (isNaN(start) || isNaN(end) || start < 0 || start > end) {
+                    return false;
+                }
+            } else {
+                // Handle single number (e.g., "5")
+                const num = parseInt(part);
+                if (isNaN(num) || num < 0) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
 
     function toggleCustomColumnInput() {
         var columnSelectionType = document.getElementById('column_selection_type').value;
@@ -1001,6 +1065,26 @@
         
         // Clear the info text
         infoElement.innerHTML = '';
+    }
+
+    // Function to toggle exclude ranges input visibility
+    function toggleExcludeRangesInput() {
+        var excludeType = document.getElementById('exclude_ranges_type').value;
+        var inputSection = document.getElementById('exclude_ranges_input_section');
+        
+        if (excludeType === 'rows' || excludeType === 'columns') {
+            inputSection.style.display = 'block';
+            // Update placeholder text based on selection
+            var inputField = document.getElementById('exclude_ranges_input');
+            if (excludeType === 'rows') {
+                inputField.placeholder = 'e.g., 1,4,5-20,39,13,100-120,0 (row indices to exclude)';
+            } else if (excludeType === 'columns') {
+                inputField.placeholder = 'e.g., 1,4,5-20,39,13,100-120,0 (column indices to exclude)';
+            }
+        } else {
+            inputSection.style.display = 'none';
+            document.getElementById('exclude_ranges_input').value = '';
+        }
     }
 
     // Function to toggle location dots value input visibility
@@ -1164,6 +1248,11 @@
                         const generateBitmapMask = document.getElementById('generate_bitmap_mask');
                         if (generateBitmapMask) {
                             toggleBitmapMaskName();
+                        }
+                        
+                        const excludeRangesType = document.getElementById('exclude_ranges_type');
+                        if (excludeRangesType) {
+                            toggleExcludeRangesInput();
                         }
                         
                         // No longer need custom division since we removed 1D patterns

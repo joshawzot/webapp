@@ -118,16 +118,16 @@
                             <div class="col-md-6">
                                 <strong><span class="storage-icon">💾</span>Device:</strong> {{ storage_info.device }}<br>
                                 <strong><span class="storage-icon">📂</span>Path:</strong> <code>{{ storage_info.path }}</code>
-                            </div>
+                </div>
                             <div class="col-md-6">
                                 <!-- Empty column to maintain layout balance -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </div>
+        </div>
+            </div>
+        </div>
                 <div id="graphViewer">
                     <img id="selectedGraph" style="max-width: 100%; display: none;">
-                </div>
+            </div>
                 {% include 'choose_plot.html' %}
             </div>
         </div>
@@ -509,8 +509,8 @@
                 selectionState = {};
             }
         } else {
-            // Initialize the selection state object
-            selectionState = {};
+        // Initialize the selection state object
+        selectionState = {};
         }
 
         // Cache the table items after the DOM content is loaded
@@ -531,7 +531,7 @@
                 'transform': 'none'
             });
         });
-        
+
         // Initialize filter history and autocomplete
         initializeFilterHistory();
 
@@ -618,7 +618,7 @@
                 } else {
                     item.classList.add('hidden');
                     // Uncheck hidden items to avoid visual confusion (but keep selection state)
-                    const checkbox = item.querySelector('.table-checkbox');
+                const checkbox = item.querySelector('.table-checkbox');
                     checkbox.checked = false;
                 }
             });
@@ -680,7 +680,7 @@
             console.log('Filter values after restoration delay:', filterInputs);
             
             console.log('Applying filters after browser form restoration delay');
-            filterTables();
+        filterTables();
             
             // THEN force correct checkbox states (after filtering is applied)
             forceCorrectCheckboxStates();
@@ -1781,11 +1781,45 @@
         });
 
         // Add the event listener for the "Plot Selected" button
-        document.getElementById('plotSelected').addEventListener('click', function() {
+        document.getElementById('plotSelected').addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
             
             if (tableNames.length > 0) {
-                // Create a form for POST submission
+                // Show loading overlay while checking dimensions
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                const loadingText = document.querySelector('#loadingOverlay div:last-child');
+                if (loadingText) {
+                    loadingText.textContent = 'Checking table dimensions...';
+                }
+
+                try {
+                    // Check if all tables have the same dimensions
+                    const response = await fetch('/check-table-dimensions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            database: '{{ database }}',
+                            tableNames: tableNames
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    // Hide loading overlay
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    if (loadingText) {
+                        loadingText.textContent = 'Processing files...';
+                    }
+
+                    if (!result.success) {
+                        // Show dimension mismatch error
+                        alert('Dimension mismatch detected!\n\n' + result.message + '\n\nPlease select tables with matching dimensions.');
+                        return;
+                    }
+
+                    // If dimensions match, proceed with form submission
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '/plot-selected';
@@ -1816,6 +1850,17 @@
                 // Add the form to the body and submit
                 document.body.appendChild(form);
                 form.submit();
+
+                } catch (error) {
+                    // Hide loading overlay on error
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    if (loadingText) {
+                        loadingText.textContent = 'Processing files...';
+                    }
+                    
+                    console.error('Error checking table dimensions:', error);
+                    alert('Error checking table dimensions: ' + error.message);
+                }
             } else {
                 alert('Please select at least one table to plot.');
             }
@@ -1874,11 +1919,11 @@
     });
 
             // Add the event listener for the "Analyze Row or Column averages" button
-        document.getElementById('analyzeRowAverages').addEventListener('click', function() {
-            const tableNames = getSelectedVisibleTableNames();
-            const database = '{{ database }}';
+    document.getElementById('analyzeRowAverages').addEventListener('click', function() {
+        const tableNames = getSelectedVisibleTableNames();
+        const database = '{{ database }}';
 
-            if (tableNames.length > 0) {
+        if (tableNames.length > 0) {
                 // Show modal for analysis options
                 const modalHtml = `
                 <div id="analysisOptionsModal" class="modal" style="display: block;">
@@ -1927,33 +1972,33 @@
                 document.getElementById('startAnalysis').addEventListener('click', function() {
                     const analysisType = document.getElementById('analysisType').value;
                     const rangeInput = document.getElementById('rangeInput').value.trim();
-                    
-                    if (!rangeInput) {
+            
+            if (!rangeInput) {
                         alert('Please enter a value range');
                         return;
-                    }
-                    
-                    // Parse the range
-                    const rangeSeparators = /[~\-]/;
-                    const rangeParts = rangeInput.split(rangeSeparators);
-                    
-                    if (rangeParts.length !== 2) {
-                        alert('Please enter a valid range (e.g., 30~40 or 25-35)');
-                        return;
-                    }
-                    
-                    const minValue = parseFloat(rangeParts[0].trim());
-                    const maxValue = parseFloat(rangeParts[1].trim());
-                    
-                    if (isNaN(minValue) || isNaN(maxValue)) {
-                        alert('Please enter valid numbers for the range');
-                        return;
-                    }
-                    
-                    if (minValue >= maxValue) {
-                        alert('Minimum value should be less than maximum value');
-                        return;
-                    }
+            }
+            
+            // Parse the range
+            const rangeSeparators = /[~\-]/;
+            const rangeParts = rangeInput.split(rangeSeparators);
+            
+            if (rangeParts.length !== 2) {
+                alert('Please enter a valid range (e.g., 30~40 or 25-35)');
+                return;
+            }
+            
+            const minValue = parseFloat(rangeParts[0].trim());
+            const maxValue = parseFloat(rangeParts[1].trim());
+            
+            if (isNaN(minValue) || isNaN(maxValue)) {
+                alert('Please enter valid numbers for the range');
+                return;
+            }
+            
+            if (minValue >= maxValue) {
+                alert('Minimum value should be less than maximum value');
+                return;
+            }
                     
                     // Close modal and start analysis
                     modal.remove();
@@ -1967,23 +2012,23 @@
         // Function to perform the actual analysis
         function performAnalysis(tableNames, database, analysisType, minValue, maxValue) {
 
-                // Show the loading overlay
-                document.getElementById('loadingOverlay').style.display = 'flex';
+            // Show the loading overlay
+            document.getElementById('loadingOverlay').style.display = 'flex';
 
                 // Send a POST request to analyze row or column averages
-                fetch('/analyze-row-averages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        database: database,
-                        tableNames: tableNames,
-                        minValue: minValue,
-                        maxValue: maxValue,
+            fetch('/analyze-row-averages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    database: database,
+                    tableNames: tableNames,
+                    minValue: minValue,
+                    maxValue: maxValue,
                         analysisType: analysisType,
-                    }),
-                })
+                }),
+            })
                 .then(response => {
                     console.log('Received response from server:', response.status, response.statusText);
                     if (!response.ok) {
@@ -1997,80 +2042,80 @@
                     }
                     return response.json();
                 })
-                .then(result => {
+            .then(result => {
                     console.log('Search completed:', result);
-                    // Hide the loading overlay
-                    document.getElementById('loadingOverlay').style.display = 'none';
+                // Hide the loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
 
-                    if (result.success) {
-                        // Create a new window/tab to display the report
-                        const reportWindow = window.open('', '_blank');
-                        reportWindow.document.write(`
-                            <html>
-                            <head>
-                                <title>Row Average Analysis Report</title>
-                                <style>
-                                    body { font-family: Arial, sans-serif; margin: 20px; }
-                                    .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-                                    .summary-section { background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2196f3; }
-                                    .summary-stats { background-color: #fff; padding: 10px; border-radius: 3px; margin-bottom: 15px; }
-                                    .summary-details { background-color: #fff; padding: 10px; border-radius: 3px; }
-                                    .summary-table { margin-bottom: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 3px; }
-                                    .summary-table h4 { margin: 0 0 5px 0; color: #d32f2f; }
-                                    .row-summary { margin: 5px 0; font-family: monospace; word-wrap: break-word; }
-                                    .table-report { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
-                                    .table-title { background-color: #007bff; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 5px 5px 0 0; }
-                                    .stats { background-color: #e9ecef; padding: 10px; margin-bottom: 15px; border-radius: 3px; }
-                                    .bad-rows { max-height: 300px; overflow-y: auto; }
-                                    .row-info { margin: 5px 0; padding: 5px; background-color: #fff3cd; border-left: 4px solid #ffc107; }
-                                    .no-bad-rows { color: #28a745; font-weight: bold; }
-                                </style>
-                            </head>
-                            <body>
-                                <div class="header">
+                if (result.success) {
+                    // Create a new window/tab to display the report
+                    const reportWindow = window.open('', '_blank');
+                    reportWindow.document.write(`
+                        <html>
+                        <head>
+                            <title>Row Average Analysis Report</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                .header { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+                                .summary-section { background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #2196f3; }
+                                .summary-stats { background-color: #fff; padding: 10px; border-radius: 3px; margin-bottom: 15px; }
+                                .summary-details { background-color: #fff; padding: 10px; border-radius: 3px; }
+                                .summary-table { margin-bottom: 15px; padding: 10px; background-color: #f5f5f5; border-radius: 3px; }
+                                .summary-table h4 { margin: 0 0 5px 0; color: #d32f2f; }
+                                .row-summary { margin: 5px 0; font-family: monospace; word-wrap: break-word; }
+                                .table-report { margin-bottom: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+                                .table-title { background-color: #007bff; color: white; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 5px 5px 0 0; }
+                                .stats { background-color: #e9ecef; padding: 10px; margin-bottom: 15px; border-radius: 3px; }
+                                .bad-rows { max-height: 300px; overflow-y: auto; }
+                                .row-info { margin: 5px 0; padding: 5px; background-color: #fff3cd; border-left: 4px solid #ffc107; }
+                                .no-bad-rows { color: #28a745; font-weight: bold; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
                                     <h1>${analysisType === 'row' ? 'Row' : 'Column'} Average Analysis Report</h1>
-                                    <p><strong>Database:</strong> ${database}</p>
+                                <p><strong>Database:</strong> ${database}</p>
                                     <p><strong>Analysis Type:</strong> ${analysisType === 'row' ? 'Row Averages' : 'Column Averages'}</p>
-                                    <p><strong>Range:</strong> ${minValue} ~ ${maxValue}</p>
-                                    <p><strong>Total Tables Analyzed:</strong> ${result.report.length}</p>
-                                </div>
-                                <div class="summary-section">
+                                <p><strong>Range:</strong> ${minValue} ~ ${maxValue}</p>
+                                <p><strong>Total Tables Analyzed:</strong> ${result.report.length}</p>
+                            </div>
+                            <div class="summary-section">
                                     <h2>Summary of Out-of-Range ${analysisType === 'row' ? 'Rows' : 'Columns'}</h2>
-                                    ${(() => {
-                                        const summaryData = result.report.filter(table => table.bad_rows_count > 0);
-                                        if (summaryData.length === 0) {
+                                ${(() => {
+                                    const summaryData = result.report.filter(table => table.bad_rows_count > 0);
+                                    if (summaryData.length === 0) {
                                             const itemType = analysisType === 'row' ? 'rows' : 'columns';
                                             return '<p class="no-bad-rows">✓ All tables have ' + itemType + ' within the specified range!</p>';
-                                        }
-                                        
-                                        return `
-                                            <div class="summary-details">
-                                                <h3>Quick Overview:</h3>
-                                                ${summaryData.map(table => `
-                                                    <div class="summary-table">
+                                    }
+                                    
+                                    return `
+                                        <div class="summary-details">
+                                            <h3>Quick Overview:</h3>
+                                            ${summaryData.map(table => `
+                                                <div class="summary-table">
                                                         <h4>${table.table_name} (${table.bad_rows_count} ${analysisType === 'row' ? 'rows' : 'columns'} out of range)</h4>
-                                                        <p class="row-summary">
+                                                    <p class="row-summary">
                                                             <strong>${analysisType === 'row' ? 'Rows' : 'Columns'}:</strong> ${table.bad_rows.map(row => row.row_index).join(', ')}
-                                                        </p>
-                                                    </div>
-                                                `).join('')}
-                                            </div>
-                                        `;
-                                    })()}
-                                </div>
-                                ${result.report.map(tableReport => `
-                                    <div class="table-report">
-                                        <div class="table-title">
-                                            <h3>${tableReport.table_name} (${tableReport.dimensions})</h3>
+                                                    </p>
+                                                </div>
+                                            `).join('')}
                                         </div>
-                                        <div class="stats">
-                                            <p><strong>Total Rows:</strong> ${tableReport.total_rows}</p>
-                                            <p><strong>Total Columns:</strong> ${tableReport.total_columns}</p>
+                                    `;
+                                })()}
+                            </div>
+                            ${result.report.map(tableReport => `
+                                <div class="table-report">
+                                    <div class="table-title">
+                                        <h3>${tableReport.table_name} (${tableReport.dimensions})</h3>
+                                    </div>
+                                    <div class="stats">
+                                        <p><strong>Total Rows:</strong> ${tableReport.total_rows}</p>
+                                        <p><strong>Total Columns:</strong> ${tableReport.total_columns}</p>
                                             <p><strong>${analysisType === 'row' ? 'Rows' : 'Columns'} Outside Range:</strong> ${tableReport.bad_rows_count}</p>
                                             <p><strong>Percentage:</strong> ${((tableReport.bad_rows_count / (analysisType === 'row' ? tableReport.total_rows : tableReport.total_columns)) * 100).toFixed(2)}%</p>
-                                        </div>
-                                        <div class="bad-rows">
-                                            ${tableReport.bad_rows_count === 0 ? 
+                                    </div>
+                                    <div class="bad-rows">
+                                        ${tableReport.bad_rows_count === 0 ? 
                                                 ('<p class="no-bad-rows">✓ All ' + (analysisType === 'row' ? 'rows' : 'columns') + ' have averages within the specified range!</p>') : 
                                                 ('<h4>' + (analysisType === 'row' ? 'Rows' : 'Columns') + ' with averages outside range (' + minValue + ' ~ ' + maxValue + '):</h4>' +
                                                  tableReport.bad_rows.map(row => 
@@ -2078,24 +2123,24 @@
                                                         '<strong>' + (analysisType === 'row' ? 'Row' : 'Column') + ' ' + row.row_index + ':</strong> Average = ' + row.average.toFixed(4) +
                                                     '</div>'
                                                  ).join(''))
-                                            }
-                                        </div>
+                                        }
                                     </div>
-                                `).join('')}
-                            </body>
-                            </html>
-                        `);
-                        reportWindow.document.close();
-                    } else {
-                        alert(`Error: ${result.message}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    // Hide the loading overlay
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    alert('An error occurred while analyzing row averages.');
-                });
+                                </div>
+                            `).join('')}
+                        </body>
+                        </html>
+                    `);
+                    reportWindow.document.close();
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Hide the loading overlay
+                document.getElementById('loadingOverlay').style.display = 'none';
+                alert('An error occurred while analyzing row averages.');
+            });
         }
 
         // Fallback polling function for when SSE fails
@@ -2152,7 +2197,7 @@
                                 .catch(e => console.log('Could not get debug info:', e));
                         } else if (progress.status === 'starting' || progress.status === 'connecting' || progress.status === 'connected') {
                             progressInfo.innerHTML = `<span style="color: blue;">${progress.current_table_name || 'Starting search...'}</span><br><em>(Using fallback polling)</em>`;
-                        } else {
+        } else {
                             progressInfo.innerHTML = `<span style="color: orange;">Status: ${progress.status}</span><br><em>(Using fallback polling)</em>`;
                         }
                     }

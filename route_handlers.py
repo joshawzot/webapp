@@ -73,12 +73,13 @@ from io import BytesIO
 # External libraries
 import pandas as pd
 import mysql.connector
-from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash, send_from_directory, current_app
+from flask import Flask, request, make_response, redirect, url_for, session, send_file, render_template, render_template_string, jsonify, flash, send_from_directory, current_app, Response
 from pptx import Presentation
 import zipfile
 import numpy as np
 import csv
 import io
+from io import StringIO
 from PIL import Image
 from sqlalchemy import create_engine
 import traceback
@@ -114,8 +115,41 @@ from generate_plot import generate_plot
 # Add this near the top of the file, with the other imports
 import json
 from datetime import datetime
+import logging
 
 UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploaded_files'))
+
+# User activity logging setup
+USER_ACTIVITY_LOG_FILE = '/home/admin2/webapp_2/user_activity.log'
+
+def log_user_activity(username, action, details=None, page=None):
+    """Log user activity to file with timestamp"""
+    try:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Get request info if available
+        ip_address = 'unknown'
+        user_agent = 'unknown'
+        if request:
+            ip_address = request.remote_addr or 'unknown'
+            user_agent = request.headers.get('User-Agent', 'unknown')
+        
+        log_entry = {
+            'timestamp': timestamp,
+            'username': username,
+            'action': action,
+            'page': page,
+            'details': details,
+            'ip_address': ip_address,
+            'user_agent': user_agent
+        }
+        
+        with open(USER_ACTIVITY_LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(log_entry) + '\n')
+            
+    except Exception as e:
+        # Don't let logging errors break the application
+        print(f"Error logging user activity: {e}")
 
 
 # Add this after the other Redis-related code
@@ -265,37 +299,37 @@ def home():
     username = session.get('username')
     print(username)
     try:
-        conn = create_connection()
-        cursor = conn.cursor()
-        databases = get_all_databases(cursor)
-        
-        # Retrieve recent folder visits
-        recent_visits_json = redis_client.get('recent_folder_visits')
-        recent_visits = []
-        if recent_visits_json:
-            try:
-                recent_visits = json.loads(recent_visits_json)
-            except:
-                # If JSON parsing fails, start with empty list
-                recent_visits = []
-        
-        # Check disk space
-        disk_info = get_disk_space()
-        
-        # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
-        disk_stats = shutil.disk_usage("/")  # Use root directory, which always exists
-        #disk_stats = shutil.disk_usage("/app") original
-        free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
-        low_disk_space = free_space_gb < 10  # True if less than 10GB
+            conn = create_connection()
+            cursor = conn.cursor()
+            databases = get_all_databases(cursor)
             
-        cursor.close()
-        conn.close()
-        return render_template('home_page.html', 
-                              databases=databases,
-                              username=username, 
-                              recent_visits=recent_visits,
-                              disk_info=disk_info,
-                              low_disk_space=low_disk_space)
+            # Retrieve recent folder visits
+            recent_visits_json = redis_client.get('recent_folder_visits')
+            recent_visits = []
+            if recent_visits_json:
+                try:
+                    recent_visits = json.loads(recent_visits_json)
+                except:
+                    # If JSON parsing fails, start with empty list
+                    recent_visits = []
+            
+            # Check disk space
+            disk_info = get_disk_space()
+            
+            # Get raw free space in bytes for comparison (10GB = 10 * 1024 * 1024 * 1024 bytes)
+            disk_stats = shutil.disk_usage("/")  # Use root directory, which always exists
+            #disk_stats = shutil.disk_usage("/app") original
+            free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
+            low_disk_space = free_space_gb < 10  # True if less than 10GB
+                
+            cursor.close()
+            conn.close()
+            return render_template('home_page.html', 
+                                  databases=databases,
+                                  username=username, 
+                                  recent_visits=recent_visits,
+                                  disk_info=disk_info,
+                                  low_disk_space=low_disk_space)
     except mysql.connector.Error as err:
         return str(err), 500
 
@@ -308,11 +342,22 @@ def login():
             return render_template('login.html', error="Please select a user")
         
         # Get the current port from the request
-        current_port = request.environ.get('SERVER_PORT', '5000')
-        try:
-            current_port = int(current_port)
-        except (ValueError, TypeError):
-            current_port = 5000  # Default fallback
+        # Try to get port from request.host first (most reliable for proxied apps)
+        current_port = None
+        
+        # Method 1: Extract from request.host (most reliable for proxied apps)
+        if ':' in request.host:
+            try:
+                current_port = int(request.host.split(':')[1])
+            except (ValueError, IndexError):
+                pass
+        
+        # Method 2: Fallback to SERVER_PORT environ variable
+        if current_port is None:
+            try:
+                current_port = int(request.environ.get('SERVER_PORT', '5000'))
+            except (ValueError, TypeError):
+                current_port = 5000
         
         # Check if user exists in mapping
         if username not in USER_PORT_MAPPING:
@@ -325,15 +370,44 @@ def login():
             return render_template('login.html', error=error_msg)
         
         # If port validation passes, proceed with login
-            session['username'] = username
-            return redirect(url_for('home'))
+        session['username'] = username
+        
+        # Log the successful login
+        log_user_activity(username, 'login', details={'port': current_port}, page='login')
+        
+        return redirect(url_for('home'))
         
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
+    # Log the logout activity
+    username = session.get('username', 'unknown')
+    log_user_activity(username, 'logout', page='logout')
+    
     session.pop('username', None)
     return redirect(url_for('login'))
+
+@app.route('/log-activity', methods=['POST'])
+def log_activity():
+    """Endpoint for client-side activity logging"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        username = session.get('username', 'anonymous')
+        action = data.get('action', 'unknown')
+        details = data.get('details')
+        page = data.get('page')
+        
+        log_user_activity(username, action, details, page)
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        print(f"Error in log_activity endpoint: {e}")
+        return jsonify({'error': 'Logging failed'}), 500
 
 @app.route('/create-db')
 @require_auth_and_port
@@ -764,8 +838,29 @@ def render_plot(database, table_name, plot_function):
 
             # Get the dimensions from the first table's data matrix
             first_table_name = table_name.split(',')[0]
-            data_matrix, data_matrix_size = get_full_table_data(first_table_name, database)
-            rows, cols = data_matrix_size
+            
+            # Check if we're in combine analysis mode (virtual table name)
+            analysis_mode = form_data.get('analysis_mode', 'individual')
+            if analysis_mode == 'combine' and first_table_name.startswith('Combined_'):
+                # For combine analysis, we need to get dimensions from the plot_data itself
+                # since the combined table doesn't exist in the database
+                try:
+                    # Try to extract dimensions from the plot data or use reasonable defaults
+                    if 'correlation_analysis' in locals() and correlation_analysis:
+                        # If correlation analysis was done, use those dimensions
+                        rows, cols = 2048, 32  # Default dimensions for combined analysis
+                    else:
+                        # Use default dimensions for combined tables
+                        rows, cols = 2048, 32
+                    print(f"Using default dimensions for combined table: {rows}x{cols}")
+                except:
+                    # Fallback to standard dimensions
+                    rows, cols = 2048, 32
+                    print(f"Using fallback dimensions for combined table: {rows}x{cols}")
+            else:
+                # For individual analysis, get dimensions from the database
+                data_matrix, data_matrix_size = get_full_table_data(first_table_name, database)
+                rows, cols = data_matrix_size
             
             # Generate individual points map
             print("Generating points map...")
@@ -881,11 +976,78 @@ def render_plot(database, table_name, plot_function):
                                      linear_output_max=linear_output_max)
 
         except Exception as e:
-            print(f"Error generating plot: {e}")
-            return f"Error generating plot: {str(e)}", 500
+            error_message = str(e)
+            print(f"Error generating plot: {error_message}")
+            
+            # Check for dimension mismatch errors and provide user-friendly feedback
+            if ("pattern_file_array must have the same shape" in error_message or
+                "dimension" in error_message.lower() or
+                "shape" in error_message.lower()):
+                
+                # Extract table names for better error context
+                current_table_names = session.get('plot_tables', [])
+                
+                # Log the dimension mismatch issue
+                log_user_activity(
+                    session.get('username', 'unknown'),
+                    'dimension_mismatch_error',
+                    details={
+                        'error': error_message,
+                        'table_names': current_table_names[:3],  # First 3 table names
+                        'table_count': len(current_table_names),
+                        'form_data_pattern': form_data.get('state_pattern', 'unknown')
+                    },
+                    page='render_plot'
+                )
+                
+                # Provide clear user feedback
+                friendly_error = f"""
+                <div class="container mt-5">
+                    <div class="alert alert-danger">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Dimension Mismatch Error</h4>
+                        <p><strong>The selected pattern does not match your table dimensions.</strong></p>
+                        <p>Your tables: <code>{', '.join(current_table_names[:3])}</code>
+                        {' and ' + str(len(current_table_names) - 3) + ' more' if len(current_table_names) > 3 else ''}</p>
+                        <p>Selected pattern: <code>{form_data.get('state_pattern', 'unknown')}</code></p>
+                        <hr>
+                        <h5>💡 How to fix this:</h5>
+                        <ul>
+                            <li><strong>Option 1:</strong> Go back and select a pattern that matches your table dimensions</li>
+                            <li><strong>Option 2:</strong> Select different tables that match the chosen pattern</li>
+                            <li><strong>Option 3:</strong> Use "1D pattern" instead of "predefined pattern" for dimension-independent analysis</li>
+                        </ul>
+                        <p class="mt-3">
+                            <a href="javascript:history.back()" class="btn btn-primary">
+                                <i class="fas fa-arrow-left"></i> Go Back and Fix
+                            </a>
+                            <a href="/" class="btn btn-secondary ml-2">
+                                <i class="fas fa-home"></i> Return to Home
+                            </a>
+                        </p>
+                    </div>
+                    <div class="alert alert-info">
+                        <h5>Technical Details:</h5>
+                        <p><code>{error_message}</code></p>
+                    </div>
+                </div>
+                """
+                return friendly_error, 400
+            else:
+                return f"Error generating plot: {error_message}", 500
 
     except Exception as e:
-        return f"Error: {str(e)}", 500
+        error_message = str(e)
+        print(f"Outer exception in render_plot: {error_message}")
+        
+        # Log any unexpected errors
+        log_user_activity(
+            session.get('username', 'unknown'),
+            'render_plot_error',
+            details={'error': error_message},
+            page='render_plot'
+        )
+        
+        return f"Error: {error_message}", 500
 
 @app.route('/download_csv/<unique_id>/<data_type>')
 def download_csv2(unique_id, data_type):
@@ -1303,18 +1465,32 @@ def view_plot(database, table_name, plot_function):
             linear_output_min = session.get('linear_output_min', None)
             linear_output_max = session.get('linear_output_max', None)
             
+            # Get ECC pattern information from session
+            ecc_pattern_mode = session.get('ecc_pattern_mode', 'normal')
+            selected_pattern = session.get('selected_pattern', '')
+            ecc_io_numbers = session.get('ecc_io_numbers', [])
+            plot_tables = session.get('plot_tables', [])
+            
+            # Determine if we should hide the pattern selection
+            hide_pattern_selection = ecc_pattern_mode in ['auto_78_tables', 'subset_ecc']
+            
             return render_template('input_form_generate_plot.html', 
-                                 database=database, 
-                                 table_name=table_name, 
+                              database=database, 
+                              table_name=table_name,
                                  plot_function=plot_function,
-                                 using_conductance=using_conductance,
-                                 using_linear_conversion=using_linear_conversion,
+                              using_conductance=using_conductance,
+                              using_linear_conversion=using_linear_conversion,
                                  conductance_comparison=conductance_comparison,
-                                 linear_conversion_comparison=linear_conversion_comparison,
-                                 linear_input_min=linear_input_min,
-                                 linear_input_max=linear_input_max,
-                                 linear_output_min=linear_output_min,
-                                 linear_output_max=linear_output_max)
+                              linear_conversion_comparison=linear_conversion_comparison,
+                              linear_input_min=linear_input_min,
+                              linear_input_max=linear_input_max,
+                              linear_output_min=linear_output_min,
+                              linear_output_max=linear_output_max,
+                              ecc_pattern_mode=ecc_pattern_mode,
+                              selected_pattern=selected_pattern,
+                              ecc_io_numbers=ecc_io_numbers,
+                              plot_tables=plot_tables,
+                              hide_pattern_selection=hide_pattern_selection)
 
 @app.route('/set-conductance-values/<database>/<table_name>')
 def set_conductance_values(database, table_name):
@@ -2041,11 +2217,14 @@ def get_pattern_file(pattern_name):
     use_absolute_paths = current_app.config.get('USE_ABSOLUTE_STATE_PATTERN_PATHS', True)
     pattern_files = absolute_pattern_files if use_absolute_paths else relative_pattern_files
     
-    # Special handling for 78-table pattern
+    # Special handling for ECC patterns
     if pattern_name == "ecc_2048x32_78tables":
         # This is a special case that will be handled differently
         # Return a special marker that indicates 78-table processing
         return "SPECIAL_78TABLES"
+    elif pattern_name.startswith("ecc_2048x32_combined_"):
+        # This is a subset ECC pattern - return special marker
+        return "SPECIAL_ECC_SUBSET"
     
     # Return the path for the pattern name
     return pattern_files.get(pattern_name, "")
@@ -3988,6 +4167,7 @@ def get_form_data_generate_plot(form):
             'filter_negative_values',  # Added negative value filter field
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
             'analysis_type',  # Added analysis type field for column-by-column analysis
+            'analysis_mode',  # Added analysis mode field for combine analysis
             'column_selection_type', 'custom_column_selection', 'yanCullinan_flag',  # Added column selection fields
             'location_dots_flag', 'location_dots_value',  # Added location dots fields
             'enable_sigma_analysis'  # Added sigma analysis control field
@@ -5621,6 +5801,33 @@ def reset_conductance(database, table_name):
     # Redirect back to the input form page
     return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
 
+@app.route('/reset-pattern-selection/<database>/<table_name>')
+def reset_pattern_selection(database, table_name):
+    """Route to reset ECC pattern auto-selection and return to manual pattern selection."""
+    # Clear ECC pattern session variables
+    session.pop('ecc_pattern_mode', None)
+    session.pop('selected_pattern', None)
+    session.pop('ecc_io_numbers', None)
+    session.pop('detected_78_io_tables', None)
+    
+    # Log the pattern reset action
+    log_user_activity(
+        session.get('username', 'unknown'),
+        'pattern_selection_reset',
+        details={
+            'database': database,
+            'table_name': table_name,
+            'reset_reason': 'user_requested_manual_pattern_selection'
+        },
+        page='reset_pattern_selection'
+    )
+    
+    # Add a flash message for user feedback
+    flash('Pattern selection reset successfully. You can now manually choose any pattern.', 'success')
+    
+    # Redirect back to the input form page
+    return redirect(f'/view-plot/{database}/{table_name}/generate_plot')
+
 @app.route('/linear-conversion/<database>/<table_name>')
 def linear_conversion(database, table_name):
     """Route to show custom linear conversion form."""
@@ -6140,10 +6347,188 @@ def plot_selected():
     if not database or not table_names:
         return 'Missing required information', 400
     
+    # Clear any previous ECC pattern session data to avoid contamination
+    session.pop('ecc_pattern_mode', None)
+    session.pop('selected_pattern', None)
+    session.pop('ecc_io_numbers', None)
+    session.pop('detected_78_io_tables', None)
+    session.pop('plot_form_data', None)
+    
     # Store table names in session to avoid URL length issues
     session['plot_tables'] = table_names
     
-    # Redirect to view_plot with a special parameter indicating to use session data
+    # Redirect to ECC pattern detection route instead of directly to input form
+    return redirect(url_for('ecc_pattern_detection', database=database, plot_function=plot_function))
+
+@app.route('/ecc-pattern-detection/<database>/<plot_function>')
+def ecc_pattern_detection(database, plot_function):
+    """
+    Route to handle ECC pattern detection flow before going to input form.
+    Implements the flowchart logic for ECC pattern detection.
+    """
+    try:
+        if 'username' not in session:
+            return "User not logged in", 403
+
+        # Get table names from session
+        table_names = session.get('plot_tables', [])
+        
+        if not table_names:
+            flash('No tables found in session. Please select tables again.', 'warning')
+            return redirect(url_for('list_tables'))
+        
+        # Check if exactly 78 tables with IO0-IO77 pattern
+        is_78_io_tables = detect_78_io_tables(table_names)
+        
+        # Always show the ECC pattern detection modal - let user decide
+        # Store the detection result in session so we can use it later if they choose ECC
+        session['detected_78_io_tables'] = is_78_io_tables
+        
+        return render_template('ecc_pattern_detection.html', 
+                             database=database, 
+                             plot_function=plot_function,
+                             table_count=len(table_names),
+                             table_names=table_names,
+                             detected_78_io_tables=is_78_io_tables)
+    except Exception as e:
+        print(f"Error in ECC pattern detection: {e}")
+        return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
+
+@app.route('/process-ecc-pattern-choice', methods=['POST'])
+def process_ecc_pattern_choice():
+    """
+    Process the user's choice about ECC pattern usage.
+    """
+    try:
+        database = request.form.get('database')
+        plot_function = request.form.get('plot_function')
+        is_ecc_pattern = request.form.get('is_ecc_pattern') == 'true'
+        
+        table_names = session.get('plot_tables', [])
+        
+        if is_ecc_pattern:
+            # User confirmed it's ECC pattern
+            if len(table_names) < 78:
+                # Less than 78 tables - create a dynamic combined pattern name
+                # Extract IO numbers to create descriptive pattern name
+                io_numbers = []
+                for table_name in table_names:
+                    import re
+                    match = re.search(r'IO(\d+)', table_name, re.IGNORECASE)
+                    if match:
+                        io_numbers.append(int(match.group(1)))
+                
+                io_numbers.sort()
+                if io_numbers:
+                    # Create pattern name like "ecc_2048x32_combined_IO0_IO5_IO12_15tables"
+                    io_list = '_'.join([f"IO{io}" for io in io_numbers[:5]])  # Show first 5 IOs
+                    if len(io_numbers) > 5:
+                        io_list += f"_and_{len(io_numbers)-5}more"
+                    combined_pattern_name = f"ecc_2048x32_combined_{io_list}_{len(table_names)}tables"
+                else:
+                    combined_pattern_name = f"ecc_2048x32_combined_{len(table_names)}tables"
+                
+                session['ecc_pattern_mode'] = 'subset_ecc'
+                session['selected_pattern'] = combined_pattern_name
+                session['ecc_io_numbers'] = io_numbers
+                return redirect(url_for('ecc_subset_pattern_selection', database=database, plot_function=plot_function))
+            else:
+                # 78+ tables - check if they're the standard IO0-IO77 pattern
+                is_78_io_tables = session.get('detected_78_io_tables', False)
+                
+                if is_78_io_tables:
+                    # Standard 78-table ECC pattern (IO0-IO77)
+                    session['ecc_pattern_mode'] = 'auto_78_tables'
+                    session['selected_pattern'] = 'ecc_2048x32_78tables'
+                else:
+                    # 78+ tables but not standard IO0-IO77 pattern
+                    # Extract IO numbers to create subset pattern
+                    io_numbers = []
+                    for table_name in table_names:
+                        import re
+                        match = re.search(r'IO(\d+)', table_name, re.IGNORECASE)
+                        if match:
+                            io_numbers.append(int(match.group(1)))
+                    
+                    if io_numbers:
+                        io_numbers.sort()
+                        # Create pattern name for large subset
+                        io_list = f"IO{io_numbers[0]}_to_IO{io_numbers[-1]}"
+                        combined_pattern_name = f"ecc_2048x32_combined_{io_list}_{len(table_names)}tables"
+                        
+                        session['ecc_pattern_mode'] = 'subset_ecc'
+                        session['selected_pattern'] = combined_pattern_name
+                        session['ecc_io_numbers'] = io_numbers
+                        
+                        return redirect(url_for('ecc_subset_pattern_selection', database=database, plot_function=plot_function))
+                    else:
+                        # No IO pattern found, default to 78-table pattern
+                        session['ecc_pattern_mode'] = 'auto_78_tables'
+                        session['selected_pattern'] = 'ecc_2048x32_78tables'
+        else:
+            # User said it's NOT ECC pattern - use normal pattern selection
+            session['ecc_pattern_mode'] = 'normal'
+            session.pop('selected_pattern', None)
+        
+        return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
+        
+    except Exception as e:
+        print(f"Error processing ECC pattern choice: {e}")
+        return redirect(url_for('list_tables'))
+
+@app.route('/ecc-subset-pattern-selection/<database>/<plot_function>')
+def ecc_subset_pattern_selection(database, plot_function):
+    """
+    Handle pattern selection for subset of ECC tables (less than 78).
+    """
+    try:
+        table_names = session.get('plot_tables', [])
+        
+        if not table_names:
+            flash('No tables found in session. Please select tables again.', 'warning')
+            return redirect(url_for('list_tables'))
+        
+        # Extract IO numbers from table names
+        io_numbers = []
+        for table_name in table_names:
+            import re
+            match = re.search(r'IO(\d+)', table_name, re.IGNORECASE)
+            if match:
+                io_numbers.append(int(match.group(1)))
+        
+        io_numbers.sort()
+        
+        # Get the combined pattern name from session
+        combined_pattern_name = session.get('selected_pattern', 'ecc_2048x32_combined_subset')
+        
+        return render_template('ecc_subset_pattern_selection.html',
+                             database=database,
+                             plot_function=plot_function,
+                             table_names=table_names,
+                             io_numbers=io_numbers,
+                             table_count=len(table_names),
+                             combined_pattern_name=combined_pattern_name)
+    except Exception as e:
+        print(f"Error in ECC subset pattern selection: {e}")
+        return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
+
+@app.route('/process-ecc-subset-pattern', methods=['POST'])
+def process_ecc_subset_pattern():
+    """
+    Process the combined pattern creation for subset ECC tables.
+    """
+    try:
+        database = request.form.get('database')
+        plot_function = request.form.get('plot_function')
+        
+        # Store the ECC subset mode info in session
+        session['ecc_pattern_mode'] = 'subset_ecc'
+        session['selected_pattern'] = 'combined_ecc_subset'
+        
+        return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
+        
+    except Exception as e:
+        print(f"Error processing ECC subset pattern: {e}")
     return redirect(url_for('view_plot', database=database, table_name='from_session', plot_function=plot_function))
 
 @app.route('/process-plot-form', methods=['POST'])
@@ -6162,6 +6547,10 @@ def process_plot_form():
     # Generate plot form data based on the form
     if plot_function == "generate_plot":
         form_data = get_form_data_generate_plot(request.form)
+        
+        # Add ECC pattern session data to form_data for proper validation
+        form_data['ecc_pattern_mode'] = session.get('ecc_pattern_mode', 'normal')
+        form_data['ecc_io_numbers'] = session.get('ecc_io_numbers', [])
         
         # Server-side validation for color_group_keywords
         if form_data.get('color_group_keywords'):
@@ -8804,11 +9193,9 @@ def analyze_row_averages():
         # Create database connection
         try:
             print(f"Attempting to connect to database: {database}")
-            
             connection = create_connection(database)
             cursor = connection.cursor()
             print(f"Successfully connected to database: {database}")
-            
         except Exception as db_error:
             error_msg = f"Database connection failed: {str(db_error)}"
             print(f"Failed to connect to database {database}: {db_error}")
@@ -8866,7 +9253,7 @@ def analyze_row_averages():
                             except (ValueError, TypeError):
                                 row_data.append(0.0)  # Handle non-numeric values
                     data_matrix.append(row_data)
-                    
+                
                     # Progress indicator for very large tables
                     if total_rows > 1000 and (row_idx + 1) % 1000 == 0:
                         print(f"Table {table_name}: Converted {row_idx + 1}/{total_rows} rows to matrix")
@@ -9100,6 +9487,80 @@ def test_search_endpoint():
             'success': False,
             'message': str(e)
         }), 500
+
+@app.route('/check-table-dimensions', methods=['POST'])
+def check_table_dimensions():
+    """Check if all selected tables have the same dimensions."""
+    try:
+        data = request.get_json()
+        database = data.get('database')
+        table_names = data.get('tableNames', [])
+        
+        if not database or not table_names:
+            return jsonify({'success': False, 'message': 'Missing database or table names'}), 400
+        
+        if len(table_names) < 2:
+            return jsonify({'success': True, 'message': 'Single table selected'})
+        
+        # Get dimensions for all tables
+        connection = create_connection(database)
+        cursor = connection.cursor()
+        
+        table_dimensions = {}
+        
+        for table_name in table_names:
+            try:
+                # Get table structure to determine dimensions
+                cursor.execute(f"SELECT * FROM `{table_name}` LIMIT 1")
+                sample_row = cursor.fetchone()
+                if sample_row:
+                    num_columns = len(sample_row)
+                    
+                    # Get total number of rows
+                    cursor.execute(f"SELECT COUNT(*) FROM `{table_name}`")
+                    num_rows = cursor.fetchone()[0]
+                    
+                    table_dimensions[table_name] = (num_rows, num_columns)
+                else:
+                    table_dimensions[table_name] = (0, 0)
+            except Exception as e:
+                print(f"Error getting dimensions for table {table_name}: {e}")
+                return jsonify({'success': False, 'message': f'Error accessing table {table_name}: {str(e)}'}), 500
+        
+        cursor.close()
+        connection.close()
+        
+        # Check if all dimensions are the same
+        if table_dimensions:
+            first_table = list(table_dimensions.keys())[0]
+            first_dimensions = table_dimensions[first_table]
+            mismatched_tables = []
+            
+            for table_name, dims in table_dimensions.items():
+                if dims != first_dimensions:
+                    mismatched_tables.append(f"{table_name} ({dims[0]}×{dims[1]})")
+            
+            if mismatched_tables:
+                # Create detailed error message
+                error_msg = f"Expected dimensions (based on '{first_table}'): {first_dimensions[0]} rows × {first_dimensions[1]} columns\n\n"
+                error_msg += f"Tables with different dimensions:\n"
+                for table_info in mismatched_tables:
+                    error_msg += f"• {table_info}\n"
+                
+                return jsonify({
+                    'success': False, 
+                    'message': error_msg,
+                    'expected_dimensions': first_dimensions,
+                    'mismatched_tables': mismatched_tables
+                })
+        
+        return jsonify({'success': True, 'message': 'All tables have matching dimensions'})
+        
+    except Exception as e:
+        print(f"Error in check_table_dimensions: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
 
 @app.route('/search-value-in-range', methods=['POST'])
 def search_value_in_range():

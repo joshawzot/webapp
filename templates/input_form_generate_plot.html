@@ -45,52 +45,68 @@
         <input type="hidden" name="table_name" value="{{ table_name }}">
         <input type="hidden" name="plot_function" value="{{ plot_function }}">
         
-        <div class="form-group">
-            <label for="state_pattern_type">State Pattern Type</label>
-            <select class="form-control" name="state_pattern_type" id="state_pattern_type" onchange="toggleStatePatternType()">
-                <option value="predefined">Predefined (Original) State Pattern</option>
-                <option value="1D">Reshaped and Combined Pattern</option>
-            </select>
-        </div>
+        <!-- Hidden input to always send "predefined" as state pattern type -->
+        <input type="hidden" name="state_pattern_type" value="predefined">
 
-        <div id="1D-fields" style="display:none;">
+        <div id="predefined-fields">
+            {% if hide_pattern_selection %}
+            <!-- ECC Pattern Auto-Selected - With Option to Switch to Manual -->
             <div class="form-group">
-                <label for="number_of_states">Number of States:</label>
-                <input type="text" class="form-control" name="number_of_states" id="number_of_states" value="4" placeholder="Enter number of states" onchange="checkCustomDivision()">
+                <label>Pattern Selection Mode:</label>
+                <div class="alert alert-info" style="margin-bottom: 15px; padding: 12px;">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Auto-Selected ECC Pattern: {{ selected_pattern }}</strong>
+                    {% if ecc_pattern_mode == 'auto_78_tables' %}
+                    <br><small class="text-muted">Automatically detected 78 ECC IO tables (IO0-IO77)</small>
+                    {% elif ecc_pattern_mode == 'subset_ecc' %}
+                    <br><small class="text-muted">Combined pattern for {{ ecc_io_numbers|length }} ECC tables: 
+                    {% for io in ecc_io_numbers[:5] %}IO{{ io }}{% if not loop.last %}, {% endif %}{% endfor %}{% if ecc_io_numbers|length > 5 %} and {{ ecc_io_numbers|length - 5 }} more{% endif %}</small>
+                    {% endif %}
+                    <hr style="margin: 10px 0;">
+                    <button type="button" class="btn btn-warning btn-sm" onclick="switchToManualPatternSelection()">
+                        <i class="fas fa-edit"></i> Switch to Manual Pattern Selection
+                    </button>
+                    <a href="/reset-pattern-selection/{{ database }}/{{ table_name }}" class="btn btn-secondary btn-sm ml-2">
+                        <i class="fas fa-undo"></i> Reset & Reload Page
+                    </a>
+                    <small class="text-muted d-block mt-2">
+                        <strong>Switch:</strong> Choose pattern manually on this page • 
+                        <strong>Reset:</strong> Clear ECC settings and reload page
+                    </small>
+                </div>
+                
+                <!-- Hidden field for auto-selected pattern (will be replaced when switching to manual) -->
+                <input type="hidden" name="state_pattern" id="state_pattern_hidden" value="{{ selected_pattern }}">
             </div>
             
-            <!-- Per-table division options container -->
-            <div id="per_table_division_container" style="display:block;">
-                <label><strong>Division Options for Each Table:</strong></label>
-                <small class="form-text text-muted d-block mb-3">
-                    Configure division method separately for each selected table. Only applicable when number of states is 4.<br>
-                    <i class="fa fa-lightbulb-o" aria-hidden="true"></i>
-                </small>
-                <div id="table_division_fields">
-                    <!-- Table-specific division fields will be generated here by JavaScript -->
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="selected_groups_1D">Selected States:</label>
-                <select class="form-control" name="selected_groups_1D" id="selected_groups_1D" onchange="updateCustomInput(this, 'custom_selected_groups_1D')">
-                    <option value="0,1,2,3">0,1,2,3</option>
-                    <option value="0,3">0,3</option>
-                    <option value="custom">Custom</option>
+            <!-- Manual pattern selection (initially hidden) -->
+            <div class="form-group" id="manual_pattern_selection" style="display: none;">
+                <label for="state_pattern_manual">Select a State Pattern:</label>
+                <select class="form-control" name="state_pattern" id="state_pattern_manual" onchange="toggleAnalysisType()">
+                <option value="1296x64_rowbar_4states">1296x64_rowbar_4states</option>
+                <option value="2048x32_rowbar_4states">2048x32_rowbar_4states</option>
+                <option value="2048x32_random">2048x32_random</option>
+                <option value="3x4_4states_debug">3x4_4states_debug</option>
+                <option value="248x248_checkerboard_4states">248x248_checkerboard_4states</option>
+                <option value="1296x64_Adrien_random_4states">1296x64_Adrien_random_4states</option>
+                <option value="248x248_1state">248x248_1state</option>
+                <option value="1296x64_1state">1296x64_1state</option>
+                <option value="248x248_16states">248x248_16states</option>
+                <option value="248x248_2states">248x248_2states</option>
+                <option value="248x248_64states">248x248_64states</option>
+                <option value="62x62_2states">62x62_2states</option>
+                <option value="248x1_1state">248x1_1state</option>
+                <option value="82944x78_ecc_fuxi">82944x78_ecc_fuxi</option>
+                <option value="65536x78_ecc">65536x78_ecc</option>
+                <option value="248x256_1state">248x256_1state</option>
+                <option value="256x32_pr0">256x32_pr0</option>
+                <option value="256x32_pr1">256x32_pr1</option>
+                <option value="test_chin">test_chin</option>
                 </select>
-                <input type="text" class="form-control mt-2" name="custom_selected_groups_1D" id="custom_selected_groups_1D" placeholder="Enter custom values" style="display:none;" />
+                <small class="text-muted">You have switched to manual pattern selection. The auto-selected ECC pattern is no longer active.</small>
             </div>
-            <div class="form-group">
-                <label for="pass_range_1D">Pass Range for Selected States:</label>
-                <select class="form-control" name="pass_range_1D" id="pass_range_1D" onchange="updateCustomInput(this, 'custom_pass_range_1D')">
-                    <option value="">None</option>
-                    <option value="40,68.88,70.88,131.88,133.88,169.88,171.88,183">40,68.88,70.88,131.88,133.88,169.88,171.88,183</option>
-                    <option value="custom">Custom</option>
-                </select>
-                <input type="text" class="form-control mt-2" name="custom_pass_range_1D" id="custom_pass_range_1D" placeholder="Enter custom values" style="display:none;" />
-            </div>
-        </div>
-
-        <div id="predefined-fields" style="display:none;">
+            {% else %}
+            <!-- Normal Pattern Selection -->
             <div class="form-group">
                 <label for="state_pattern">Select a State Pattern:</label>
                 <select class="form-control" name="state_pattern" id="state_pattern" onchange="toggleAnalysisType()">
@@ -195,6 +211,17 @@
                 <option value="ecc_2048x32_IO76">ecc_2048x32_IO76</option>
                 <option value="ecc_2048x32_IO77">ecc_2048x32_IO77</option>
                 </select>
+            </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label for="analysis_mode">Analysis Mode:</label>
+                <select class="form-control" name="analysis_mode" id="analysis_mode" onchange="toggleAnalysisModeInfo()">
+                    <option value="individual">No Combine Analysis (Individual Tables)</option>
+                    <option value="combine">Combine Analysis (Treat All Tables as One Dataset)</option>
+                </select>
+                <small class="form-text text-muted" id="analysis_mode_info">
+                </small>
             </div>
             
             <div class="form-group">
@@ -489,37 +516,34 @@
         // Don't reset the form here - let restoreFormData handle it
         // Only set default values if no saved data exists
         
-        // Force select the default option "Predefined State Pattern" and trigger change event
-        var statePatternType = document.getElementById('state_pattern_type');
-        statePatternType.value = 'predefined';
-        
-        // Set default values for fields (these will be overridden by restoreFormData if saved data exists)
-        var fields1D = document.getElementById('1D-fields');
+        // Since we only use predefined patterns now, show predefined fields and set defaults
         var fieldsPredefined = document.getElementById('predefined-fields');
-        var numberOfStates = document.getElementById('number_of_states');
         var outlierAnalysis = document.getElementById('outlier_analysis_flag');
         
-        // Set default custom input displays
-        document.getElementById('custom_selected_groups_1D').style.display = 'none';
-        document.getElementById('custom_pass_range_1D').style.display = 'none';
+        // Show predefined fields (they should always be visible now)
+        fieldsPredefined.style.display = 'block';
+        
+        // Set default custom input displays for predefined fields only
         document.getElementById('custom_selected_groups_predefined').style.display = 'none';
         document.getElementById('custom_pass_range_predefined').style.display = 'none';
         
-        // Set default dropdown values
-        document.getElementById('selected_groups_1D').value = '0,1,2,3';
-        document.getElementById('pass_range_1D').value = '';
+        // Handle ECC pattern auto-selection based on session data
+        handleECCPatternAutoSelection();
+        
+        // Set default dropdown values for predefined fields only
         document.getElementById('selected_groups_predefined').value = '0,1,2,3';
         document.getElementById('pass_range_predefined').value = '';
-        document.getElementById('state_pattern').selectedIndex = 0;
+        
+        // Don't override state pattern if it was set by ECC detection
+        if (!document.getElementById('state_pattern').dataset.eccAutoSet) {
+            document.getElementById('state_pattern').selectedIndex = 0;
+        }
         
         // Set default checkbox states
         outlierAnalysis.checked = false;
         document.getElementById('color_map_flag').checked = false;
         document.getElementById('yanCullinan_flag').checked = false;
         document.getElementById('enable_sigma_analysis').checked = false;
-        
-        // Clear any existing table division fields
-        clearTableDivisionFields();
         
         // Set default location dots options
         document.getElementById('location_dots_flag').checked = false;
@@ -542,17 +566,17 @@
         document.getElementById('analysis_type').value = 'default';
         document.getElementById('analysis_type_container').style.display = 'none';
         
+        // Set default analysis mode
+        document.getElementById('analysis_mode').value = 'individual';
+        toggleAnalysisModeInfo();
+        
         // Set default column selection options
         document.getElementById('column_selection_type').value = 'all';
         document.getElementById('custom_column_selection').value = '';
         document.getElementById('custom_column_selection').style.display = 'none';
         document.getElementById('column_selection_container').style.display = 'none';
         
-        // Call toggleStatePatternType to set proper visibility
-        toggleStatePatternType();
-        
-        // Check custom division visibility
-        checkCustomDivision();
+        // No need to toggle state pattern type since we only use predefined patterns now
 
         // Set default BER display option
         document.getElementById('option_top_ios').checked = true;
@@ -608,14 +632,7 @@
         
         // Load available bitmap masks after form initialization (preserve selection for back/forward navigation)
         setTimeout(() => loadBitmapMasks(true), 200);
-        // Generate table division fields if needed after a short delay
-        setTimeout(() => {
-            const statePatternType = document.getElementById('state_pattern_type').value;
-            const numberOfStates = document.getElementById('number_of_states').value;
-            if (statePatternType === '1D' && numberOfStates === '4') {
-                generateTableDivisionFields();
-            }
-        }, 300);
+        // No longer need to generate table division fields since we removed 1D patterns
     });
 
     // Save form data when leaving the page
@@ -644,87 +661,14 @@
         restoreFormData();
         // Load available bitmap masks after form initialization (preserve selection for fresh page load)
         setTimeout(() => loadBitmapMasks(true), 100);
-        // Generate table division fields if needed after a short delay to ensure table names are loaded
-        setTimeout(() => {
-            const statePatternType = document.getElementById('state_pattern_type').value;
-            const numberOfStates = document.getElementById('number_of_states').value;
-            if (statePatternType === '1D' && numberOfStates === '4') {
-                generateTableDivisionFields();
-            }
-        }, 200);
+        // No longer need to generate table division fields since we removed 1D patterns
     };
 
     document.getElementById('plotForm').addEventListener('submit', function(event) {
         // Save form data before submission
         saveFormData();
         
-        // Validate per-table custom division values (only for 1D pattern type)
-        const statePatternType = document.getElementById('state_pattern_type').value;
-        const numberOfStates = document.getElementById('number_of_states').value;
-        
-        if (statePatternType === '1D' && numberOfStates === '4') {
-            const tableCustomDivisionInputs = document.querySelectorAll('.table-custom-division-input');
-            const tableCustomDivisionDropdowns = document.querySelectorAll('.table-division-dropdown');
-            
-            for (let i = 0; i < tableCustomDivisionDropdowns.length; i++) {
-                const dropdown = tableCustomDivisionDropdowns[i];
-                const customInput = tableCustomDivisionInputs[i];
-                const tableName = dropdown.dataset.tableName;
-                
-                if (dropdown.value === 'custom') {
-                    const customDivisionValues = customInput.value.trim();
-                    
-                    if (!customDivisionValues) {
-                        alert(`Custom Division Error for table "${tableName}": Please enter custom division values when "Custom (Enter your own values)" is selected.`);
-                        event.preventDefault();
-                        customInput.focus();
-                        return;
-                    }
-                    
-                    // Validate format: should be exactly 4 comma-separated numbers
-                    const values = customDivisionValues.split(',').map(v => v.trim()).filter(v => v);
-                    if (values.length !== 4) {
-                        alert(`Custom Division Error for table "${tableName}": Please enter exactly 4 comma-separated values.`);
-                        event.preventDefault();
-                        customInput.focus();
-                        return;
-                    }
-                    
-                    // Validate that all values are numbers
-                    const numericValues = values.map(v => parseFloat(v));
-                    if (numericValues.some(v => isNaN(v))) {
-                        alert(`Custom Division Error for table "${tableName}": All values must be valid numbers.`);
-                        event.preventDefault();
-                        customInput.focus();
-                        return;
-                    }
-                    
-                    // Validate that all values are positive
-                    if (numericValues.some(v => v <= 0)) {
-                        alert(`Custom Division Error for table "${tableName}": All values must be positive numbers.`);
-                        event.preventDefault();
-                        customInput.focus();
-                        return;
-                    }
-                }
-            }
-        }
-
-        // Save custom division values to localStorage for future suggestions
-        if (statePatternType === '1D' && numberOfStates === '4') {
-            const tableCustomDivisionInputs = document.querySelectorAll('.table-custom-division-input');
-            const tableCustomDivisionDropdowns = document.querySelectorAll('.table-division-dropdown');
-            
-            for (let i = 0; i < tableCustomDivisionDropdowns.length; i++) {
-                const dropdown = tableCustomDivisionDropdowns[i];
-                const customInput = tableCustomDivisionInputs[i];
-                const tableName = dropdown.dataset.tableName;
-                
-                if (dropdown.value === 'custom' && customInput.value.trim()) {
-                    saveCustomDivisionValue(tableName, customInput.value.trim());
-                }
-            }
-        }
+        // No longer need to validate 1D pattern custom division values since we removed that functionality
 
         const keywordsInput = document.getElementById('color_group_keywords');
         const keywordsValue = keywordsInput.value.trim();
@@ -886,249 +830,19 @@
         }
     }
     
-    function checkCustomDivision() {
-        var numberOfStates = document.getElementById('number_of_states').value;
-        var perTableDivisionContainer = document.getElementById('per_table_division_container');
-        
-        if (numberOfStates === '4') {
-            perTableDivisionContainer.style.display = 'block';
-            generateTableDivisionFields();
-        } else {
-            perTableDivisionContainer.style.display = 'none';
-            clearTableDivisionFields();
-        }
-    }
+    // checkCustomDivision function removed since we no longer use 1D patterns
 
-    function generateTableDivisionFields() {
-        var container = document.getElementById('table_division_fields');
-        var formElement = document.getElementById('plotForm');
-        var rawTableNames = formElement.dataset.tableNames;
-        
-        if (!rawTableNames) {
-            console.log('No table names found');
-            return;
-        }
-        
-        var tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
-        console.log('Generating division fields for tables:', tableNames);
-        
-        // Clear existing fields
-        container.innerHTML = '';
-        
-        tableNames.forEach(function(tableName, index) {
-            var fieldsetId = 'table_division_' + index;
-            var dropdownId = 'custom_division_type_' + index;
-            var customInputId = 'custom_division_values_' + index;
-            var customSectionId = 'custom_division_input_section_' + index;
-            
-            var fieldsetHTML = `
-                <div class="card mb-3" id="${fieldsetId}">
-                    <div class="card-header">
-                        <strong>${tableName}</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="${dropdownId}">Division Method:</label>
-                            <select class="form-control table-division-dropdown" name="custom_division_type_${index}" id="${dropdownId}" 
-                                    data-table-name="${tableName}" data-index="${index}" onchange="toggleTableCustomDivision(${index})">
-                                <option value="">None (Equal Division)</option>
-                                <option value="21080,19880,21072,20912">Custom Division 1 [21080, 19880, 21072, 20912]</option>
-                                <option value="1625010,1612862,1640536,1591224">Custom Division 2 [1625010, 1612862, 1640536, 1591224]</option>
-                                <option value="15920,16056,17048,16512">Custom Division 3 [15920,16056,17048,16512]</option>
-                                <option value="custom">Custom (Enter your own values)</option>
-                            </select>
-                        </div>
-                        
-                        <div id="${customSectionId}" style="display:none;">
-                            <label for="${customInputId}" class="mt-2">Enter Custom Division Values:</label>
-                            <input type="text" class="form-control table-custom-division-input" 
-                                   name="custom_division_values_${index}" id="${customInputId}" 
-                                   data-table-name="${tableName}" data-index="${index}"
-                                   placeholder="e.g., 20000,21000,22000,23000"
-                                   onfocus="showSuggestionsOnFocus(${index})"
-                                   onblur="hideSuggestionsOnBlur(${index})">
-                            <div id="suggestions_${index}" class="suggestions-container mt-2" style="display:none;">
-                                <small class="form-text text-muted mb-1">Previously used values (from all tables):</small>
-                                <div id="suggestions_buttons_${index}" class="suggestions-buttons">
-                                    <!-- Suggestion buttons will be added here -->
-                                </div>
-                            </div>
-                            <small class="form-text text-muted">Enter exactly 4 comma-separated values for the division thresholds.</small>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            container.innerHTML += fieldsetHTML;
-        });
-        
-        // Add suggestions for all tables using globally saved values
-        const savedValues = getSavedCustomDivisionValues();
-        if (savedValues.length > 0) {
-            tableNames.forEach(function(tableName, index) {
-                addSuggestionsForTable(tableName, index, savedValues);
-            });
-        }
-    }
+    // generateTableDivisionFields function removed since we no longer use 1D patterns
 
-    function addSuggestionsForTable(tableName, index, savedValues) {
-        const suggestionsContainer = document.getElementById(`suggestions_${index}`);
-        const suggestionsButtons = document.getElementById(`suggestions_buttons_${index}`);
-        
-        if (!suggestionsContainer || !suggestionsButtons) return;
-        
-        // Clear existing suggestions
-        suggestionsButtons.innerHTML = '';
-        
-        // Add a button for each saved value
-        savedValues.forEach(function(savedValue, valueIndex) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'btn btn-sm btn-outline-secondary mr-1 mb-1';
-            button.textContent = savedValue;
-            button.title = `Click to use: ${savedValue}`;
-            button.onclick = function() {
-                const customInput = document.getElementById(`custom_division_values_${index}`);
-                customInput.value = savedValue;
-                customInput.focus();
-            };
-            suggestionsButtons.appendChild(button);
-        });
-        
-        // Add a clear suggestions button if there are saved values
-        if (savedValues.length > 0) {
-            const clearButton = document.createElement('button');
-            clearButton.type = 'button';
-            clearButton.className = 'btn btn-sm btn-outline-danger ml-2 mb-1';
-            clearButton.textContent = 'Clear All History';
-            clearButton.title = 'Clear all saved custom division values';
-            clearButton.onclick = function() {
-                if (confirm('Clear all saved custom division values? This will affect all tables.')) {
-                    clearSavedValuesForTable(tableName);
-                    // Hide suggestions for all tables after clearing
-                    const allSuggestionsContainers = document.querySelectorAll('[id^="suggestions_"]');
-                    allSuggestionsContainers.forEach(container => {
-                        container.style.display = 'none';
-                    });
-                }
-            };
-            suggestionsButtons.appendChild(clearButton);
-        }
-        
-        // Show the suggestions container
-        suggestionsContainer.style.display = 'block';
-    }
+    // addSuggestionsForTable function removed since we no longer use 1D patterns
 
-    function showSuggestionsOnFocus(index) {
-        const suggestionsContainer = document.getElementById('suggestions_' + index);
-        if (suggestionsContainer) {
-            const buttonsContainer = document.getElementById('suggestions_buttons_' + index);
-            if (buttonsContainer && buttonsContainer.children.length > 0) {
-                suggestionsContainer.style.display = 'block';
-            }
-        }
-    }
+    // All table division-related functions removed since we no longer use 1D patterns
 
-    function hideSuggestionsOnBlur(index) {
-        // Use a timeout to allow clicking on suggestion buttons before hiding
-        setTimeout(function() {
-            const suggestionsContainer = document.getElementById('suggestions_' + index);
-            const customInput = document.getElementById('custom_division_values_' + index);
-            
-            // Only hide if the input is not focused and no button is being clicked
-            if (suggestionsContainer && document.activeElement !== customInput) {
-                const isClickingButton = document.activeElement && 
-                                       document.activeElement.parentElement && 
-                                       document.activeElement.parentElement.id === 'suggestions_buttons_' + index;
-                
-                if (!isClickingButton) {
-                    suggestionsContainer.style.display = 'none';
-                }
-            }
-        }, 150);
-    }
-
-    function clearTableDivisionFields() {
-        var container = document.getElementById('table_division_fields');
-        container.innerHTML = '';
-    }
-
-    function toggleTableCustomDivision(index) {
-        var dropdown = document.getElementById('custom_division_type_' + index);
-        var customSection = document.getElementById('custom_division_input_section_' + index);
-        var customInput = document.getElementById('custom_division_values_' + index);
-        var suggestionsContainer = document.getElementById('suggestions_' + index);
-        
-        if (dropdown.value === 'custom') {
-            customSection.style.display = 'block';
-            // Show suggestions if they exist and are currently hidden
-            if (suggestionsContainer && suggestionsContainer.innerHTML.trim() !== '') {
-                var buttonsContainer = document.getElementById('suggestions_buttons_' + index);
-                if (buttonsContainer && buttonsContainer.children.length > 0) {
-                    suggestionsContainer.style.display = 'block';
-                }
-            }
-        } else {
-            customSection.style.display = 'none';
-            customInput.value = '';
-            // Hide suggestions when not using custom
-            if (suggestionsContainer) {
-                suggestionsContainer.style.display = 'none';
-            }
-        }
-    }
-
-    function toggleStatePatternType() {
-        var patternType = document.getElementById('state_pattern_type').value;
-        var fields1D = document.getElementById('1D-fields');
-        var fieldsPredefined = document.getElementById('predefined-fields');
-        var numberOfStates = document.getElementById('number_of_states');
-        var outlierAnalysis = document.getElementById('outlier_analysis_flag');
-
-        if (patternType === '1D') {
-            fields1D.style.display = 'block';
-            fieldsPredefined.style.display = 'none';
-            numberOfStates.value = '4';  // Set default value when 1D is selected
-            outlierAnalysis.checked = false;  // Uncheck the outlier analysis checkbox
-            document.getElementById('color_map_flag').checked = false;  // Uncheck color map when switching to 1D
-            document.getElementById('yanCullinan_flag').checked = false;  // Uncheck Yan Cullinan when switching to 1D
-            checkCustomDivision();  // Check the custom division visibility
-        } else {
-            fields1D.style.display = 'none';
-            fieldsPredefined.style.display = 'block';
-            clearTableDivisionFields();  // Clear table division fields when switching away from 1D
-        }
-    }
+    // toggleStatePatternType function removed since we only use predefined patterns now
 
 
 
-    // Function to save custom division values to localStorage (globally)
-    function saveCustomDivisionValue(tableName, customValues) {
-        if (!customValues) return;
-        
-        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '[]');
-        
-        // Add new value if it doesn't already exist
-        if (!savedValues.includes(customValues)) {
-            savedValues.unshift(customValues); // Add to beginning
-            savedValues = savedValues.slice(0, 10); // Keep only last 10 values to avoid excessive storage
-        }
-        
-        localStorage.setItem('customDivisionValues', JSON.stringify(savedValues));
-        console.log(`Saved custom division value globally: ${customValues}`);
-    }
-
-    // Function to load saved custom division values from localStorage (globally)
-    function getSavedCustomDivisionValues(tableName) {
-        let savedValues = JSON.parse(localStorage.getItem('customDivisionValues') || '[]');
-        return savedValues;
-    }
-
-    // Function to clear all saved values
-    function clearSavedValuesForTable(tableName) {
-        localStorage.removeItem('customDivisionValues');
-        console.log('Cleared all saved custom division values');
-    }
+    // Custom division value storage functions removed since we no longer use 1D patterns
 
     // Function to toggle bitmap mask name input visibility
     function toggleBitmapMaskName() {
@@ -1212,7 +926,9 @@
     }
 
     function toggleAnalysisType() {
-        var statePattern = document.getElementById('state_pattern').value;
+        // Get state pattern from either the regular select or the manual select
+        var statePatternElement = document.getElementById('state_pattern') || document.getElementById('state_pattern_manual');
+        var statePattern = statePatternElement ? statePatternElement.value : '';
         var analysisTypeContainer = document.getElementById('analysis_type_container');
         
         if (statePattern === '82944x78_ecc_fuxi') {
@@ -1225,7 +941,9 @@
     }
     
     function toggleColumnSelection() {
-        var statePattern = document.getElementById('state_pattern').value;
+        // Get state pattern from either the regular select or the manual select
+        var statePatternElement = document.getElementById('state_pattern') || document.getElementById('state_pattern_manual');
+        var statePattern = statePatternElement ? statePatternElement.value : '';
         var analysisType = document.getElementById('analysis_type').value;
         var columnSelectionContainer = document.getElementById('column_selection_container');
         
@@ -1275,6 +993,14 @@
         } else {
             customColumnInput.style.display = 'none';
         }
+    }
+
+    function toggleAnalysisModeInfo() {
+        var analysisMode = document.getElementById('analysis_mode').value;
+        var infoElement = document.getElementById('analysis_mode_info');
+        
+        // Clear the info text
+        infoElement.innerHTML = '';
     }
 
     // Function to toggle location dots value input visibility
@@ -1409,10 +1135,6 @@
                 // Trigger necessary change events to update dependent fields
                 setTimeout(() => {
                     try {
-                        const statePatternType = document.getElementById('state_pattern_type');
-                        if (statePatternType) {
-                            toggleStatePatternType();
-                        }
                         
                         const statePattern = document.getElementById('state_pattern');
                         if (statePattern) {
@@ -1422,6 +1144,11 @@
                         const analysisType = document.getElementById('analysis_type');
                         if (analysisType) {
                             toggleColumnSelection();
+                        }
+                        
+                        const analysisMode = document.getElementById('analysis_mode');
+                        if (analysisMode) {
+                            toggleAnalysisModeInfo();
                         }
                         
                         const columnSelectionType = document.getElementById('column_selection_type');
@@ -1439,8 +1166,7 @@
                             toggleBitmapMaskName();
                         }
                         
-                        // Check custom division if needed
-                        checkCustomDivision();
+                        // No longer need custom division since we removed 1D patterns
                         
                         console.log('Form data restored successfully and dependent fields updated');
                     } catch (updateError) {
@@ -1578,6 +1304,116 @@
             // Note: Auto-save functionality is active but no UI message is displayed
         }
     });
+
+    // Function to switch from auto-selected ECC pattern to manual pattern selection
+    function switchToManualPatternSelection() {
+        console.log('Switching to manual pattern selection...');
+        
+        // Hide the auto-selected pattern info
+        const autoSelectedDiv = document.querySelector('.alert.alert-info');
+        if (autoSelectedDiv) {
+            autoSelectedDiv.style.display = 'none';
+        }
+        
+        // Remove the hidden field for auto-selected pattern
+        const hiddenField = document.getElementById('state_pattern_hidden');
+        if (hiddenField) {
+            hiddenField.remove();
+        }
+        
+        // Show the manual pattern selection dropdown
+        const manualSelectionDiv = document.getElementById('manual_pattern_selection');
+        if (manualSelectionDiv) {
+            manualSelectionDiv.style.display = 'block';
+        }
+        
+        // Set default selection to first option
+        const manualSelect = document.getElementById('state_pattern_manual');
+        if (manualSelect) {
+            manualSelect.selectedIndex = 0;
+            // Trigger change event to update analysis type options
+            toggleAnalysisType();
+        }
+        
+        console.log('✅ Switched to manual pattern selection');
+    }
+
+    // Function to handle ECC pattern auto-selection
+    function handleECCPatternAutoSelection() {
+        // Get ECC pattern information from the server template variables
+        const eccMode = '{{ ecc_pattern_mode }}';
+        const selectedPattern = '{{ selected_pattern }}';
+        const hidePatternSelection = {% if hide_pattern_selection %}true{% else %}false{% endif %};
+        
+        console.log('ECC Mode:', eccMode, 'Selected Pattern:', selectedPattern, 'Hide Pattern Selection:', hidePatternSelection);
+        
+        if (eccMode && selectedPattern) {
+            const selectedGroupsSelect = document.getElementById('selected_groups_predefined');
+            
+            if (hidePatternSelection) {
+                // Pattern is already set via hidden input, just set analysis mode for subset ECC
+                if (eccMode === 'subset_ecc') {
+                    const analysisModeSelect = document.getElementById('analysis_mode');
+                    if (analysisModeSelect) {
+                        analysisModeSelect.value = 'combine';
+                        toggleAnalysisModeInfo();
+                        console.log('Set to combine analysis mode for ECC subset');
+                    }
+                }
+                
+                // Always set selected groups to all 4 states for ECC patterns
+                if (selectedGroupsSelect) {
+                    selectedGroupsSelect.value = '0,1,2,3';
+                }
+                
+                console.log('ECC pattern auto-configured:', selectedPattern);
+            } else {
+                // Legacy handling for when pattern selection is visible
+                const statePatternSelect = document.getElementById('state_pattern');
+                
+                if (eccMode === 'auto_78_tables' && selectedPattern === 'ecc_2048x32_78tables') {
+                    // Auto-select the 78-table pattern
+                    const option78Tables = document.getElementById('ecc_78tables_option');
+                    if (option78Tables && statePatternSelect) {
+                        option78Tables.style.display = 'block';
+                        statePatternSelect.value = 'ecc_2048x32_78tables';
+                        selectedGroupsSelect.value = '0,1,2,3';
+                        statePatternSelect.dataset.eccAutoSet = 'true';
+                        
+                        console.log('Auto-selected ecc_2048x32_78tables pattern for 78 IO tables');
+                    }
+                }
+            }
+        }
+    }
+    
+    // Function to add visual indicator for ECC pattern selection
+    function addECCPatternIndicator(message) {
+        const statePatternElement = document.getElementById('state_pattern');
+        
+        // Only add indicator if state pattern element exists and is visible (not hidden)
+        if (statePatternElement && statePatternElement.type !== 'hidden') {
+            const statePatternGroup = statePatternElement.closest('.form-group');
+            
+            if (statePatternGroup) {
+                // Remove existing indicator if present
+                const existingIndicator = statePatternGroup.querySelector('.ecc-pattern-indicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+                
+                // Add new indicator
+                const indicator = document.createElement('div');
+                indicator.className = 'ecc-pattern-indicator alert alert-success mt-2';
+                indicator.innerHTML = `<i class="fas fa-check-circle"></i> <strong>ECC Pattern:</strong> ${message}`;
+                indicator.style.fontSize = '0.9em';
+                indicator.style.padding = '8px 12px';
+                indicator.style.marginBottom = '0';
+                
+                statePatternGroup.appendChild(indicator);
+            }
+        }
+    }
 
     // Debug function to check localStorage contents
     window.debugFormData = function() {

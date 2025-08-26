@@ -674,3 +674,60 @@
     RuntimeError: Cannot write() after finish()
 [I 2025-08-22 15:54:34.265 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
 [I 2025-08-22 18:30:28.014 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-25 14:30:16.840 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[W 2025-08-25 15:19:16.840 ServerApp] WebSocket ping timeout after 119884 ms.
+[I 2025-08-25 15:19:21.857 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-25 15:26:18.047 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-25 15:26:29.660 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 15:28:29.633 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 15:30:29.621 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-25 15:45:27.507 NotebookApp] 405 HEAD /notebooks/AP_OV_LDTR_Bench.ipynb?token=[secret] (192.168.68.251) 24.69ms referer=http://192.168.68.215:3000/
+[W 2025-08-25 15:45:27.513 NotebookApp] 405 HEAD /notebooks/AP_OV_LDTR_Bench.ipynb (192.168.68.251) 0.60ms referer=http://192.168.68.215:3000/
+[W 2025-08-25 15:45:27.519 NotebookApp] 405 HEAD /tree/AP_OV_LDTR_Bench.ipynb?token=[secret] (192.168.68.251) 1.60ms referer=http://192.168.68.215:3000/
+[W 2025-08-25 15:45:31.145 ServerApp] Notebook AP_OV_LDTR_Bench.ipynb is not trusted
+[W 2025-08-25 15:45:31.193 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 11.92ms referer=http://192.168.68.215:8888/notebooks/AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 15:45:31.198 ServerApp] Kernel started: 5c0f15a2-782f-429d-a351-fbef1b65bc0f
+[I 2025-08-25 15:47:31.193 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 15:49:31.209 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 15:51:31.205 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 15:53:31.199 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 15:55:31.217 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 15:59:31.182 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:01:31.192 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:05:31.197 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:17:31.193 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:23:31.175 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:35:48.330 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 16:45:31.175 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:47:31.154 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:49:31.153 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 16:53:31.139 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 17:36:29.544 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 17:38:29.515 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 17:40:30.444 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 17:42:29.494 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[I 2025-08-25 17:48:30.509 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
+[W 2025-08-25 18:39:01.587 ServerApp] WebSocket ping timeout after 119628 ms.
+[I 2025-08-25 18:39:06.589 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[W 2025-08-25 18:39:18.048 ServerApp] WebSocket ping timeout after 119716 ms.
+[I 2025-08-25 18:39:23.050 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
+[I 2025-08-25 19:16:28.151 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 19:17:31.313 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 19:19:31.208 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 19:21:21.552 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 19:55:30.587 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 19:55:32.439 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 19:58:48.000 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 20:22:00.301 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 20:36:14.225 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 22:59:38.014 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-25 23:01:50.660 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 23:06:10.597 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 23:10:30.549 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-25 23:19:10.669 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-26 00:08:43.793 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-26 00:09:12.912 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-26 00:10:52.274 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-26 00:10:55.036 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-26 00:11:11.213 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-26 00:12:04.814 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53

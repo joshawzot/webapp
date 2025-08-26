@@ -41,6 +41,7 @@
                                 <option value="max" data-port="3006">max (Port 3006)</option>
                             </select>
                         </div>
+                        
                         <div class="form-group text-center">
                             <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
                                 <i class="fas fa-sign-in-alt"></i> Login
@@ -54,6 +55,23 @@
 </div>
 
 <script>
+// Function to log user activity
+function logActivity(action, details = null) {
+    fetch('/log-activity', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: action,
+            details: details,
+            page: 'login'
+        })
+    }).catch(error => {
+        console.error('Error logging activity:', error);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('loginForm');
     const usernameSelect = document.getElementById('username');
@@ -108,6 +126,11 @@ document.addEventListener('DOMContentLoaded', function() {
     usernameSelect.addEventListener('change', function() {
         const selectedUser = this.value;
         
+        // Log user selection
+        if (selectedUser) {
+            logActivity('user_selected', {user: selectedUser, port: currentPort});
+        }
+        
         if (selectedUser && userPortMapping[selectedUser]) {
             const requiredPort = userPortMapping[selectedUser];
             
@@ -134,12 +157,17 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         const selectedUser = usernameSelect.value;
         
+        // Log login attempt
+        logActivity('login_attempt', {user: selectedUser, port: currentPort});
+        
         if (selectedUser && userPortMapping[selectedUser]) {
             const requiredPort = userPortMapping[selectedUser];
             
             if (currentPort !== requiredPort) {
                 e.preventDefault();
                 showPortWarning(selectedUser, requiredPort);
+                // Log failed login attempt due to port mismatch
+                logActivity('login_failed', {user: selectedUser, reason: 'port_mismatch', required_port: requiredPort, current_port: currentPort});
                 return false;
             }
         }

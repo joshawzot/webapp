@@ -70,7 +70,6 @@
                     <thead class="thead-light">
                         <tr>
                             <th>Folder Name</th>
-                            <th>Visited By</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -78,9 +77,6 @@
                         {% for visit in recent_visits %}
                             <tr>
                                 <td>{{ visit.folder_name }}</td>
-                                <td>
-                                    <span class="badge badge-secondary">{{ visit.username }}</span>
-                                </td>
                                 <td>
                                     <form action="/list-tables" method="post" class="d-inline">
                                         <input type="hidden" name="database" value="{{ visit.folder_name }}">
@@ -285,6 +281,23 @@
 <script src="https://unpkg.com/clusterize.js@0.18.1/clusterize.min.js"></script>
 
 <script>
+// Function to log user activity
+function logActivity(action, details = null) {
+    fetch('/log-activity', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: action,
+            details: details,
+            page: 'home'
+        })
+    }).catch(error => {
+        console.error('Error logging activity:', error);
+    });
+}
+
 // Debounce function to limit how often a function runs
 function debounce(func, wait) {
     let timeout;
@@ -295,6 +308,29 @@ function debounce(func, wait) {
 }
 
 document.addEventListener('DOMContentLoaded', (event) => {
+    // Log page load
+    logActivity('page_loaded');
+    
+    // Log button clicks for main action buttons
+    document.querySelectorAll('a.btn, button.btn').forEach(button => {
+        const buttonText = button.textContent.trim();
+        const buttonHref = button.href;
+        
+        // Skip logging for certain buttons (like form submission buttons)
+        if (button.id === 'mergeFoldersBtn' || button.classList.contains('schema-checkbox')) {
+            return;
+        }
+        
+        button.addEventListener('click', function() {
+            logActivity('button_click', {
+                button_text: buttonText,
+                button_href: buttonHref,
+                button_id: button.id,
+                button_classes: Array.from(button.classList).join(' ')
+            });
+        });
+    });
+    
     // Cache selectors
     const filterInputs = Array.from(document.querySelectorAll('.filterInput'));
     const databaseFilterInput = document.getElementById('databaseFilter');
@@ -340,17 +376,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const databaseOptions = document.querySelectorAll('.database-option');
         databaseOptions.forEach(item => {
             item.addEventListener('dblclick', function() {
+                const selectedDb = item.getAttribute('data-db');
+                
+                // Log database selection
+                logActivity('database_opened', {database_name: selectedDb});
+                
                 var form = document.getElementById('databaseForm');
 
                 // Remove any existing 'database' hidden inputs
                 var existingInput = form.querySelector('input[name="database"]');
                 if (existingInput) {
-                    existingInput.value = item.getAttribute('data-db');
+                    existingInput.value = selectedDb;
                 } else {
                     var input = document.createElement('input');
                     input.type = 'hidden';
                     input.name = 'database';
-                    input.value = item.getAttribute('data-db');
+                    input.value = selectedDb;
                     form.appendChild(input);
                 }
                 form.submit();
@@ -372,6 +413,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         // Check if any filter field has input
         const anyFilterHasInput = filters.some(filter => filter) || databaseFilter || andFilters.length > 0 || orFilters.length > 0;
+        
+        // Log search activity if there's any filter input
+        if (anyFilterHasInput) {
+            logActivity('search_filter', {
+                filters: filters.filter(f => f),
+                database_filter: databaseFilter,
+                and_filters: andFilters,
+                or_filters: orFilters
+            });
+        }
 
         if (!anyFilterHasInput) {
             // If no filters have input, clear the list
@@ -422,6 +473,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // Add handler for merge folders button
     document.getElementById('mergeFoldersBtn').addEventListener('click', function() {
+        // Log merge folders action
+        logActivity('merge_folders_initiated');
+        
         // Show processing indicator
         document.getElementById('mergeProcessingIndicator').style.display = 'block';
         // Disable the merge button to prevent double clicks
@@ -475,6 +529,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
             return;
         }
 
+        // Log merge request details
+        logActivity('merge_folders_request', {
+            target_schema: targetSchemaName,
+            selected_schemas: selectedSchemas,
+            schema_count: selectedSchemas.length,
+            use_existing: useExistingSchema
+        });
+        
         // Send merge request to server
         fetch('/merge-schemas', {
             method: 'POST',
@@ -493,9 +555,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.getElementById('mergeProcessingIndicator').style.display = 'none';
             
             if (data.success) {
+                // Log successful merge
+                logActivity('merge_folders_success', {
+                    target_schema: targetSchemaName,
+                    schema_count: selectedSchemas.length
+                });
                 alert('Folders merged successfully!');
                 window.location.reload(); // Reload the page to show the new schema
             } else {
+                // Log failed merge
+                logActivity('merge_folders_failed', {
+                    target_schema: targetSchemaName,
+                    error_message: data.message,
+                    schema_count: selectedSchemas.length
+                });
                 alert('Error: ' + data.message);
                 // Re-enable the merge button
                 document.getElementById('mergeFoldersBtn').disabled = false;
@@ -505,6 +578,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // Hide processing indicator and re-enable button on error
             document.getElementById('mergeProcessingIndicator').style.display = 'none';
             document.getElementById('mergeFoldersBtn').disabled = false;
+            
+            // Log merge error
+            logActivity('merge_folders_error', {
+                target_schema: targetSchemaName,
+                error: error.toString(),
+                schema_count: selectedSchemas.length
+            });
             
             console.error('Error:', error);
             alert('An error occurred while merging folders');

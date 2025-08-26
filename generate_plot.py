@@ -245,8 +245,16 @@ def get_group_data_1124(table_name, selected_groups, database_name, pattern_file
     group_idx_to_position = {}
 
     # Ensure that pattern_file_array has the same shape as data_np
+    print(f"🔍 DIMENSION CHECK: pattern_file_array.shape = {pattern_file_array.shape}")
+    print(f"🔍 DIMENSION CHECK: data_np.shape = {data_np.shape}")
+    
     if pattern_file_array.shape != data_np.shape:
-        raise ValueError("pattern_file_array must have the same shape as the data array.")
+        print(f"🚨 DIMENSION MISMATCH DETECTED!")
+        print(f"   Pattern shape: {pattern_file_array.shape}")
+        print(f"   Data shape: {data_np.shape}")
+        raise ValueError(f"pattern_file_array shape {pattern_file_array.shape} must have the same shape as the data array {data_np.shape}.")
+    else:
+        print(f"✅ DIMENSION CHECK PASSED: shapes match {pattern_file_array.shape}")
 
     unique_groups = np.unique(pattern_file_array)
     group_indices = unique_groups.tolist()
@@ -310,8 +318,16 @@ def get_group_data_1124_2(target_ranges, table_name, selected_groups, database_n
     #     data_np = data_np * 1e6
 
     # Ensure that pattern_file_array has the same shape as data_np
+    print(f"🔍 DIMENSION CHECK: pattern_file_array.shape = {pattern_file_array.shape}")
+    print(f"🔍 DIMENSION CHECK: data_np.shape = {data_np.shape}")
+    
     if pattern_file_array.shape != data_np.shape:
-        raise ValueError("pattern_file_array must have the same shape as the data array.")
+        print(f"🚨 DIMENSION MISMATCH DETECTED!")
+        print(f"   Pattern shape: {pattern_file_array.shape}")
+        print(f"   Data shape: {data_np.shape}")
+        raise ValueError(f"pattern_file_array shape {pattern_file_array.shape} must have the same shape as the data array {data_np.shape}.")
+    else:
+        print(f"✅ DIMENSION CHECK PASSED: shapes match {pattern_file_array.shape}")
 
     groups = []
     groups_stats = []  # List to store statistics for each group
@@ -730,7 +746,12 @@ def calculate_sigma_distances(data, target_values, table_names, selected_groups=
     return sigma_distances
 
 def generate_plot(table_names, database_name, form_data):
-    print("form_data:", form_data)
+    import re  # Import re for regex pattern matching
+    import os  # Import os for path operations
+    print("🚨 FULL FORM_DATA DEBUG:")
+    for key, value in form_data.items():
+        print(f"  {key}: {value}")
+    print("🚨 END FORM_DATA DEBUG")
     color_map_flag = form_data['color_map_flag']  # This is now a boolean
     yanCullinan_flag = form_data.get('yanCullinan_flag', False)  # PLACEHOLDER CHIN EDIT HERE
     outlier_analysis_flag = form_data.get('outlier_analysis_flag', False)  # Default to False if not provided
@@ -754,6 +775,10 @@ def generate_plot(table_names, database_name, form_data):
     # Get analysis type for column-by-column analysis
     analysis_type = form_data.get('analysis_type', 'default')
     print("analysis_type:", analysis_type)
+    
+    # Get analysis mode for combine analysis
+    analysis_mode = form_data.get('analysis_mode', 'individual')
+    print("analysis_mode:", analysis_mode)
     
     # Initialize sigma_distances and num_states at the start
     sigma_distances = {}
@@ -786,7 +811,9 @@ def generate_plot(table_names, database_name, form_data):
     if form_data['state_pattern_type'] == 'predefined':
         # Define the path to your state pattern files directory
         state_pattern = form_data.get('state_pattern')
-        print("state_pattern:", state_pattern)
+        print("🔍 DEBUG: state_pattern from form_data:", state_pattern)
+        print("🔍 DEBUG: form_data keys:", list(form_data.keys()))
+        print("🔍 DEBUG: ecc_pattern_mode:", form_data.get('ecc_pattern_mode', 'not_set'))
         # Define a dictionary to map state patterns to their file paths
         '''pattern_files = {
             "1296x64_rowbar_4states": "State_pattern_files/1296x64_rowbar_4states.npy",
@@ -813,17 +840,144 @@ def generate_plot(table_names, database_name, form_data):
 
         # Fetch the file path based on the state pattern using a dictionary lookup
         file_path = pattern_files.get(state_pattern)
+        print(f"🔍 DEBUG: Looking up pattern '{state_pattern}' in pattern_files")
+        print(f"🔍 DEBUG: Found file_path: {file_path}")
 
-        # Special handling for 78-table pattern
+        # Special handling for ECC patterns
         if state_pattern == "ecc_2048x32_78tables":
             print("DEBUG: Processing 78-table pattern - will match each table with its corresponding IO pattern")
             # This will be handled later in the processing loop
             pattern_file_array = "SPECIAL_78TABLES"  # Special marker
-        # Load the pattern file array if the file path is found
-        elif file_path:
+        elif state_pattern == "combined_ecc_subset":
+            print(f"🔍 DEBUG: Processing ECC subset pattern: {state_pattern}")
+            print(f"🔍 DEBUG: ECC pattern mode from form_data: {form_data.get('ecc_pattern_mode', 'not_set')}")
+            
+            # This is the standard ECC subset case
+            if 'ecc_io_numbers' in form_data and form_data['ecc_io_numbers']:
+                print(f"🔍 DEBUG: Valid ECC IO numbers found: {form_data['ecc_io_numbers']}")
+                pattern_file_array = "SPECIAL_ECC_SUBSET"  # Special marker
+            else:
+                # No valid IO numbers - this should be an error
+                raise Exception(f"ECC subset pattern 'combined_ecc_subset' requested but no valid IO numbers found in session. Please try the ECC pattern detection again.")
+        elif state_pattern.startswith("ecc_2048x32_combined_"):
+            print(f"🔍 DEBUG: Processing ECC subset pattern: {state_pattern}")
+            print(f"🔍 DEBUG: ECC pattern mode from form_data: {form_data.get('ecc_pattern_mode', 'not_set')}")
+            
+            # Check if user has manually overridden the pattern selection
+            # If ecc_pattern_mode is 'normal', it means user switched to manual selection
+            if form_data.get('ecc_pattern_mode') == 'normal':
+                print(f"🔍 DEBUG: User has switched to manual pattern selection - ignoring ECC combined pattern")
+                print(f"🔍 DEBUG: Will treat '{state_pattern}' as regular pattern (should fail if not found)")
+                # Don't use ECC special handling - let it fall through to regular pattern loading
+                pattern_file_array = None
+            elif 'ecc_io_numbers' in form_data and form_data['ecc_io_numbers']:
+                print(f"🔍 DEBUG: Valid ECC IO numbers found: {form_data['ecc_io_numbers']}")
+                pattern_file_array = "SPECIAL_ECC_SUBSET"  # Special marker
+            else:
+                # No valid IO numbers - this means user selected non-ECC tables but chose "ECC pattern"
+                # This should fail with a clear error rather than proceeding with wrong patterns
+                available_io_numbers = []
+                for table_name in table_names:
+                    match = re.search(r'IO(\d+)', table_name)
+                    if match:
+                        available_io_numbers.append(int(match.group(1)))
+                
+                if not available_io_numbers:
+                    raise Exception(f"ECC pattern processing requested for non-ECC tables. The selected tables {table_names} do not contain IO patterns (IO0, IO1, etc.) required for ECC analysis. Please select tables with IO patterns or choose 'No, Regular Analysis' in the ECC pattern detection.")
+                else:
+                    print(f"🔍 DEBUG: Found IO numbers in table names but not in session: {available_io_numbers}")
+                    pattern_file_array = "SPECIAL_ECC_SUBSET"  # Special marker
+        elif any(re.search(r'IO(\d+)', name) for name in table_names) and len(table_names) > 1:
+            # Check if user explicitly chose regular analysis (ecc_pattern_mode = 'normal')
+            if form_data.get('ecc_pattern_mode') == 'normal':
+                print(f"🚨 DEBUG: SKIPPING auto-detection because ecc_pattern_mode is 'normal' - user chose regular analysis")
+                print(f"🚨 DEBUG: Will use manually selected pattern: {state_pattern}")
+                print(f"🚨 DEBUG: This should cause dimension mismatch for 2048x32 tables vs 1296x64 pattern")
+                # Don't auto-detect ECC - let it fall through to regular pattern loading
+                # Set pattern_file_array to None so we'll load the regular pattern file below
+                pattern_file_array = None
+            else:
+                # Auto-detect case: Multiple IO tables (works for both combine and individual analysis)
+                print(f"DEBUG: Auto-detecting ECC subset case - Multiple IO tables with pattern '{state_pattern}' selected")
+                print(f"DEBUG: Table names: {table_names}")
+                print(f"DEBUG: Analysis mode: {analysis_mode}")
+                # Check if this is an ECC subset case by looking at table names
+                io_numbers = []
+                for table_name in table_names:
+                    match = re.search(r'IO(\d+)', table_name)
+                    if match:
+                        io_numbers.append(int(match.group(1)))
+                
+                if len(io_numbers) > 1:  # Multiple IO tables
+                    print(f"DEBUG: Auto-detected ECC subset with IO numbers: {io_numbers}")
+                    pattern_file_array = "SPECIAL_ECC_SUBSET"  # Force ECC subset handling for both modes
+                else:
+                    print(f"DEBUG: Single IO table or no IO pattern detected, using individual pattern")
+                    pattern_file_array = "SPECIAL_ECC_SUBSET" if io_numbers else None
+        # Load the pattern file array if the file path is found and pattern_file_array is still None
+        if file_path and pattern_file_array is None:
             try:
                 pattern_file_array = np.load(file_path)
-                print(f"DEBUG: Loaded pattern_file_array with shape {pattern_file_array.shape}")
+                print(f"🔍 DEBUG: Loaded pattern_file_array with shape {pattern_file_array.shape}")
+                print(f"🔍 DEBUG: Pattern file loaded from: {file_path}")
+                print(f"🔍 DEBUG: Successfully loaded regular pattern '{state_pattern}'")
+                
+                # Check for dimension mismatch early when user explicitly chose regular analysis
+                if form_data.get('ecc_pattern_mode') == 'normal' and analysis_mode == 'combine':
+                    # For combine mode, pattern must match the COMBINED dimensions, not individual table dimensions
+                    num_tables = len(table_names)
+                    if num_tables > 1:
+                        # Get actual table dimensions instead of hardcoding 2048x32
+                        print(f"🔍 GETTING ACTUAL TABLE DIMENSIONS...")
+                        first_table_name = table_names[0]
+                        
+                        # Use get_table_dimensions from db_operations to get actual dimensions
+                        from db_operations import get_table_dimensions
+                        try:
+                            first_table_rows, first_table_cols = get_table_dimensions(database_name, first_table_name)
+                            print(f"   First table ({first_table_name}): {first_table_rows}x{first_table_cols}")
+                            
+                            # Calculate expected combined shape based on actual table dimensions
+                            expected_combined_shape = (first_table_rows, first_table_cols * num_tables)
+                            
+                        except Exception as e:
+                            print(f"   ⚠️  Could not get table dimensions: {e}")
+                            print(f"   ⚠️  Falling back to hardcoded assumption: 2048x32")
+                            # Fallback to previous hardcoded logic
+                            expected_combined_shape = (2048, 32 * num_tables)
+                        
+                        print(f"🔍 COMBINE MODE DIMENSION CHECK:")
+                        print(f"   Number of tables: {num_tables}")
+                        print(f"   Pattern shape: {pattern_file_array.shape}")
+                        print(f"   Expected combined data shape: {expected_combined_shape}")
+                        
+                        # Check if pattern dimensions match combined data dimensions
+                        if pattern_file_array.shape != expected_combined_shape:
+                            # Check if we can auto-replicate a single-table pattern for multi-table combine
+                            single_table_rows, single_table_cols = expected_combined_shape[0], expected_combined_shape[1] // num_tables
+                            single_table_shape = (single_table_rows, single_table_cols)
+                            
+                            if pattern_file_array.shape == single_table_shape:
+                                print(f"🔄 AUTO-REPLICATING PATTERN FOR COMBINE MODE:")
+                                print(f"   Original pattern shape: {pattern_file_array.shape}")
+                                print(f"   Single table dimensions: {single_table_shape}")
+                                print(f"   Replicating pattern {num_tables} times to match combined data shape: {expected_combined_shape}")
+                                
+                                # Replicate the pattern horizontally to match combined data
+                                replicated_pattern = np.tile(pattern_file_array, (1, num_tables))
+                                pattern_file_array = replicated_pattern
+                                print(f"🔍 DEBUG: After replication - pattern_file_array.shape = {pattern_file_array.shape}")
+                                
+                                print(f"✅ PATTERN REPLICATED: New pattern shape: {pattern_file_array.shape}")
+                                print(f"✅ DIMENSION CHECK PASSED: Replicated pattern matches combined data shape")
+                            else:
+                                print(f"🚨 DIMENSION MISMATCH DETECTED!")
+                                print(f"   Pattern shape: {pattern_file_array.shape}")
+                                print(f"   Expected single table shape: {single_table_shape}")
+                                print(f"   Expected combined shape: {expected_combined_shape}")
+                                raise ValueError(f"Pattern dimension mismatch: Selected pattern '{state_pattern}' has shape {pattern_file_array.shape}, but combined data from {num_tables} tables will have shape {expected_combined_shape}. Please select a compatible pattern or use individual analysis mode.")
+                        else:
+                            print(f"✅ DIMENSION CHECK PASSED: Pattern matches combined data shape")
                 # Special handling for 82944x78_ecc_fuxi.npy which is actually (78, 1296, 64)
                 if state_pattern == "82944x78_ecc_fuxi":
                     # Reshape the 3D array to 2D (78, 82944) and then transpose to (82944, 78)
@@ -845,8 +999,17 @@ def generate_plot(table_names, database_name, form_data):
                 print(f"DEBUG: Final pattern_file_array after loading: {pattern_file_array is not None}")
             except Exception as e:
                 raise Exception(f"Error loading pattern file '{file_path}': {str(e)}")
-        else:
+        elif pattern_file_array is None:
+            # Only raise error if no file_path was found AND no special handling was applied
+            print(f"🔍 DEBUG: No file_path found for pattern '{state_pattern}'")
+            print(f"🔍 DEBUG: Available patterns: {list(pattern_files.keys())}")
+            if state_pattern.startswith("ecc_2048x32_combined_"):
+                print(f"🔍 DEBUG: This appears to be a combined ECC pattern that user tried to override")
+                print(f"🔍 DEBUG: User likely selected manual pattern but form still submitted ECC pattern name")
             raise Exception(f"Pattern file not found for state pattern: {state_pattern}. Available patterns: {list(pattern_files.keys())}")
+        else:
+            # Pattern was handled by special logic (e.g., SPECIAL_ECC_SUBSET), continue processing
+            print(f"🔍 DEBUG: Pattern '{state_pattern}' handled by special logic: pattern_file_array = {pattern_file_array}")
     elif form_data['state_pattern_type'] == '1D':
         state_pattern = None
         number_of_states = form_data.get('number_of_states', "")
@@ -891,112 +1054,281 @@ def generate_plot(table_names, database_name, form_data):
     data_matrices = []
     bitmap_mask_to_save = None  # Will store the bitmap mask if we need to generate one
     
-    for table_name in table_names:
-        data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
+    # Handle combine analysis mode
+    if analysis_mode == 'combine':
+        print("COMBINE ANALYSIS MODE: Processing all tables as one combined dataset")
         
-        # Apply conductance conversion if enabled
-        if using_conductance and conductance_params:
-            print(f"Converting table {table_name} to conductance values")
-            data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
-        # Apply linear conversion if enabled
-        elif using_linear_conversion:
-            # Get conversion parameters from form_data
-            conversion_params = {
-                'input_min': form_data.get('linear_input_min', 0),
-                'input_max': form_data.get('linear_input_max', 63),
-                'output_min': form_data.get('linear_output_min', 60),
-                'output_max': form_data.get('linear_output_max', 170)
-            }
-            print(f"Converting table {table_name} using linear conversion ({conversion_params['input_min']}-{conversion_params['input_max']} → {conversion_params['output_min']}-{conversion_params['output_max']})")
-            data_matrix = convert_table_to_linear(data_matrix, conversion_params)
+        # Collect all data matrices first
+        combined_data_matrices = []
+        original_table_names = table_names.copy()  # Keep original table names for reference
         
-        # Check if we need to apply an existing bitmap mask
-        apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
-        if apply_bitmap_mask:
-            print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {table_name}")
-            from route_handlers import load_bitmap_mask, validate_mask_dimensions
+        for table_name in table_names:
+            data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
             
-            mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
-            if mask_array is not None:
-                # Validate dimensions
-                is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
-                if is_valid:
-                    print(f"Bitmap mask validation passed: {validation_message}")
-                    # Apply the mask: set filtered coordinates to NaN
-                    data_matrix[mask_array == 0] = np.nan
-                    valid_count = np.sum(mask_array == 1)
-                    filtered_count = np.sum(mask_array == 0)
-                    print(f"Bitmap mask applied to {table_name}: {valid_count} valid points, {filtered_count} filtered out")
+            # Apply conversions and filters to each table
+            # Apply conductance conversion if enabled
+            if using_conductance and conductance_params:
+                print(f"Converting table {table_name} to conductance values")
+                data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+            # Apply linear conversion if enabled
+            elif using_linear_conversion:
+                # Get conversion parameters from form_data
+                conversion_params = {
+                    'input_min': form_data.get('linear_input_min', 0),
+                    'input_max': form_data.get('linear_input_max', 63),
+                    'output_min': form_data.get('linear_output_min', 60),
+                    'output_max': form_data.get('linear_output_max', 170)
+                }
+                print(f"Converting table {table_name} using linear conversion")
+                data_matrix = convert_table_to_linear(data_matrix, conversion_params)
+            
+            # Apply bitmap mask if specified
+            apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
+            if apply_bitmap_mask:
+                print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {table_name}")
+                from route_handlers import load_bitmap_mask, validate_mask_dimensions
+                
+                mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
+                if mask_array is not None:
+                    is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
+                    if is_valid:
+                        data_matrix[mask_array == 0] = np.nan
+                        print(f"Bitmap mask applied to {table_name}")
+                    else:
+                        print(f"Bitmap mask validation failed for {table_name}: {validation_message}")
                 else:
-                    print(f"Bitmap mask validation failed for {table_name}: {validation_message}")
-                    print("Skipping bitmap mask application")
-            else:
-                print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {table_name}")
+                    print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {table_name}")
+            
+            # Apply data range and negative value filtering
+            data_min_value = form_data.get('data_min_value')
+            data_max_value = form_data.get('data_max_value')
+            if data_min_value is not None or data_max_value is not None:
+                mask = np.ones(data_matrix.shape, dtype=bool)
+                if data_min_value is not None:
+                    mask &= (data_matrix >= data_min_value)
+                if data_max_value is not None:
+                    mask &= (data_matrix <= data_max_value)
+                data_matrix[~mask] = np.nan
+                print(f"Data range filter applied to {table_name}")
+            
+            filter_negative_values = form_data.get('filter_negative_values', False)
+            if filter_negative_values:
+                data_matrix[data_matrix < 0] = np.nan
+                print(f"Negative value filter applied to {table_name}")
+            
+            combined_data_matrices.append(data_matrix)
         
-        # Initialize combined mask for bitmap generation
-        combined_filter_mask = np.ones(data_matrix.shape, dtype=bool)
+        # For combine analysis, create a single "virtual" table that contains all data
+        if len(combined_data_matrices) > 1:
+            # Concatenate all matrices horizontally (side by side)
+            combined_matrix = np.hstack(combined_data_matrices)
+            print(f"Combined {len(combined_data_matrices)} tables into matrix shape: {combined_matrix.shape}")
+            
+            # Create a single table name representing the combination
+            combined_table_name = f"Combined_{len(original_table_names)}_tables"
+            table_names = [combined_table_name]  # Use single combined table
+            data_matrices = [(combined_table_name, combined_matrix)]  # Store as tuple for consistency
+            
+            # Handle pattern combination for the combined data matrix
+            if form_data.get('state_pattern') == "ecc_2048x32_78tables":
+                print("COMBINE ANALYSIS: Special handling for ecc_2048x32_78tables pattern")
+                # For 78 tables pattern, we need to combine the 78 patterns horizontally too
+                if pattern_file_array == "SPECIAL_78TABLES":
+                    # Load all 78 individual patterns and combine them
+                    combined_patterns = []
+                    for i, orig_table_name in enumerate(original_table_names):
+                        # Extract IO number from table name
+                        import re
+                        match = re.search(r'IO(\d+)', orig_table_name)
+                        if match:
+                            io_num = int(match.group(1))
+                            if 0 <= io_num <= 77:
+                                io_pattern_name = f"ecc_2048x32_IO{io_num}"
+                                pattern_files = get_pattern_files()
+                                io_pattern_path = pattern_files.get(io_pattern_name)
+                                if io_pattern_path:
+                                    try:
+                                        io_pattern = np.load(io_pattern_path)
+                                        if io_pattern.shape == (32, 2048):
+                                            io_pattern = io_pattern.T  # Transpose to (2048, 32)
+                                        combined_patterns.append(io_pattern)
+                                        print(f"Added 78-table pattern for {io_pattern_name} (shape: {io_pattern.shape})")
+                                    except Exception as e:
+                                        print(f"Error loading pattern {io_pattern_name}: {e}")
+                    
+                    if combined_patterns:
+                        # Horizontally stack all 78 patterns
+                        pattern_file_array = np.hstack(combined_patterns)
+                        print(f"Combined 78-table pattern shape: {pattern_file_array.shape}")
+                    else:
+                        print("Warning: No patterns could be loaded for 78-table ECC")
+                        pattern_file_array = None
+                        
+            elif pattern_file_array == "SPECIAL_ECC_SUBSET" or form_data.get('state_pattern', '').startswith("ecc_2048x32_combined_"):
+                print("COMBINE ANALYSIS: Special handling for ECC subset pattern")
+                print(f"DEBUG: Original table names order: {original_table_names}")
+                # For ECC subset, combine the individual IO patterns
+                combined_patterns = []
+                for i, orig_table_name in enumerate(original_table_names):
+                    # Extract IO number from table name
+                    import re
+                    match = re.search(r'IO(\d+)', orig_table_name)
+                    if match:
+                        io_num = int(match.group(1))
+                        print(f"DEBUG: Processing table {orig_table_name} -> IO{io_num} at position {i}")
+                        if 0 <= io_num <= 77:
+                            io_pattern_name = f"ecc_2048x32_IO{io_num}"
+                            pattern_files = get_pattern_files()
+                            io_pattern_path = pattern_files.get(io_pattern_name)
+                            if io_pattern_path and os.path.exists(io_pattern_path):
+                                io_pattern = np.load(io_pattern_path)
+                                combined_patterns.append(io_pattern)
+                                print(f"DEBUG: Added pattern for {io_pattern_name} at position {len(combined_patterns)-1} (shape: {io_pattern.shape})")
+                            else:
+                                print(f"Warning: Pattern file not found for {io_pattern_name}")
+                
+                if combined_patterns:
+                    # Horizontally stack all IO patterns
+                    pattern_file_array = np.hstack(combined_patterns)
+                    print(f"Combined ECC subset pattern shape: {pattern_file_array.shape}")
+                else:
+                    print("Warning: No ECC patterns could be loaded for subset")
+                    # Fallback to standard pattern handling
+                    pattern_file_array = None
+            elif pattern_file_array is not None and not isinstance(pattern_file_array, str):
+                # For regular patterns, tile them horizontally to match the combined data matrix
+                # BUT ONLY if they haven't been replicated already
+                num_tables = len(original_table_names)
+                expected_combined_cols = 32 * num_tables  # For 2048x32 tables: 4 tables = 128 cols
+                
+                if num_tables > 1 and pattern_file_array.shape[1] == 32:
+                    # Pattern hasn't been replicated yet - tile it
+                    print("COMBINE ANALYSIS: Tiling regular pattern to match combined data matrix")
+                    combined_patterns = [pattern_file_array] * num_tables
+                    pattern_file_array = np.hstack(combined_patterns)
+                    print(f"Tiled pattern {num_tables} times, new shape: {pattern_file_array.shape}")
+                elif num_tables > 1 and pattern_file_array.shape[1] == expected_combined_cols:
+                    # Pattern already replicated - skip tiling
+                    print(f"COMBINE ANALYSIS: Pattern already replicated to correct size: {pattern_file_array.shape}")
+                else:
+                    print(f"COMBINE ANALYSIS: Using pattern as-is: {pattern_file_array.shape}")
+                # If only one table, pattern_file_array stays the same
+        else:
+            # Single table - convert to tuple format for consistency
+            data_matrices = [(table_names[0], combined_data_matrices[0])]
         
-        # Apply data range filtering if specified
-        data_min_value = form_data.get('data_min_value')
-        data_max_value = form_data.get('data_max_value')
-        if data_min_value is not None or data_max_value is not None:
-            print(f"Applying data range filter for table {table_name}: min={data_min_value}, max={data_max_value}")
-            original_shape = data_matrix.shape
-            original_count = data_matrix.size
+        print(f"COMBINE ANALYSIS: Final table_names = {table_names}")
+        print(f"COMBINE ANALYSIS: Data matrices shapes = {[dm[1].shape for dm in data_matrices]}")
+    
+    # Individual analysis mode (original behavior)
+    # Skip this loop if we're in combine mode since data is already processed above
+    if analysis_mode != 'combine':
+        for table_name in table_names:
+            data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
             
-            # Create a mask for values within the specified range
-            mask = np.ones(data_matrix.shape, dtype=bool)
-            if data_min_value is not None:
-                mask &= (data_matrix >= data_min_value)
-            if data_max_value is not None:
-                mask &= (data_matrix <= data_max_value)
+            # Apply conductance conversion if enabled
+            if using_conductance and conductance_params:
+                print(f"Converting table {table_name} to conductance values")
+                data_matrix = convert_table_to_conductance(data_matrix, conductance_params)
+            # Apply linear conversion if enabled
+            elif using_linear_conversion:
+                # Get conversion parameters from form_data
+                conversion_params = {
+                    'input_min': form_data.get('linear_input_min', 0),
+                    'input_max': form_data.get('linear_input_max', 63),
+                    'output_min': form_data.get('linear_output_min', 60),
+                    'output_max': form_data.get('linear_output_max', 170)
+                }
+                print(f"Converting table {table_name} using linear conversion ({conversion_params['input_min']}-{conversion_params['input_max']} → {conversion_params['output_min']}-{conversion_params['output_max']})")
+                data_matrix = convert_table_to_linear(data_matrix, conversion_params)
             
-            # Update combined mask
-            combined_filter_mask &= mask
+            # Check if we need to apply an existing bitmap mask
+            apply_bitmap_mask = form_data.get('apply_bitmap_mask', '').strip()
+            if apply_bitmap_mask:
+                print(f"Applying bitmap mask '{apply_bitmap_mask}' to table {table_name}")
+                from route_handlers import load_bitmap_mask, validate_mask_dimensions
+                
+                mask_array, mask_dimensions = load_bitmap_mask(database_name, apply_bitmap_mask)
+                if mask_array is not None:
+                    # Validate dimensions
+                    is_valid, validation_message = validate_mask_dimensions(mask_array, data_matrix)
+                    if is_valid:
+                        print(f"Bitmap mask validation passed: {validation_message}")
+                        # Apply the mask: set filtered coordinates to NaN
+                        data_matrix[mask_array == 0] = np.nan
+                        valid_count = np.sum(mask_array == 1)
+                        filtered_count = np.sum(mask_array == 0)
+                        print(f"Bitmap mask applied to {table_name}: {valid_count} valid points, {filtered_count} filtered out")
+                    else:
+                        print(f"Bitmap mask validation failed for {table_name}: {validation_message}")
+                        print("Skipping bitmap mask application")
+                else:
+                    print(f"Could not load bitmap mask '{apply_bitmap_mask}' for table {table_name}")
             
-            # Replace values outside the range with NaN
-            filtered_data_matrix = data_matrix.copy()
-            filtered_data_matrix[~mask] = np.nan
-            
-            # Count valid data points after filtering
-            valid_count = np.sum(~np.isnan(filtered_data_matrix))
-            filtered_count = original_count - valid_count
-            
-            print(f"Data filtering for {table_name}: {original_count} total points, {valid_count} valid points, {filtered_count} filtered out")
-            data_matrix = filtered_data_matrix
-            
-        # Apply negative value filtering if specified
-        filter_negative_values = form_data.get('filter_negative_values', False)
-        if filter_negative_values:
-            print(f"Applying negative value filter for table {table_name}")
-            original_shape = data_matrix.shape
-            original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
-            
-            # Create a mask for non-negative values (>= 0)
-            negative_mask = (data_matrix >= 0)
-            
-            # Update combined mask
-            combined_filter_mask &= negative_mask
-            
-            # Replace negative values with NaN
-            filtered_data_matrix = data_matrix.copy()
-            filtered_data_matrix[data_matrix < 0] = np.nan
-            
-            # Count valid data points after filtering
-            valid_count = np.sum(~np.isnan(filtered_data_matrix))
-            filtered_count = original_count - valid_count
-            
-            print(f"Negative value filtering for {table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
-            data_matrix = filtered_data_matrix
+            # Initialize combined mask for bitmap generation
+            combined_filter_mask = np.ones(data_matrix.shape, dtype=bool)
         
-        # Store bitmap mask for generation (use the first table's mask)
-        generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
-        if generate_bitmap_mask and bitmap_mask_to_save is None:
-            # Convert boolean mask to integer (1 for valid, 0 for filtered)
-            bitmap_mask_to_save = combined_filter_mask.astype(int)
-            print(f"Bitmap mask prepared for generation from table {table_name}")
+            # Apply data range filtering if specified
+            data_min_value = form_data.get('data_min_value')
+            data_max_value = form_data.get('data_max_value')
+            if data_min_value is not None or data_max_value is not None:
+                print(f"Applying data range filter for table {table_name}: min={data_min_value}, max={data_max_value}")
+                original_shape = data_matrix.shape
+                original_count = data_matrix.size
+                
+                # Create a mask for values within the specified range
+                mask = np.ones(data_matrix.shape, dtype=bool)
+                if data_min_value is not None:
+                    mask &= (data_matrix >= data_min_value)
+                if data_max_value is not None:
+                    mask &= (data_matrix <= data_max_value)
+                
+                # Update combined mask
+                combined_filter_mask &= mask
+                
+                # Replace values outside the range with NaN
+                filtered_data_matrix = data_matrix.copy()
+                filtered_data_matrix[~mask] = np.nan
+                
+                # Count valid data points after filtering
+                valid_count = np.sum(~np.isnan(filtered_data_matrix))
+                filtered_count = original_count - valid_count
+                
+                print(f"Data filtering for {table_name}: {original_count} total points, {valid_count} valid points, {filtered_count} filtered out")
+                data_matrix = filtered_data_matrix
             
-        data_matrices.append((table_name, data_matrix))
+            # Apply negative value filtering if specified
+            filter_negative_values = form_data.get('filter_negative_values', False)
+            if filter_negative_values:
+                print(f"Applying negative value filter for table {table_name}")
+                original_shape = data_matrix.shape
+                original_count = np.sum(~np.isnan(data_matrix))  # Count non-NaN values before filtering
+                
+                # Create a mask for non-negative values (>= 0)
+                negative_mask = (data_matrix >= 0)
+                
+                # Update combined mask
+                combined_filter_mask &= negative_mask
+                
+                # Replace negative values with NaN
+                filtered_data_matrix = data_matrix.copy()
+                filtered_data_matrix[data_matrix < 0] = np.nan
+                
+                # Count valid data points after filtering
+                valid_count = np.sum(~np.isnan(filtered_data_matrix))
+                filtered_count = original_count - valid_count
+                
+                print(f"Negative value filtering for {table_name}: {original_count} non-NaN points before, {valid_count} valid points after, {filtered_count} negative values filtered out")
+                data_matrix = filtered_data_matrix
+        
+            # Store bitmap mask for generation (use the first table's mask)
+            generate_bitmap_mask = form_data.get('generate_bitmap_mask', False)
+            if generate_bitmap_mask and bitmap_mask_to_save is None:
+                # Convert boolean mask to integer (1 for valid, 0 for filtered)
+                bitmap_mask_to_save = combined_filter_mask.astype(int)
+                print(f"Bitmap mask prepared for generation from table {table_name}")
+                
+            data_matrices.append((table_name, data_matrix))
     
     # Ensure all data matrices are converted to float
     data_matrices = [(label, data_matrix.astype(float)) for label, data_matrix in data_matrices]
@@ -1050,17 +1382,32 @@ def generate_plot(table_names, database_name, form_data):
                 groups, stats, selected_groups = get_group_data_new_from_matrix(
                     data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
-                # Special handling for 78-table pattern
-                if pattern_file_array == "SPECIAL_78TABLES":
-                    # Load the specific pattern for this table
-                    table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
-                    groups, stats, selected_groups = get_group_data_from_matrix(
-                        data_matrix, selected_groups, table_pattern_array)
+                # Special handling for ECC patterns (both 78-table and subset)
+                if pattern_file_array == "SPECIAL_78TABLES" or pattern_file_array == "SPECIAL_ECC_SUBSET":
+                    # For combine analysis, the pattern was already combined above
+                    if analysis_mode == 'combine':
+                        # In combine mode, pattern_file_array should already be the combined pattern
+                        if pattern_file_array is None or isinstance(pattern_file_array, str):
+                            raise Exception("Combined ECC pattern not properly loaded in combine analysis mode")
+                        groups, stats, selected_groups = get_group_data_from_matrix(
+                            data_matrix, selected_groups, pattern_file_array)
+                    else:
+                        # Load the specific pattern for this table (individual analysis)
+                        print(f"DEBUG: Individual analysis - loading pattern for table {table_name}")
+                        table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
+                        print(f"DEBUG: Individual analysis - pattern shape for {table_name}: {table_pattern_array.shape}")
+                        print(f"DEBUG: Individual analysis - pattern unique values for {table_name}: {np.unique(table_pattern_array)}")
+                        groups, stats, selected_groups = get_group_data_from_matrix(
+                            data_matrix, selected_groups, table_pattern_array)
                 else:
                     # Ensure pattern_file_array is loaded before using it
                     print(f"DEBUG: Before predefined processing (target_range_flag=0) - pattern_file_array is None: {pattern_file_array is None}")
                     if pattern_file_array is None:
-                        raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
+                        # Check if this is a regular analysis mode that failed
+                        if form_data.get('ecc_pattern_mode') == 'normal':
+                            raise ValueError(f"Dimension validation failed: Cannot use pattern '{state_pattern}' with the selected tables. This often occurs when trying to use a pattern with different dimensions than your data. For 2048x32 tables in combine mode, the combined data shape will be (2048, 128). Please select a compatible pattern or use individual analysis mode.")
+                        else:
+                            raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                     # Modify to use the data matrix directly
                     groups, stats, selected_groups = get_group_data_from_matrix(
                         data_matrix, selected_groups, pattern_file_array)
@@ -1070,17 +1417,32 @@ def generate_plot(table_names, database_name, form_data):
                 groups, stats, selected_groups, table_miao_ber = get_group_data_latest_from_matrix(
                     target_ranges, data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
-                # Special handling for 78-table pattern
-                if pattern_file_array == "SPECIAL_78TABLES":
-                    # Load the specific pattern for this table
-                    table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
-                    groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
-                        target_ranges, data_matrix, selected_groups, table_pattern_array)
+                # Special handling for ECC patterns (both 78-table and subset)
+                if pattern_file_array == "SPECIAL_78TABLES" or pattern_file_array == "SPECIAL_ECC_SUBSET":
+                    # For combine analysis, the pattern was already combined above
+                    if analysis_mode == 'combine':
+                        # In combine mode, pattern_file_array should already be the combined pattern
+                        if pattern_file_array is None or isinstance(pattern_file_array, str):
+                            raise Exception("Combined ECC pattern not properly loaded in combine analysis mode")
+                        groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                            target_ranges, data_matrix, selected_groups, pattern_file_array)
+                    else:
+                        # Load the specific pattern for this table (individual analysis)
+                        print(f"DEBUG: Individual analysis (target_range) - loading pattern for table {table_name}")
+                        table_pattern_array = get_pattern_for_io_table(table_name, pattern_files)
+                        print(f"DEBUG: Individual analysis (target_range) - pattern shape for {table_name}: {table_pattern_array.shape}")
+                        print(f"DEBUG: Individual analysis (target_range) - pattern unique values for {table_name}: {np.unique(table_pattern_array)}")
+                        groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
+                            target_ranges, data_matrix, selected_groups, table_pattern_array)
                 else:
                     # Ensure pattern_file_array is loaded before using it
                     print(f"DEBUG: Before predefined processing (target_range_flag=1) - pattern_file_array is None: {pattern_file_array is None}")
                     if pattern_file_array is None:
-                        raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
+                        # Check if this is a regular analysis mode that failed
+                        if form_data.get('ecc_pattern_mode') == 'normal':
+                            raise ValueError(f"Dimension validation failed: Cannot use pattern '{state_pattern}' with the selected tables. This often occurs when trying to use a pattern with different dimensions than your data. For 2048x32 tables in combine mode, the combined data shape will be (2048, 128). Please select a compatible pattern or use individual analysis mode.")
+                        else:
+                            raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                     # Modify to use the data matrix directly
                     groups, stats, selected_groups, table_miao_ber = get_group_data_1124_2_from_matrix(
                         target_ranges, data_matrix, selected_groups, pattern_file_array)
@@ -1340,10 +1702,39 @@ def generate_plot(table_names, database_name, form_data):
             # Process each filtered table's data for outliers
             for table_idx, table_name in enumerate(filtered_table_names):
                 try:
-                    # Get the data matrix for this table
-                    data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
-                    if not isinstance(data_matrix_size, tuple) or len(data_matrix_size) != 2:
-                        print(f"Warning: Invalid data_matrix_size for table {table_name}")
+                    # Initialize variables
+                    data_matrix = None
+                    data_matrix_size = None
+                    
+                    # Get the data matrix for this table from already processed matrices
+                    if analysis_mode == 'combine':
+                        # For combine analysis, use the combined data matrix
+                        if data_matrices and len(data_matrices) > 0:
+                            data_matrix = data_matrices[0][1]  # Combined matrix is the first (and only) entry
+                            data_matrix_size = data_matrix.shape
+                        else:
+                            print(f"Warning: No data matrices available for combine analysis")
+                            continue
+                    else:
+                        # For individual analysis, get the data matrix for this specific table
+                        # Find the index of this table in the original table list
+                        original_table_idx = None
+                        for idx, (stored_table_name, stored_matrix) in enumerate(data_matrices):
+                            if stored_table_name == table_name:
+                                original_table_idx = idx
+                                break
+                        
+                        if original_table_idx is not None:
+                            data_matrix = data_matrices[original_table_idx][1]
+                            data_matrix_size = data_matrix.shape
+                        else:
+                            # Fallback to database if not found in processed matrices
+                            print(f"Warning: Table {table_name} not found in processed matrices, fetching from database")
+                            data_matrix, data_matrix_size = get_full_table_data(table_name, database_name)
+                    
+                    # Validate data_matrix_size
+                    if data_matrix_size is None or not isinstance(data_matrix_size, tuple) or len(data_matrix_size) != 2:
+                        print(f"Warning: Invalid data_matrix_size for table {table_name}: {data_matrix_size}")
                         continue
                         
                     rows, cols = data_matrix_size
@@ -1407,10 +1798,48 @@ def generate_plot(table_names, database_name, form_data):
                 print("correlation_analysis:", correlation_analysis)
                 # Generate cluster map if we have correlation analysis
                 if correlation_analysis:
+                    # Initialize dimensions
+                    rows, cols = None, None
+                    
                     # Get the dimensions from the first table's data matrix
-                    first_table_name = filtered_table_names[0]
-                    data_matrix, data_matrix_size = get_full_table_data(first_table_name, database_name)
-                    rows, cols = data_matrix_size
+                    if analysis_mode == 'combine':
+                        # For combine analysis, use the combined data matrix dimensions
+                        if data_matrices and len(data_matrices) > 0:
+                            data_matrix = data_matrices[0][1]  # Combined matrix is the first (and only) entry
+                            rows, cols = data_matrix.shape
+                        else:
+                            print("Warning: No data matrices available for combine analysis in correlation")
+                            rows, cols = 2048, 32  # Default fallback dimensions
+                    else:
+                        # For individual analysis, get dimensions from the first filtered table
+                        if filtered_table_names:
+                            first_table_name = filtered_table_names[0]
+                            # Find this table in the processed matrices
+                            first_table_matrix = None
+                            for stored_table_name, stored_matrix in data_matrices:
+                                if stored_table_name == first_table_name:
+                                    first_table_matrix = stored_matrix
+                                    break
+                            
+                            if first_table_matrix is not None:
+                                rows, cols = first_table_matrix.shape
+                            else:
+                                # Fallback to database if not found
+                                try:
+                                    data_matrix, data_matrix_size = get_full_table_data(first_table_name, database_name)
+                                    rows, cols = data_matrix_size
+                                except Exception as e:
+                                    print(f"Error getting dimensions for {first_table_name}: {e}")
+                                    rows, cols = 2048, 32  # Default fallback dimensions
+                        else:
+                            print("Warning: No filtered table names for correlation analysis")
+                            rows, cols = 2048, 32  # Default fallback dimensions
+                    
+                    # Ensure we have valid dimensions
+                    if rows is None or cols is None:
+                        print("Warning: Could not determine table dimensions, using defaults")
+                        rows, cols = 2048, 32
+                        
                     cluster_map = plot_individual_points_map(correlation_analysis, table_dimensions=(rows, cols))
                     print("cluster_map generated:", cluster_map is not None)
             except Exception as e:
@@ -1622,8 +2051,16 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array)
     group_idx_to_position = {}
 
     # Ensure that pattern_file_array has the same shape as data_np
+    print(f"🔍 DIMENSION CHECK: pattern_file_array.shape = {pattern_file_array.shape}")
+    print(f"🔍 DIMENSION CHECK: data_np.shape = {data_np.shape}")
+    
     if pattern_file_array.shape != data_np.shape:
-        raise ValueError("pattern_file_array must have the same shape as the data array.")
+        print(f"🚨 DIMENSION MISMATCH DETECTED!")
+        print(f"   Pattern shape: {pattern_file_array.shape}")
+        print(f"   Data shape: {data_np.shape}")
+        raise ValueError(f"pattern_file_array shape {pattern_file_array.shape} must have the same shape as the data array {data_np.shape}.")
+    else:
+        print(f"✅ DIMENSION CHECK PASSED: shapes match {pattern_file_array.shape}")
 
     unique_groups = np.unique(pattern_file_array)
     group_indices = unique_groups.tolist()

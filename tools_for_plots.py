@@ -1596,11 +1596,31 @@ def plot_colormap_magnified(data, title, figsize=(30, 15), g_range=None):
 
 def get_full_table_data(table_name, database_name):
     connection = create_connection(database_name)
-    query = f"SELECT * FROM `{table_name}`"
+    
+    # First, let's verify table dimensions using INFORMATION_SCHEMA
     cursor = connection.cursor()
+    
+    # Get column count from INFORMATION_SCHEMA
+    cursor.execute("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s", (database_name, table_name))
+    schema_col_count = cursor.fetchone()[0]
+    
+    # Get row count from table
+    cursor.execute(f"SELECT COUNT(*) FROM `{table_name}`")
+    schema_row_count = cursor.fetchone()[0]
+    
+    print(f"🔍 SCHEMA VERIFICATION: {table_name}")
+    print(f"   INFORMATION_SCHEMA says: {schema_row_count}x{schema_col_count}")
+    
+    # Now get the actual data
+    query = f"SELECT * FROM `{table_name}`"
     cursor.execute(query)
     data = cursor.fetchall()
     close_connection()  # Make sure to pass the connection object to properly close it
+
+    # Debug: Check raw data from database
+    print(f"🔍 DEBUG TABLE LOADING: {table_name}")
+    print(f"   Raw data rows: {len(data) if data else 0}")
+    print(f"   Raw data cols: {len(data[0]) if data and len(data) > 0 else 0}")
 
     # Assuming the data is structured as a list of tuples, where each tuple represents a row in the table
     data_matrix = np.array(data)
@@ -1609,6 +1629,13 @@ def get_full_table_data(table_name, database_name):
     
     # Get the size (shape) of the matrix
     data_matrix_size = data_matrix.shape
+    print(f"   Final matrix shape: {data_matrix_size}")
+    
+    # Compare schema vs actual data dimensions
+    if data_matrix_size != (schema_row_count, schema_col_count):
+        print(f"🚨 DIMENSION MISMATCH!")
+        print(f"   Schema says: {schema_row_count}x{schema_col_count}")
+        print(f"   Data shows: {data_matrix_size}")
 
     return data_matrix, data_matrix_size
     

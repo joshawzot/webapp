@@ -1233,12 +1233,10 @@ function updateOperatorsForColumn(filterIndex) {
     operatorSelect.innerHTML = '';
     
     if (selectedColumn === 'TEST_START_DATETIME') {
-        // 📅 Special operators for date/time columns
+        // 📅 Special operators for date/time columns (simplified)
         operatorSelect.innerHTML = `
-            <option value="equals">Equals (exact match)</option>
             <option value="before">Before (earlier than)</option>
             <option value="after">After (later than)</option>
-            <option value="contains">Contains (partial match)</option>
             <option value="on_date">On Date (same date, any time)</option>
         `;
         

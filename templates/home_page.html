@@ -204,17 +204,9 @@
                             <input type="text" class="form-control mb-2" id="targetFolderAndFilter" 
                                    placeholder="Enter comma-separated substrings for AND filtering">
                             
-                            <!-- Replace dropdown with a styled div containing checkboxes -->
-                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
-                                {% for db in databases %}
-                                <div class="target-folder-option">
-                                    <div class="custom-control custom-radio">
-                                        <input type="radio" id="target_{{ db }}" name="targetFolder" 
-                                               class="custom-control-input target-schema-radio" value="{{ db }}">
-                                        <label class="custom-control-label" for="target_{{ db }}">{{ db }}</label>
-                                    </div>
-                                </div>
-                                {% endfor %}
+                            <!-- Target folders will be loaded dynamically when needed -->
+                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;" id="targetFolderContainer">
+                                <div class="text-center text-muted p-3">🔄 Loading folders...</div>
                             </div>
                         </div>
                     </div>
@@ -339,16 +331,31 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     const allFilterInputs = [...filterInputs, databaseFilterInput, andFiltersInput, orFiltersInput];
 
-    // Store the database data
-    const databaseData = [
-        {% for db in databases %}
-        {
-            dbName: "{{ db }}",
-            dbNameLower: "{{ db|lower }}",
-            dbNameSegments: "{{ db|lower }}".split('_')
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
+    // Store the database data - will be loaded via AJAX
+    let databaseData = [];
+    let databasesLoaded = false;
+
+    // Function to load databases via AJAX when needed
+    function loadDatabasesIfNeeded() {
+        if (databasesLoaded) {
+            return Promise.resolve();
+        }
+        
+        return fetch('/getDatabases')
+            .then(response => response.json())
+            .then(databases => {
+                databaseData = databases.map(dbName => ({
+                    dbName: dbName,
+                    dbNameLower: dbName.toLowerCase(),
+                    dbNameSegments: dbName.toLowerCase().split('_')
+                }));
+                databasesLoaded = true;
+                console.log(`🔄 Loaded ${databaseData.length} databases via AJAX`);
+            })
+            .catch(error => {
+                console.error('Error loading databases:', error);
+            });
+    }
 
     // Initialize Clusterize.js with empty no_data_text
     var clusterize = new Clusterize({
@@ -399,7 +406,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
     }
 
-    // Updated filter function
+    // Updated filter function with lazy loading
     function filterDatabasesImmediate() {
         const filters = filterInputs.map(input => input.value.toLowerCase().trim());
         const databaseFilter = databaseFilterInput.value.toLowerCase().trim();
@@ -430,34 +437,40 @@ document.addEventListener('DOMContentLoaded', (event) => {
             return;
         }
 
-        // Filter the data
-        const filteredData = databaseData.filter(data => {
-            const { dbNameLower, dbNameSegments } = data;
+        // Show loading message
+        clusterize.update(['<div class="text-center text-muted p-3">🔄 Loading databases...</div>']);
 
-            // Check prefix filters
-            let passesPrefixFilters = filters.every((filter, index) => {
-                return !filter || (dbNameSegments[index] && dbNameSegments[index].startsWith(filter));
+        // Load databases if needed, then filter
+        loadDatabasesIfNeeded().then(() => {
+            // Filter the data
+            const filteredData = databaseData.filter(data => {
+                const { dbNameLower, dbNameSegments } = data;
+
+                // Check prefix filters
+                let passesPrefixFilters = filters.every((filter, index) => {
+                    return !filter || (dbNameSegments[index] && dbNameSegments[index].startsWith(filter));
+                });
+
+                // Check database name filter
+                let passesDatabaseFilter = !databaseFilter || dbNameLower.startsWith(databaseFilter);
+
+                // Check AND filters
+                let passesAndFilters = andFilters.every(substring => dbNameLower.includes(substring));
+
+                // Check OR filters
+                let passesOrFilters = !anyOrFiltersAreNonEmpty || orFilters.some(substring => dbNameLower.includes(substring));
+
+                return passesPrefixFilters && passesDatabaseFilter && passesAndFilters && passesOrFilters;
             });
 
-            // Check database name filter
-            let passesDatabaseFilter = !databaseFilter || dbNameLower.startsWith(databaseFilter);
-
-            // Check AND filters
-            let passesAndFilters = andFilters.every(substring => dbNameLower.includes(substring));
-
-            // Check OR filters
-            let passesOrFilters = !anyOrFiltersAreNonEmpty || orFilters.some(substring => dbNameLower.includes(substring));
-
-            return passesPrefixFilters && passesDatabaseFilter && passesAndFilters && passesOrFilters;
+            if (filteredData.length === 0) {
+                // Display custom message when no data matches filters
+                clusterize.update(['<div class="no-results">No folders match your search criteria.</div>']);
+            } else {
+                // Render the filtered list
+                renderDatabaseOptions(filteredData);
+            }
         });
-
-        if (filteredData.length === 0) {
-            // Display custom message when no data matches filters
-            clusterize.update(['<div class="no-results">No folders match your search criteria.</div>']);
-        } else {
-            // Render the filtered list
-            renderDatabaseOptions(filteredData);
-        }
     }
 
     // Optimized filter function (debounced)
@@ -603,8 +616,36 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (this.checked) {
             document.getElementById('newSchemaSection').style.display = 'none';
             document.getElementById('existingSchemaSection').style.display = 'block';
+            // Load target folders when this option is selected
+            loadTargetFolders();
         }
     });
+
+    // Function to load and render target folders
+    function loadTargetFolders() {
+        loadDatabasesIfNeeded().then(() => {
+            renderTargetFolders();
+        });
+    }
+    
+    // Function to render target folders
+    function renderTargetFolders() {
+        const container = document.getElementById('targetFolderContainer');
+        const folderHTML = databaseData.map((db, index) => `
+            <div class="target-folder-option">
+                <div class="custom-control custom-radio">
+                    <input type="radio" id="target_${index}" name="targetFolder" 
+                           class="custom-control-input target-schema-radio" value="${db.dbName}">
+                    <label class="custom-control-label" for="target_${index}">${db.dbName}</label>
+                </div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = folderHTML;
+        
+        // Apply current filters after rendering
+        filterTargetFolders();
+    }
 
     // Function to filter target folders
     function filterTargetFolders() {
@@ -711,12 +752,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const anyOrFiltersAreNonEmpty = orFilters.length > 0;
         const anyOrNotFiltersAreNonEmpty = orNotFilters.length > 0;
         
-        // Get all databases from the original data
-        const allDatabases = [
-            {% for db in databases %}
-            "{{ db }}"{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
+        // Get all databases from the loaded data
+        const allDatabases = databaseData.map(db => db.dbName);
         
         // Filter the databases
         const filteredDatabases = allDatabases.filter(db => {

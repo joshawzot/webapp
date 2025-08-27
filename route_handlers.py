@@ -299,10 +299,6 @@ def home():
     username = session.get('username')
     print(username)
     try:
-            conn = create_connection()
-            cursor = conn.cursor()
-            databases = get_all_databases(cursor)
-            
             # Retrieve recent folder visits
             recent_visits_json = redis_client.get('recent_folder_visits')
             recent_visits = []
@@ -322,15 +318,12 @@ def home():
             free_space_gb = disk_stats.free / (1024 * 1024 * 1024)
             low_disk_space = free_space_gb < 10  # True if less than 10GB
                 
-            cursor.close()
-            conn.close()
             return render_template('home_page.html', 
-                                  databases=databases,
                                   username=username, 
                                   recent_visits=recent_visits,
                                   disk_info=disk_info,
                                   low_disk_space=low_disk_space)
-    except mysql.connector.Error as err:
+    except Exception as err:
         return str(err), 500
 
 @app.route('/login', methods=['GET', 'POST'])

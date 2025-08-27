@@ -47,6 +47,15 @@
     top: 100% !important;
     bottom: auto !important;
 }
+
+/* Collapsible section chevron animation */
+.card-header[data-toggle="collapse"] .fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.card-header[data-toggle="collapse"][aria-expanded="true"] .fa-chevron-down {
+    transform: rotate(180deg);
+}
 </style>
 <div class="container">
     <!-- Add a Return to Home Page button -->
@@ -66,126 +75,158 @@
         {% endif %}
     {% endwith %}
 
-    <!-- Drag and Drop File Upload Area -->
-    <div class="border p-3 mb-4">
-        <h3>Upload Files:</h3>
-        <div class="mb-2">
-            <small class="text-muted">
-                <strong>Supported file types:</strong> 
-                <span class="badge badge-info">.csv</span> 
-                <span class="badge badge-info">.npy</span>
-                | Multiple files can be uploaded at once
-            </small>
-        </div>
-        <div class="mb-3 p-2" style="background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #17a2b8;">
-            <small class="text-muted">
-                <strong><i class="fa fa-info-circle"></i> Requirements:</strong><br>
-                • <strong>Dimensions:</strong> Any 2-dimensional matrix (rectangular: rows × columns) supported<br>
-                • <strong>File naming:</strong> Use descriptive names (becomes table name in database)
-            </small>
-        </div>
-        <form id="uploadForm" action="/upload-file" method="post" enctype="multipart/form-data" class="mb-3">
-            <input type="hidden" name="db_name" value="{{ database }}">
-            <div class="form-group">
-                <input type="file" name="files[]" id="files" multiple accept=".csv,.npy" style="display: none;">
-                <div id="drop_area" class="drag-drop-area">
-                    <p>Drag and drop files here</p>
-                    <p>or click to select files</p>
-                    <p><small class="text-muted">Only .csv and .npy files accepted</small></p>
+    <!-- Three Full-Width Collapsible Sections -->
+    
+    <!-- Upload Files Section -->
+    <div class="card mb-4">
+                <div class="card-header" style="cursor: pointer;" data-toggle="collapse" data-target="#uploadFilesCollapse" aria-expanded="false" aria-controls="uploadFilesCollapse">
+                    <h5 class="mb-0">
+                        <i class="fas fa-upload"></i> Upload Files
+                        <i class="fas fa-chevron-down float-right" style="margin-top: 2px;"></i>
+                    </h5>
                 </div>
-            </div>
-            <div id="file_list" class="file-list">
-                <p>No files selected</p>
-            </div>
+                <div id="uploadFilesCollapse" class="collapse">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <strong>Supported file types:</strong> 
+                                <span class="badge badge-info">.csv</span> 
+                                <span class="badge badge-info">.npy</span>
+                                | Multiple files can be uploaded at once
+                            </small>
+                        </div>
+                        <div class="mb-3 p-2" style="background-color: #f8f9fa; border-radius: 4px; border-left: 4px solid #17a2b8;">
+                            <small class="text-muted">
+                                <strong><i class="fa fa-info-circle"></i> Requirements:</strong><br>
+                                • <strong>Dimensions:</strong> Any 2-dimensional matrix (rectangular: rows × columns) supported<br>
+                                • <strong>File naming:</strong> Use descriptive names (becomes table name in database)
+                            </small>
+                        </div>
+                        <form id="uploadForm" action="/upload-file" method="post" enctype="multipart/form-data" class="mb-3">
+                            <input type="hidden" name="db_name" value="{{ database }}">
+                            <div class="form-group">
+                                <input type="file" name="files[]" id="files" multiple accept=".csv,.npy" style="display: none;">
+                                <div id="drop_area" class="drag-drop-area">
+                                    <p>Drag and drop files here</p>
+                                    <p>or click to select files</p>
+                                    <p><small class="text-muted">Only .csv and .npy files accepted</small></p>
+                                </div>
+                            </div>
+                            <div id="file_list" class="file-list">
+                                <p>No files selected</p>
+                            </div>
 
-            <!-- Progress Bar -->
-            <div class="progress">
-                <div id="progress_bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
+                            <!-- Progress Bar -->
+                            <div class="progress">
+                                <div id="progress_bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
 
-            <button type="submit" class="btn btn-primary">Upload</button>
-        </form>           
+                            <button type="submit" class="btn btn-primary">Upload</button>
+                        </form>           
+                    </div>
+                </div>
+    </div>
+
+    <!-- Schema Information Section -->
+    <div class="card mb-4">
+                <div class="card-header" style="cursor: pointer;" data-toggle="collapse" data-target="#schemaInfoCollapse" aria-expanded="false" aria-controls="schemaInfoCollapse">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database"></i> Schema: {{ database }}
+                        <i class="fas fa-chevron-down float-right" style="margin-top: 2px;"></i>
+                    </h5>
+                </div>
+                <div id="schemaInfoCollapse" class="collapse">
+                    <div class="card-body">
+                        <div class="alert alert-{{ storage_info.color }} storage-info-box {% if storage_info.is_symlink %}symlink-archive{% elif storage_info.location == 'backup_restored_temp' %}temp-archive{% elif storage_info.location == 'secondary' %}archive{% else %}primary{% endif %}" style="padding: 10px 15px; margin-bottom: 15px; border-radius: 6px;">
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong><span class="storage-icon">💾</span>Device:</strong> {{ storage_info.device }}<br>
+                                    <strong><span class="storage-icon">📂</span>Path:</strong> <code style="font-size: 0.8em;">{{ storage_info.path }}</code>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="graphViewer">
+                            <img id="selectedGraph" style="max-width: 100%; display: none;">
+                        </div>
+                        {% include 'choose_plot.html' %}
+                    </div>
+                </div>
+    </div>
+
+    <!-- Table Filters Section -->
+    <div class="card mb-4">
+                <div class="card-header" style="cursor: pointer;" data-toggle="collapse" data-target="#tableFiltersCollapse" aria-expanded="false" aria-controls="tableFiltersCollapse">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter"></i> Table Filters
+                        <i class="fas fa-chevron-down float-right" style="margin-top: 2px;"></i>
+                    </h5>
+                </div>
+                <div id="tableFiltersCollapse" class="collapse">
+                    <div class="card-body">
+                        <!-- <div class="mb-2">
+                            <small class="text-muted">
+                                <strong>Filter Types:</strong> 
+                                <span class="badge badge-success">AND</span> 
+                                <span class="badge badge-info">OR</span>
+                                <span class="badge badge-warning">NOT</span>
+                                | Use comma-separated values
+                            </small>
+                        </div> -->
+                        
+                        <!-- Main Filter -->
+                        <div class="form-group">
+                            <label for="tableFilter" class="small text-muted">General Filter:</label>
+                            <input type="text" id="tableFilter" class="form-control form-control-sm" list="tableFilterSuggestions" placeholder="Filter table names on the fly">
+                            <datalist id="tableFilterSuggestions"></datalist>
+                        </div>
+                        
+                        <!-- AND Filters -->
+                        <div class="form-group">
+                            <label for="andFilters" class="small text-muted">AND Filters:</label>
+                            <input type="text" id="andFilters" class="form-control form-control-sm" list="andFiltersSuggestions" placeholder="Enter comma-separated substrings for AND filtering">
+                            <datalist id="andFiltersSuggestions"></datalist>
+                        </div>
+
+                        <!-- OR Filters -->
+                        <div class="form-group">
+                            <label for="orFilters" class="small text-muted">OR Filters:</label>
+                            <input type="text" id="orFilters" class="form-control form-control-sm" list="orFiltersSuggestions" placeholder="Enter comma-separated substrings for OR filtering">
+                            <datalist id="orFiltersSuggestions"></datalist>
+                        </div>
+
+                        <!-- AND NOT Filters -->
+                        <div class="form-group">
+                            <label for="andNotFilters" class="small text-muted">AND NOT Filters:</label>
+                            <input type="text" id="andNotFilters" class="form-control form-control-sm" list="andNotFiltersSuggestions" placeholder="Enter comma-separated substrings for AND NOT filtering">
+                            <datalist id="andNotFiltersSuggestions"></datalist>
+                        </div>
+
+                        <!-- OR NOT Filters -->
+                        <div class="form-group">
+                            <label for="orNotFilters" class="small text-muted">OR NOT Filters:</label>
+                            <input type="text" id="orNotFilters" class="form-control form-control-sm" list="orNotFiltersSuggestions" placeholder="Enter comma-separated substrings for OR NOT filtering">
+                            <datalist id="orNotFiltersSuggestions"></datalist>
+                        </div>
+
+                        <!-- IO OR Filters -->
+                        <div class="form-group">
+                            <label for="ioOrFilters" class="small text-muted">IO OR Filters:</label>
+                            <input type="text" id="ioOrFilters" class="form-control form-control-sm" list="ioOrFiltersSuggestions" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
+                            <datalist id="ioOrFiltersSuggestions"></datalist>
+                        </div>
+
+                        <!-- Exact Table Names -->
+                        <div class="form-group mb-0">
+                            <label for="exactTableNames" class="small text-muted">Exact Table Names:</label>
+                            <input type="text" id="exactTableNames" class="form-control form-control-sm" list="exactTableNamesSuggestions" placeholder="Enter comma-separated exact table names to match">
+                            <datalist id="exactTableNamesSuggestions"></datalist>
+                        </div>
+                    </div>
+                </div>
     </div>
 
     <div class="container mt-3 mb-3">
         <!-- First row with table count and select buttons -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <div class="mb-3">
-                    <h5>Schema: {{ database }}</h5>
-                    <div class="alert alert-{{ storage_info.color }} storage-info-box {% if storage_info.is_symlink %}symlink-archive{% elif storage_info.location == 'backup_restored_temp' %}temp-archive{% elif storage_info.location == 'secondary' %}archive{% else %}primary{% endif %}" style="padding: 10px 15px; margin-bottom: 15px; border-radius: 6px;">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <strong><span class="storage-icon">💾</span>Device:</strong> {{ storage_info.device }}<br>
-                                <strong><span class="storage-icon">📂</span>Path:</strong> <code>{{ storage_info.path }}</code>
-                </div>
-                            <div class="col-md-6">
-                                <!-- Empty column to maintain layout balance -->
-            </div>
-        </div>
-            </div>
-        </div>
-                <div id="graphViewer">
-                    <img id="selectedGraph" style="max-width: 100%; display: none;">
-            </div>
-                {% include 'choose_plot.html' %}
-            </div>
-        </div>
-
-        <!-- Filter fields with autocomplete suggestions -->
-        <div class="row custom-row mb-2">
-            <div class="col">
-                <input type="text" id="tableFilter" class="form-control" list="tableFilterSuggestions" placeholder="Filter table names on the fly">
-                <datalist id="tableFilterSuggestions"></datalist>
-            </div>
-        </div>
-        <!-- First set of filter fields with "AND" logic -->
-        <div class="row custom-row mb-2">
-            <div class="col">
-                <input type="text" id="andFilters" class="form-control" list="andFiltersSuggestions" placeholder="Enter comma-separated substrings for AND filtering">
-                <datalist id="andFiltersSuggestions"></datalist>
-            </div>
-        </div>
-
-        <!-- New row of OR filter fields with "OR" logic -->
-        <div class="row custom-row mb-2">
-            <div class="col">
-                <input type="text" id="orFilters" class="form-control" list="orFiltersSuggestions" placeholder="Enter comma-separated substrings for OR filtering">
-                <datalist id="orFiltersSuggestions"></datalist>
-            </div>
-        </div>
-
-        <!-- New row for AND NOT filter fields -->
-        <div class="row custom-row mb-2">
-            <div class="col">
-                <input type="text" id="andNotFilters" class="form-control" list="andNotFiltersSuggestions" placeholder="Enter comma-separated substrings for AND NOT filtering">
-                <datalist id="andNotFiltersSuggestions"></datalist>
-            </div>
-        </div>
-
-        <!-- New row for OR NOT filter fields -->
-        <div class="row custom-row mb-2">
-            <div class="col">
-                <input type="text" id="orNotFilters" class="form-control" list="orNotFiltersSuggestions" placeholder="Enter comma-separated substrings for OR NOT filtering">
-                <datalist id="orNotFiltersSuggestions"></datalist>
-            </div>
-        </div>
-
-        <!-- New row for special "IO" OR filter fields -->
-        <div class="row custom-row mb-2">
-            <div class="col">
-                <input type="text" id="ioOrFilters" class="form-control" list="ioOrFiltersSuggestions" placeholder="Enter comma-separated IO filters (e.g. io1,io2)">
-                <datalist id="ioOrFiltersSuggestions"></datalist>
-            </div>
-        </div>
-
-        <!-- New row for exact table name matching -->
-        <div class="row custom-row mb-3">
-            <div class="col">
-                <input type="text" id="exactTableNames" class="form-control" list="exactTableNamesSuggestions" placeholder="Enter comma-separated exact table names to match">
-                <datalist id="exactTableNamesSuggestions"></datalist>
-            </div>
-        </div>
 
         <!-- Table count information row -->
         <div class="row custom-row mb-3">
@@ -213,26 +254,26 @@
                         <h6 class="dropdown-header">Download Actions</h6>
                         <a class="dropdown-item" href="#" id="downloadSelected">Download Selected as CSV</a>
                         <a class="dropdown-item" href="#" id="downloadSelectedNpy">Download Selected as NPY</a>
-                        <a class="dropdown-item" href="#" id="downloadSelectedMetadata">Download as metadata</a>
+                        <!-- <a class="dropdown-item" href="#" id="downloadSelectedMetadata">Download as metadata</a> -->
                         
                         <div class="dropdown-divider"></div>
                         
                         <!-- Table Operations -->
-                        <h6 class="dropdown-header">Table Operations</h6>
-                        <a class="dropdown-item" href="#" id="concatenateSelected">Concatenate Selected (...)</a>
+                        <!-- Temporarily hidden - can be re-enabled in the future -->
+                        <!-- <h6 class="dropdown-header">Table Operations</h6>
+                        <a class="dropdown-item" href="#" id="concatenateSelected">Concatenate Selected</a>
                         <a class="dropdown-item" href="#" id="mergeSelected">Reshape and Combine Selected</a>
                         <a class="dropdown-item" href="#" id="simpleCombine">Simple Combine</a>
                         <a class="dropdown-item" href="#" id="combineSingleColumns">Simple Combine Columns</a>
-                        <a class="dropdown-item" href="#" id="advancedCombine">Advanced Combine</a>
+                        <a class="dropdown-item" href="#" id="advancedCombine">Advanced Combine</a> -->
                         
                         <div class="dropdown-divider"></div>
                         
                         <!-- Analysis & Utilities -->
                         <h6 class="dropdown-header">Analysis & Utilities</h6>
-                        <a class="dropdown-item" href="#" id="openModal">View Preprocessed Graphs</a>
-                        <a class="dropdown-item" href="#" id="scatterPlotSelected">Scatter Plot Selected</a>
-                        <a class="dropdown-item" href="#" id="analyzeRowAverages">Analyze Row or Column averages</a>
-                        <a class="dropdown-item" href="#" id="searchValueInRange">Search Value in Range</a>
+                        <!-- <a class="dropdown-item" href="#" id="scatterPlotSelected">Scatter Plot Selected</a> -->
+                        <a class="dropdown-item" href="#" id="analyzeRowAverages">Analyze Row or Column averages (detect bad wl or bl)</a>
+                        <a class="dropdown-item" href="#" id="searchValueInRange">Search Value in Range  (Visualize States outliers)</a>
                         <a class="dropdown-item" href="#" id="showSelected">Copy selected table names to the clipboard</a>
                         <a class="dropdown-item" href="#" id="copySelected">Copy Selected to Another Folder</a>
                         
@@ -251,8 +292,8 @@
         {% for table in tables %}
             <li data-table-name="{{ table['table_name'] }}" data-dimensions="{{ table['dimensions'] }}" class="table-item">
                 <input type="checkbox" id="select-table-{{ loop.index }}" class="table-checkbox" data-table-name="{{ table['table_name'] }}">
-                <button class="btn btn-primary btn-sm" onclick="window.location.href='{{ url_for('view_table', database=database, table_name=table['table_name']) }}'">View valuemap</button>
-                <button class="btn btn-info btn-sm ms-1" onclick="window.location.href='{{ url_for('view_colormap', database=database, table_name=table['table_name']) }}'">View colormap</button>
+                <button class="btn btn-primary btn-sm view-table-btn" data-table-name="{{ table['table_name'] }}">View valuemap</button>
+                <button class="btn btn-info btn-sm ms-1 view-colormap-btn" data-table-name="{{ table['table_name'] }}">View colormap</button>
                 <span class="table-name" contenteditable="true" data-original-name="{{ table['table_name'] }}">{{ table['table_name'] }}</span>
                 <span id="table-name-{{ loop.index }}" class="table-name">({{ table['dimensions'] }})</span>
             </li>
@@ -534,6 +575,17 @@
 
         // Initialize filter history and autocomplete
         initializeFilterHistory();
+        
+        // Add event listeners for view table/colormap buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('view-table-btn')) {
+                const tableName = e.target.getAttribute('data-table-name');
+                window.location.href = `{{ url_for('view_table', database=database, table_name='__TABLE_NAME__') }}`.replace('__TABLE_NAME__', tableName);
+            } else if (e.target.classList.contains('view-colormap-btn')) {
+                const tableName = e.target.getAttribute('data-table-name');
+                window.location.href = `{{ url_for('view_colormap', database=database, table_name='__TABLE_NAME__') }}`.replace('__TABLE_NAME__', tableName);
+            }
+        });
 
         // Function to filter tables
         function filterTables() {
@@ -1020,7 +1072,9 @@
         });
 
         // Download Metadata CSV Functionality
-        document.getElementById('downloadSelectedMetadata').addEventListener('click', async function() {
+        const downloadMetadataBtn = document.getElementById('downloadSelectedMetadata');
+        if (downloadMetadataBtn) {
+            downloadMetadataBtn.addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
             
             if (tableNames.length > 0) {
@@ -1237,10 +1291,13 @@
             } else {
                 alert('Please select at least one table to download as metadata.');
             }
-        });
+            });
+        }
 
         // Add the event listener for the "Concatenate Selected" button
-        document.getElementById('concatenateSelected').addEventListener('click', function() {
+        const concatenateBtn = document.getElementById('concatenateSelected');
+        if (concatenateBtn) {
+            concatenateBtn.addEventListener('click', function() {
             const tableNames = getSelectedVisibleTableNames();
             const database = '{{ database }}';
 
@@ -1286,7 +1343,8 @@
             } else {
                 alert('Please select at least two tables to concatenate.');
             }
-        });
+            });
+        }
 
         // Add the event listener for the copySelected button
         document.getElementById('copySelected').addEventListener('click', async function() {
@@ -1512,7 +1570,9 @@
         });
 
         // Add the event listener for the "Simple Combine" button
-        document.getElementById('simpleCombine').addEventListener('click', function() {
+        const simpleCombineBtn = document.getElementById('simpleCombine');
+        if (simpleCombineBtn) {
+            simpleCombineBtn.addEventListener('click', function() {
             const tableNames = getSelectedVisibleTableNames();
             const database = '{{ database }}';
 
@@ -1558,10 +1618,13 @@
             } else {
                 alert('Please select exactly one table to combine.');
             }
-        });
+            });
+        }
 
         // Add the event listener for the "Combine Single Columns" button
-        document.getElementById('combineSingleColumns').addEventListener('click', async function() {
+        const combineSingleColumnsBtn = document.getElementById('combineSingleColumns');
+        if (combineSingleColumnsBtn) {
+            combineSingleColumnsBtn.addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
             const database = '{{ database }}';
 
@@ -1625,10 +1688,13 @@
             } else {
                 alert('Please select at least one table to combine.');
             }
-        });
+            });
+        }
 
         // Add the event listener for the "Advanced Combine" button
-        document.getElementById('advancedCombine').addEventListener('click', function() {
+        const advancedCombineBtn = document.getElementById('advancedCombine');
+        if (advancedCombineBtn) {
+            advancedCombineBtn.addEventListener('click', function() {
             const tableNames = getSelectedVisibleTableNames();
             const database = '{{ database }}';
 
@@ -1658,10 +1724,13 @@
             } else {
                 alert('Please select at least two tables for advanced combine.');
             }
-        });
+            });
+        }
 
         // Add the event listener for the "Scatter Plot Selected" button
-        document.getElementById('scatterPlotSelected').addEventListener('click', async function() {
+        const scatterPlotBtn = document.getElementById('scatterPlotSelected');
+        if (scatterPlotBtn) {
+            scatterPlotBtn.addEventListener('click', async function() {
             const tableNames = getSelectedVisibleTableNames();
             const database = '{{ database }}';
 
@@ -1778,7 +1847,8 @@
             } else {
                 alert('Please select exactly one table for scatter plot.');
             }
-        });
+            });
+        }
 
         // Add the event listener for the "Plot Selected" button
         document.getElementById('plotSelected').addEventListener('click', async function() {
@@ -1883,7 +1953,9 @@
         return databases[parseInt(choice) - 1];
     }
 
-    document.getElementById('mergeSelected').addEventListener('click', function() {
+    const mergeSelectedBtn = document.getElementById('mergeSelected');
+    if (mergeSelectedBtn) {
+        mergeSelectedBtn.addEventListener('click', function() {
         const tableNames = getSelectedVisibleTableNames();
         const database = '{{ database }}';
 
@@ -1916,10 +1988,13 @@
         } else {
             alert('Please select at least one table to reshape and combine.');
         }
-    });
+        });
+    }
 
             // Add the event listener for the "Analyze Row or Column averages" button
-    document.getElementById('analyzeRowAverages').addEventListener('click', function() {
+    const analyzeRowAveragesBtn = document.getElementById('analyzeRowAverages');
+    if (analyzeRowAveragesBtn) {
+        analyzeRowAveragesBtn.addEventListener('click', function() {
         const tableNames = getSelectedVisibleTableNames();
         const database = '{{ database }}';
 
@@ -2004,10 +2079,11 @@
                     modal.remove();
                     performAnalysis(tableNames, database, analysisType, minValue, maxValue);
                 });
-            } else {
-                alert('Please select at least one table to analyze.');
-            }
+                    } else {
+            alert('Please select at least one table to analyze.');
+        }
         });
+    }
         
         // Function to perform the actual analysis
         function performAnalysis(tableNames, database, analysisType, minValue, maxValue) {

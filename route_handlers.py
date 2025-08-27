@@ -6916,7 +6916,7 @@ def interactive_rwb_analysis():
 @app.route('/get-filtered-data-preview', methods=['POST'])
 @require_auth_and_port
 def get_filtered_data_preview():
-    """Get filtered data preview for the interactive interface"""
+    """Get filtered data preview for the interactive interface with caching"""
     try:
         print("=== Starting get_filtered_data_preview ===")
         data = request.get_json()
@@ -6934,6 +6934,12 @@ def get_filtered_data_preview():
         
         print(f"Getting filtered data preview for table: {table_name}")
         print(f"Filters: {filters}")
+        
+        # Create a cache key based on table and filters
+        import json
+        import hashlib
+        cache_key = hashlib.md5(f"{table_name}_{json.dumps(filters, sort_keys=True)}".encode()).hexdigest()
+        print(f"Cache key: {cache_key}")
         
         # Import database functions
         try:
@@ -7001,6 +7007,18 @@ def get_filtered_data_preview():
                         placeholders = ','.join(['%s'] * len(values))
                         where_conditions.append(f"`{column}` IN ({placeholders})")
                         params.extend(values)
+                # 📅 Date/Time operators for TEST_START_DATETIME column
+                elif operator == 'before':
+                    where_conditions.append(f"`{column}` < %s")
+                    params.append(value)
+                elif operator == 'after':
+                    where_conditions.append(f"`{column}` > %s")
+                    params.append(value)
+                elif operator == 'on_date':
+                    # Extract date part from value (e.g., "2025_06_24" from "2025_06_24-06_48_52")
+                    date_part = value.split('-')[0] if '-' in value else value
+                    where_conditions.append(f"`{column}` LIKE %s")
+                    params.append(f"{date_part}%")
             
             # Build complete query
             if where_conditions:
@@ -7038,12 +7056,37 @@ def get_filtered_data_preview():
             
             print(f"Returning success: {len(results)} preview rows out of {total_count} total")
             
+            # Cache the filtered data for faster analysis
+            if 'rwb_cache' not in session:
+                session['rwb_cache'] = {}
+            
+            # Store complete filtered dataset (not just preview) in cache
+            if where_conditions:
+                full_query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+                print("Caching full filtered dataset for analysis optimization...")
+                cursor.execute(full_query, params)
+                full_results = cursor.fetchall()
+                
+                session['rwb_cache'][cache_key] = {
+                    'data': full_results,
+                    'filters': filters,
+                    'table': table_name,
+                    'columns': columns,
+                    'row_count': len(full_results),
+                    'timestamp': time.time()
+                }
+                print(f"✅ Cached {len(full_results)} rows for future analysis")
+            else:
+                # If no filters, don't cache (too much data)
+                print("No filters applied - skipping cache (dataset too large)")
+            
             return jsonify({
                 'success': True,
                 'data': results,
                 'columns': columns,
                 'total_count': total_count,
-                'preview_count': len(results)
+                'preview_count': len(results),
+                'cached': cache_key in session.get('rwb_cache', {})
             })
             
         except Exception as e:
@@ -7594,9 +7637,9 @@ def generate_mean_calculation_ajax():
 @app.route('/generate-analysis-simple', methods=['POST'])
 @require_auth_and_port
 def generate_analysis_simple():
-    """Simple analysis endpoint that reuses the working preview logic"""
+    """Optimized analysis endpoint that reuses cached filtered data"""
     try:
-        print("🚀 SIMPLE ANALYSIS ENDPOINT CALLED!")
+        print("🚀 OPTIMIZED ANALYSIS ENDPOINT CALLED!")
         
         data = request.get_json()
         if not data:
@@ -7608,59 +7651,109 @@ def generate_analysis_simple():
         
         print(f"Analysis type: {analysis_type}, Table: {table}, Filters: {len(filters)}")
         
-        # Reuse the WORKING preview logic to get data
-        from db_operations import create_long_running_connection
-        connection = create_long_running_connection(database='rwb')
-        cursor = connection.cursor(dictionary=True)
+        # Create cache key to check for existing filtered data
+        import json
+        import hashlib
+        cache_key = hashlib.md5(f"{table}_{json.dumps(filters, sort_keys=True)}".encode()).hexdigest()
+        print(f"Looking for cached data with key: {cache_key}")
         
-        # Use the same logic as get_filtered_data_preview (which works!)
-        where_conditions = []
-        params = []
-        
-        for filter_obj in filters:
-            column = filter_obj.get('column')
-            operator = filter_obj.get('operator', 'equals')
-            value = filter_obj.get('value', '')
+        # Check if we have cached data from preview
+        cached_data = None
+        cache_hit = False
+        if 'rwb_cache' in session and cache_key in session['rwb_cache']:
+            cached_entry = session['rwb_cache'][cache_key]
+            cache_age = time.time() - cached_entry.get('timestamp', 0)
             
-            if not column or not value:
-                continue
-                
-            print(f"Processing filter: {column} {operator} {value}")
-            
-            if operator == 'equals':
-                where_conditions.append(f"`{column}` = %s")
-                params.append(value)
-            elif operator == 'contains':
-                where_conditions.append(f"`{column}` LIKE %s")
-                params.append(f"%{value}%")
-            elif operator == 'in_list':
-                values = [v.strip() for v in value.split(',')]
-                placeholders = ','.join(['%s'] * len(values))
-                where_conditions.append(f"`{column}` IN ({placeholders})")
-                params.extend(values)
-            elif operator == 'greater_than':
-                where_conditions.append(f"`{column}` > %s")
-                params.append(value)
-            elif operator == 'less_than':
-                where_conditions.append(f"`{column}` < %s")
-                params.append(value)
-        
-        # Build query
-        base_query = f"SELECT * FROM `{table}`"
-        if where_conditions:
-            query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
-            print(f"Executing query: {query} with params: {params}")
-            cursor.execute(query, params)
+            # Use cache if it's less than 10 minutes old and has the same filters
+            if cache_age < 600 and cached_entry.get('filters') == filters:
+                cached_data = cached_entry['data']
+                cache_hit = True
+                print(f"🎯 CACHE HIT! Using {len(cached_data)} cached rows (age: {cache_age:.1f}s)")
+            else:
+                print(f"Cache expired (age: {cache_age:.1f}s) or filters changed - will query database")
         else:
-            print(f"No filters, executing: {base_query}")
-            cursor.execute(base_query)
+            print("No cached data found - will query database")
         
-        results = cursor.fetchall()
-        print(f"Got {len(results)} rows")
+        # Get data from cache or database
+        if cache_hit and cached_data:
+            results = cached_data
+            print(f"Using cached data: {len(results)} rows")
+        else:
+            print("Querying database for fresh data...")
+            # Fallback to database query
+            from db_operations import create_long_running_connection
+            connection = create_long_running_connection(database='rwb')
+            cursor = connection.cursor(dictionary=True)
         
-        if len(results) == 0:
+            # Use the same logic as get_filtered_data_preview (which works!)
+            where_conditions = []
+            params = []
+            
+            for filter_obj in filters:
+                column = filter_obj.get('column')
+                operator = filter_obj.get('operator', 'equals')
+                value = filter_obj.get('value', '')
+                
+                if not column or not value:
+                    continue
+                    
+                print(f"Processing filter: {column} {operator} {value}")
+                
+                if operator == 'equals':
+                    where_conditions.append(f"`{column}` = %s")
+                    params.append(value)
+                elif operator == 'contains':
+                    where_conditions.append(f"`{column}` LIKE %s")
+                    params.append(f"%{value}%")
+                elif operator == 'in_list':
+                    values = [v.strip() for v in value.split(',')]
+                    placeholders = ','.join(['%s'] * len(values))
+                    where_conditions.append(f"`{column}` IN ({placeholders})")
+                    params.extend(values)
+                elif operator == 'greater_than':
+                    where_conditions.append(f"`{column}` > %s")
+                    params.append(value)
+                elif operator == 'less_than':
+                    where_conditions.append(f"`{column}` < %s")
+                    params.append(value)
+            
+            # Build query
+            base_query = f"SELECT * FROM `{table}`"
+            if where_conditions:
+                query = f"{base_query} WHERE {' AND '.join(where_conditions)}"
+                print(f"Executing query: {query} with params: {params}")
+                cursor.execute(query, params)
+            else:
+                print(f"No filters, executing: {base_query}")
+                cursor.execute(base_query)
+            
+            results = cursor.fetchall()
+            print(f"Got {len(results)} rows from database")
+            
+            # Cache the data for future analysis runs
+            if 'rwb_cache' not in session:
+                session['rwb_cache'] = {}
+            
+            # Only cache if we have filters (don't cache entire table)
+            if where_conditions and len(results) > 0:
+                session['rwb_cache'][cache_key] = {
+                    'data': results,
+                    'filters': filters,
+                    'table': table,
+                    'row_count': len(results),
+                    'timestamp': time.time()
+                }
+                print(f"🎯 AUTO-CACHED {len(results)} rows for future analysis speedup")
+            
+            # Close connection since we got the data
             cursor.close()
             connection.close()
+            
+            if len(results) == 0:
+                return jsonify({'success': False, 'error': 'No data found with applied filters'})
+        
+        # At this point, results contains our data (either from cache or database)
+        if len(results) == 0:
             return jsonify({'success': False, 'error': 'No data found with applied filters'})
         
         # Convert to DataFrame
@@ -7692,14 +7785,18 @@ def generate_analysis_simple():
             plot_html = f'<img src="data:image/png;base64,{img_data}" class="img-fluid" alt="RWB Level Plot">'
             plt.close()
             
-            cursor.close()
-            connection.close()
+            # Only close connection if we actually opened one (not using cache)
+            if not cache_hit:
+                # Note: connection was already closed earlier for non-cached queries
+                pass
             
             return jsonify({
                 'success': True,
                 'plot_html': plot_html,
                 'rows_processed': len(rwb_plot),
-                'analysis_type': 'level_plot'
+                'analysis_type': 'level_plot',
+                'cached_data_used': cache_hit,
+                'cache_key': cache_key if cache_hit else None
             })
             
         elif analysis_type == 'mean_calculation':
@@ -7747,24 +7844,169 @@ def generate_analysis_simple():
             
             print(f"Cleaned {len(mean_results)} result rows for JSON serialization")
             
-            cursor.close()
-            connection.close()
+            # Only close connection if we actually opened one (not using cache)
+            if not cache_hit:
+                # Note: connection was already closed earlier for non-cached queries
+                pass
             
             return jsonify({
                 'success': True,
                 'mean_results': mean_results,
                 'rows_processed': len(rwb_plot),
                 'analysis_type': 'mean_calculation',
-                'display_columns': available_columns
+                'display_columns': available_columns,
+                'cached_data_used': cache_hit,
+                'cache_key': cache_key if cache_hit else None
             })
         
         else:
-            cursor.close()
-            connection.close()
+            # Only close connection if we actually opened one (not using cache)
+            if not cache_hit:
+                # Note: connection was already closed earlier for non-cached queries
+                pass
             return jsonify({'success': False, 'error': f'Unknown analysis type: {analysis_type}'})
             
     except Exception as e:
         print(f"Error in generate_analysis_simple: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/clear-rwb-cache', methods=['POST'])
+@require_auth_and_port
+def clear_rwb_cache():
+    """Clear the RWB analysis cache when filters change"""
+    try:
+        if 'rwb_cache' in session:
+            cache_count = len(session['rwb_cache'])
+            session.pop('rwb_cache', None)
+            print(f"🗑️ Cleared {cache_count} cached RWB datasets")
+            return jsonify({'success': True, 'cleared_count': cache_count})
+        else:
+            print("No RWB cache to clear")
+            return jsonify({'success': True, 'cleared_count': 0})
+    except Exception as e:
+        print(f"Error clearing RWB cache: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/generate-analysis-from-data', methods=['POST'])
+@require_auth_and_port
+def generate_analysis_from_data():
+    """Generate analysis using pre-selected data (much faster than database queries)"""
+    try:
+        print("🚀 ANALYSIS FROM SELECTED DATA ENDPOINT CALLED!")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data received'})
+        
+        analysis_type = data.get('analysis_type')  # 'level_plot' or 'mean_calculation'
+        selected_data = data.get('data', [])
+        
+        print(f"Analysis type: {analysis_type}, Selected rows: {len(selected_data)}")
+        
+        if len(selected_data) == 0:
+            return jsonify({'success': False, 'error': 'No data selected for analysis'})
+        
+        # Convert selected data directly to DataFrame (no database query needed!)
+        import pandas as pd
+        rwb_plot = pd.DataFrame(selected_data)
+        print(f"✅ Created DataFrame from selected data: {len(rwb_plot)} rows, {len(rwb_plot.columns)} columns")
+        
+        # Import core functions
+        from core_post_processing_functions import rwb_groupby_level_nqplot, rwb_calc_io_mean
+        
+        if analysis_type == 'level_plot':
+            overlay_col = data.get('overlay_col', 'IO')
+            legend = data.get('legend', False)
+            title = data.get('title', 'RWB Level Analysis')
+            
+            print(f"Generating level plot: overlay={overlay_col}, legend={legend}, title={title}")
+            
+            # Generate plot
+            rwb_groupby_level_nqplot(rwb_plot, overlay_col=overlay_col, legend=legend, title=title)
+            
+            # Capture plot
+            import matplotlib.pyplot as plt
+            import io
+            import base64
+            
+            img_buffer = io.BytesIO()
+            plt.savefig(img_buffer, format='png', dpi=100, bbox_inches='tight')
+            img_buffer.seek(0)
+            img_data = base64.b64encode(img_buffer.read()).decode()
+            plot_html = f'<img src="data:image/png;base64,{img_data}" class="img-fluid" alt="RWB Level Plot">'
+            plt.close()
+            
+            return jsonify({
+                'success': True,
+                'plot_html': plot_html,
+                'rows_processed': len(rwb_plot),
+                'analysis_type': 'level_plot',
+                'data_source': 'selected_preview',
+                'cached_data_used': False  # Not using database cache since we use selected data
+            })
+            
+        elif analysis_type == 'mean_calculation':
+            groupby_cols = data.get('groupby_cols', 'TEST_NAME')
+            
+            print(f"Calculating mean: groupby={groupby_cols}")
+            
+            # Parse groupby columns
+            groupby_cols_list = [col.strip() for col in groupby_cols.split(',')]
+            
+            # Calculate mean
+            rwb_mean = rwb_calc_io_mean(rwb_plot, groupby_cols=groupby_cols_list)
+            
+            # Show only the group by column(s) plus the 3 specific LEVEL columns
+            level_columns = ['LEVEL_01_XPOINT_PPM', 'LEVEL_12_XPOINT_PPM', 'LEVEL_23_XPOINT_PPM']
+            available_columns = groupby_cols_list + [col for col in level_columns if col in rwb_mean.columns]
+            
+            print(f"Showing {len(available_columns)} columns: {available_columns}")
+            
+            # Check if all expected LEVEL columns exist
+            missing_cols = [col for col in level_columns if col not in rwb_mean.columns]
+            if missing_cols:
+                print(f"Warning: Missing LEVEL columns: {missing_cols}")
+                print(f"Available columns in DataFrame: {list(rwb_mean.columns)}")
+                # Show whatever LEVEL columns we have
+                available_level_cols = [col for col in rwb_mean.columns if 'LEVEL' in col and 'XPOINT_PPM' in col]
+                available_columns = groupby_cols_list + available_level_cols
+                print(f"Using available LEVEL columns: {available_level_cols}")
+            
+            # Convert DataFrame to dict and handle NaN values for JSON serialization
+            import numpy as np
+            import pandas as pd
+            mean_results_raw = rwb_mean[available_columns].to_dict('records')
+            
+            # Replace NaN, inf, and -inf values with None for proper JSON serialization
+            mean_results = []
+            for row in mean_results_raw:
+                clean_row = {}
+                for key, value in row.items():
+                    if pd.isna(value) or (isinstance(value, float) and (np.isinf(value) or np.isnan(value))):
+                        clean_row[key] = None
+                    else:
+                        clean_row[key] = value
+                mean_results.append(clean_row)
+            
+            print(f"Cleaned {len(mean_results)} result rows for JSON serialization")
+            
+            return jsonify({
+                'success': True,
+                'mean_results': mean_results,
+                'rows_processed': len(rwb_plot),
+                'analysis_type': 'mean_calculation',
+                'display_columns': available_columns,
+                'data_source': 'selected_preview',
+                'cached_data_used': False  # Not using database cache since we use selected data
+            })
+        
+        else:
+            return jsonify({'success': False, 'error': f'Unknown analysis type: {analysis_type}'})
+            
+    except Exception as e:
+        print(f"Error in generate_analysis_from_data: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})

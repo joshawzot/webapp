@@ -1369,7 +1369,7 @@ function updateAnalysisButtonStates() {
     if (levelPlotBtn) {
         levelPlotBtn.disabled = !hasSelection;
         if (!hasSelection) {
-            levelPlotBtn.innerHTML = '<i class="fas fa-chart-line"></i> Generate Level Plot (Select rows first)';
+            levelPlotBtn.innerHTML = '<i class="fas fa-chart-line"></i> Generate Level Plot (run 2. Data Preview & Selection first)';
         } else {
             levelPlotBtn.innerHTML = '<i class="fas fa-chart-line"></i> Generate Level Plot';
         }
@@ -1378,7 +1378,7 @@ function updateAnalysisButtonStates() {
     if (meanCalcBtn) {
         meanCalcBtn.disabled = !hasSelection;
         if (!hasSelection) {
-            meanCalcBtn.innerHTML = '<i class="fas fa-calculator"></i> Calculate Mean (Select rows first)';
+            meanCalcBtn.innerHTML = '<i class="fas fa-calculator"></i> Calculate Mean (run 2. Data Preview & Selection first)';
         } else {
             meanCalcBtn.innerHTML = '<i class="fas fa-calculator"></i> Calculate Mean & Display';
         }

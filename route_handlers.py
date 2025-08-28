@@ -4125,7 +4125,7 @@ def get_form_data_generate_plot(form):
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
             'analysis_type',  # Added analysis type field for column-by-column analysis
             'analysis_mode',  # Added analysis mode field for combine analysis
-            'number_of_identifiers', 'identifier_sections',  # Added table name separator fields
+            'identifier_sections',  # Added table name separator field
             'column_selection_type', 'custom_column_selection', 'yanCullinan_flag',  # Added column selection fields
             'location_dots_flag', 'location_dots_value',  # Added location dots fields
             'exclude_ranges_type', 'exclude_ranges_input',  # Added exclude ranges fields

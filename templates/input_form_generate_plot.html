@@ -2,6 +2,10 @@
 {% block content %}
 
 <!-- Template: input_form_generate_plot.html -->
+<!-- Meta tags for JavaScript access to template variables -->
+<meta name="ecc-pattern-mode" content="{{ ecc_pattern_mode|default('') }}">
+<meta name="selected-pattern" content="{{ selected_pattern|default('') }}">
+<meta name="hide-pattern-selection" content="{{ 'true' if hide_pattern_selection else 'false' }}">
 <div class="text-muted text-center mb-2" style="font-size: 0.8em; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
     📄 <strong>Template:</strong> input_form_generate_plot.html
 </div>
@@ -51,7 +55,7 @@
         <div id="predefined-fields">
             {% if hide_pattern_selection %}
             <!-- ECC Pattern Auto-Selected - With Option to Switch to Manual -->
-            <div class="form-group">
+            <div class="form-group" style="display: none;">
                 <label>Pattern Selection Mode:</label>
                 <div class="alert alert-info" style="margin-bottom: 15px; padding: 12px;">
                     <i class="fas fa-info-circle"></i> 
@@ -228,32 +232,29 @@
             <!-- Table Name Separator Configuration (Initially Hidden) -->
             <div id="table_name_separator_section" style="display: none;">
                 <div class="form-group">
-                    <label for="number_of_identifiers">Number of identifiers:</label>
-                    <input type="number" class="form-control" name="number_of_identifiers" id="number_of_identifiers" placeholder="Enter number of identifier sections" min="1" max="10" value="1">
-                    <small class="form-text text-muted">Number of table name sections (split by "_") to use as dataset identifiers.</small>
-                </div>
-                
-                <div class="form-group">
                     <label for="identifier_sections">Sections:</label>
-                    <input type="text" class="form-control" name="identifier_sections" id="identifier_sections" placeholder="e.g., 3 or 2,3">
-                    <small class="form-text text-muted">
-                        Specify which sections to use as identifiers:<br>
+                    <input type="text" class="form-control" name="identifier_sections" id="identifier_sections" placeholder="e.g., 3 or 2,3" oninput="handleSectionInput()">
+                    <!-- <small class="form-text text-muted">
+                        Specify which sections to use as identifiers (1-based indexing):<br>
                         • <strong>Single section:</strong> 3 (uses section 3)<br>
                         • <strong>Multiple sections:</strong> 2,3 (combines sections 2 and 3)<br>
                         • <strong>Example:</strong> For "tsi_220_180c649h_npu9_npy", section 3 = "180c649h"
-                    </small>
+                    </small> -->
                 </div>
                 
-                <!-- Example Display -->
-                <div class="alert alert-info">
+                <!-- Validation feedback area -->
+                <div id="section_validation_feedback" class="alert" style="display: none;">
+                    <i class="fas fa-info-circle"></i>
+                    <span id="validation_message"></span>
+                </div>
+                
+                <!-- Dynamic Example Display -->
+                <div class="alert alert-info" id="dynamic_example_section">
                     <h6><i class="fas fa-info-circle"></i> How it works:</h6>
                     <p class="mb-2">Tables will be grouped by the selected identifier sections:</p>
-                    <ul class="mb-0">
-                        <li><strong>Table:</strong> tsi_220_180c649h_npu9_npy</li>
-                        <li><strong>Sections:</strong> ["tsi", "220", "180c649h", "npu9", "npy"]</li>
-                        <li><strong>If you select section 3:</strong> Identifier = "180c649h"</li>
-                        <li><strong>If you select sections 2,3:</strong> Identifier = "220_180c649h"</li>
-                    </ul>
+                    <div id="example_content">
+                        <em>Select tables to see an example...</em>
+                    </div>
                 </div>
             </div>
             
@@ -620,7 +621,6 @@
         toggleAnalysisModeInfo();
         
         // Set default table name separator options
-        document.getElementById('number_of_identifiers').value = '1';
         document.getElementById('identifier_sections').value = '';
         
         // Set default exclude ranges options
@@ -895,7 +895,6 @@
         const analysisMode = document.getElementById('analysis_mode').value;
         if (analysisMode === 'separate_datasets') {
             const identifierSections = document.getElementById('identifier_sections').value.trim();
-            const numberOfIdentifiers = parseInt(document.getElementById('number_of_identifiers').value);
             
             if (!identifierSections) {
                 alert('Table Name Separator Error: Please specify which sections to use as identifiers.');
@@ -904,12 +903,35 @@
                 return;
             }
             
-            if (!validateIdentifierSections(identifierSections, numberOfIdentifiers)) {
+            if (!validateIdentifierSections(identifierSections)) {
                 alert('Table Name Separator Error: Invalid section specification. Use formats like:\n• Single section: 3\n• Multiple sections: 2,3 or 1,3,5\n• Section numbers must be positive integers');
                 event.preventDefault(); // Stop form submission
                 document.getElementById('identifier_sections').focus();
                 return;
             }
+            
+            // Check if sections are valid without running full validation (to avoid UI updates during submission)
+            const sectionsValue = identifierSections;
+            const formElement = document.getElementById('plotForm');
+            const rawTableNames = formElement.dataset.tableNames;
+            
+            if (rawTableNames) {
+                const tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
+                const sectionNumbers = sectionsValue.replace(/\s/g, '').split(',');
+                const maxSection = Math.max(...tableNames.map(name => name.split('_').length));
+                
+                for (const sectionStr of sectionNumbers) {
+                    if (sectionStr === '') continue;
+                    const sectionNum = parseInt(sectionStr);
+                    if (isNaN(sectionNum) || sectionNum < 1 || sectionNum > maxSection) {
+                        alert('Table Name Separator Error: One or more specified sections do not exist in the selected table names.\n\nPlease check the validation message and choose valid sections.');
+                        event.preventDefault(); // Stop form submission
+                        document.getElementById('identifier_sections').focus();
+                        return;
+                    }
+                }
+            }
+            // If all sections are valid, continue with form submission
         }
     });
 
@@ -1106,14 +1128,9 @@
         return true;
     }
     
-    function validateIdentifierSections(input, expectedCount) {
+    function validateIdentifierSections(input) {
         // Remove spaces and split by commas
         const parts = input.replace(/\s/g, '').split(',');
-        
-        // Check if the number of sections matches the expected count
-        if (parts.length !== expectedCount) {
-            return false;
-        }
         
         for (const part of parts) {
             if (part === '') return false; // Empty parts not allowed
@@ -1125,6 +1142,122 @@
         }
         
         return true;
+    }
+
+    function updateDynamicExample() {
+        const formElement = document.getElementById('plotForm');
+        const exampleContent = document.getElementById('example_content');
+        
+        if (!formElement || !exampleContent) {
+            return;
+        }
+        
+        // Get table names from form data attribute
+        const rawTableNames = formElement.dataset.tableNames;
+        if (!rawTableNames) {
+            exampleContent.innerHTML = '<em>No tables selected...</em>';
+            return;
+        }
+        
+        const tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
+        if (tableNames.length === 0) {
+            exampleContent.innerHTML = '<em>No tables selected...</em>';
+            return;
+        }
+        
+        // Use the first table name as example
+        const exampleTable = tableNames[0];
+        const sections = exampleTable.split('_');
+        
+        // Create sections array display
+        const sectionsDisplay = sections.map((section, index) => `"${section}"`).join(', ');
+        
+        // Create example HTML
+        exampleContent.innerHTML = `
+            <ul class="mb-0">
+                <li><strong>Example table:</strong> ${exampleTable}</li>
+                <li><strong>Sections:</strong> [${sectionsDisplay}]</li>
+                <li><strong>If you select section 3:</strong> Identifier = "${sections[2] || 'N/A'}"</li>
+                <li><strong>If you select sections 2,3:</strong> Identifier = "${(sections[1] || 'N/A')}_${(sections[2] || 'N/A')}"</li>
+            </ul>
+        `;
+    }
+
+    function handleSectionInput() {
+        // Update dynamic example immediately
+        updateDynamicExample();
+        
+        // Clear any existing timeout
+        if (window.sectionValidationTimeout) {
+            clearTimeout(window.sectionValidationTimeout);
+        }
+        
+        // Validate after a short delay to avoid conflicts during form submission
+        window.sectionValidationTimeout = setTimeout(() => {
+            validateTableNameSections();
+        }, 500);
+    }
+
+    function validateTableNameSections() {
+        const sectionsInput = document.getElementById('identifier_sections');
+        const feedbackDiv = document.getElementById('section_validation_feedback');
+        const messageSpan = document.getElementById('validation_message');
+        const formElement = document.getElementById('plotForm');
+        
+        if (!sectionsInput || !feedbackDiv || !messageSpan || !formElement) {
+            return false;
+        }
+        
+        const sectionsValue = sectionsInput.value.trim();
+        if (!sectionsValue) {
+            feedbackDiv.style.display = 'none';
+            updateDynamicExample(); // Update example even when no sections entered
+            return null; // Return null to indicate "no validation needed"
+        }
+        
+        // Get table names from form data attribute
+        const rawTableNames = formElement.dataset.tableNames;
+        if (!rawTableNames) {
+            feedbackDiv.style.display = 'none';
+            return false;
+        }
+        
+        const tableNames = rawTableNames.split(',').map(tn => tn.trim()).filter(tn => tn);
+        if (tableNames.length === 0) {
+            feedbackDiv.style.display = 'none';
+            return false;
+        }
+        
+        // Parse sections
+        const sectionNumbers = sectionsValue.replace(/\s/g, '').split(',');
+        const maxSection = Math.max(...tableNames.map(name => name.split('_').length));
+        const invalidSections = [];
+        
+        for (const sectionStr of sectionNumbers) {
+            if (sectionStr === '') continue;
+            
+            const sectionNum = parseInt(sectionStr);
+            if (isNaN(sectionNum) || sectionNum < 1) {
+                invalidSections.push(sectionStr);
+            } else if (sectionNum > maxSection) {
+                invalidSections.push(sectionStr);
+            }
+        }
+        
+        // Update dynamic example
+        updateDynamicExample();
+        
+        if (invalidSections.length > 0) {
+            feedbackDiv.className = 'alert alert-danger';
+            feedbackDiv.style.display = 'block';
+            messageSpan.innerHTML = `<strong>Invalid sections:</strong> ${invalidSections.join(', ')}<br>Available sections: 1-${maxSection} (based on table names with most sections)`;
+            return false;
+        } else {
+            feedbackDiv.className = 'alert alert-success';
+            feedbackDiv.style.display = 'block';
+            messageSpan.innerHTML = `<strong>Valid sections:</strong> ${sectionsValue}`;
+            return true;
+        }
     }
 
     function toggleCustomColumnInput() {
@@ -1150,6 +1283,8 @@
         if (analysisMode === 'separate_datasets') {
             separatorSection.style.display = 'block';
             infoElement.innerHTML = 'Tables will be grouped into separate datasets based on table name identifiers.';
+            // Update the dynamic example when showing the section
+            updateDynamicExample();
         } else {
             separatorSection.style.display = 'none';
             if (analysisMode === 'individual') {
@@ -1326,6 +1461,10 @@
                         const analysisMode = document.getElementById('analysis_mode');
                         if (analysisMode) {
                             toggleAnalysisModeInfo();
+                            // Also update dynamic example if in separate_datasets mode
+                            if (analysisMode.value === 'separate_datasets') {
+                                setTimeout(updateDynamicExample, 100);
+                            }
                         }
                         
                         const columnSelectionType = document.getElementById('column_selection_type');
@@ -1522,10 +1661,10 @@
 
     // Function to handle ECC pattern auto-selection
     function handleECCPatternAutoSelection() {
-        // Get ECC pattern information from the server template variables
-        const eccMode = '{{ ecc_pattern_mode }}';
-        const selectedPattern = '{{ selected_pattern }}';
-        const hidePatternSelection = {% if hide_pattern_selection %}true{% else %}false{% endif %};
+        // Get ECC pattern information from the server template variables or DOM
+        const eccMode = document.querySelector('meta[name="ecc-pattern-mode"]')?.content || '';
+        const selectedPattern = document.querySelector('meta[name="selected-pattern"]')?.content || '';
+        const hidePatternSelection = document.querySelector('meta[name="hide-pattern-selection"]')?.content === 'true';
         
         console.log('ECC Mode:', eccMode, 'Selected Pattern:', selectedPattern, 'Hide Pattern Selection:', hidePatternSelection);
         

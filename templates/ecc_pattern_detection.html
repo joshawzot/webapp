@@ -43,17 +43,24 @@
                         </div>
                     </div>
 
-                    <form action="/process-ecc-pattern-choice" method="POST">
+                    <form action="/process-ecc-pattern-choice" method="POST" id="eccForm">
                         <input type="hidden" name="database" value="{{ database }}">
                         <input type="hidden" name="plot_function" value="{{ plot_function }}">
                         
                         <div class="text-center">
-                            <button type="submit" name="is_ecc_pattern" value="true" class="btn btn-success btn-lg mx-2">
+                            <button type="submit" name="is_ecc_pattern" value="true" class="btn btn-success btn-lg mx-2" id="eccYesButton">
                                 <i class="fas fa-check"></i> Yes, ECC Pattern
                             </button>
                             <button type="submit" name="is_ecc_pattern" value="false" class="btn btn-secondary btn-lg mx-2">
                                 <i class="fas fa-times"></i> No, Regular Analysis
                             </button>
+                        </div>
+                        
+                        <!-- Warning message for non-ECC tables -->
+                        <div id="eccWarning" class="alert alert-warning mt-3" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Warning:</strong> Not all selected table names contain IO numbers (e.g., IO0, IO1, IO2...). 
+                            ECC patterns require tables with IO identifiers. Please select "No, Regular Analysis" instead.
                         </div>
                     </form>
 
@@ -86,5 +93,91 @@
     font-size: 1.1em;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all table names from the DOM instead of template variables
+    const tableElements = document.querySelectorAll('.badge.badge-secondary');
+    const tableNames = Array.from(tableElements).map(el => el.textContent.trim());
+    
+    console.log('🔍 ECC Validation - DOM Elements found:', tableElements.length);
+    console.log('🔍 ECC Validation - Table names extracted:', tableNames);
+    
+    const eccYesButton = document.getElementById('eccYesButton');
+    const eccWarning = document.getElementById('eccWarning');
+    const eccForm = document.getElementById('eccForm');
+    
+    console.log('🔍 ECC Validation - Button element:', eccYesButton);
+    console.log('🔍 ECC Validation - Warning element:', eccWarning);
+    console.log('🔍 ECC Validation - Form element:', eccForm);
+    
+    // Safety check - ensure all elements are found
+    if (!eccYesButton || !eccWarning || !eccForm) {
+        console.error('❌ ECC Validation - Missing required DOM elements!');
+        return;
+    }
+    
+    if (tableNames.length === 0) {
+        console.error('❌ ECC Validation - No table names found in DOM!');
+        return;
+    }
+    
+    // Function to check if a table name contains IO pattern
+    function hasIOPattern(tableName) {
+        const hasIO = /IO\d+/i.test(tableName);
+        console.log(`🔍 Checking "${tableName}" for IO pattern: ${hasIO}`);
+        return hasIO;
+    }
+    
+    // Check if all tables have IO patterns
+    function validateECCTables() {
+        console.log('🔍 Validating ECC tables:', tableNames);
+        
+        const nonECCTables = tableNames.filter(name => !hasIOPattern(name));
+        const allHaveIO = nonECCTables.length === 0;
+        
+        console.log('🔍 Tables without IO pattern:', nonECCTables);
+        console.log('🔍 All tables have IO?', allHaveIO);
+        
+        if (!allHaveIO) {
+            // Show warning and disable button
+            eccWarning.style.display = 'block';
+            eccYesButton.disabled = true;
+            eccYesButton.classList.remove('btn-success');
+            eccYesButton.classList.add('btn-secondary');
+            eccYesButton.innerHTML = '<i class="fas fa-ban"></i> Yes, ECC Pattern (Disabled)';
+            
+            console.log('🚨 ECC validation failed - button disabled');
+        } else {
+            // Hide warning and enable button
+            eccWarning.style.display = 'none';
+            eccYesButton.disabled = false;
+            eccYesButton.classList.remove('btn-secondary');
+            eccYesButton.classList.add('btn-success');
+            eccYesButton.innerHTML = '<i class="fas fa-check"></i> Yes, ECC Pattern';
+            
+            console.log('✅ ECC validation passed - button enabled');
+        }
+        
+        return allHaveIO;
+    }
+    
+    // Validate on page load
+    validateECCTables();
+    
+    // Add form submission validation
+    eccForm.addEventListener('submit', function(e) {
+        const clickedButton = e.submitter;
+        
+        if (clickedButton && clickedButton.name === 'is_ecc_pattern' && clickedButton.value === 'true') {
+            if (!validateECCTables()) {
+                e.preventDefault();
+                alert('⚠️ ECC Pattern Validation Failed\n\nNot all selected table names contain IO numbers (e.g., IO0, IO1, IO2...).\n\nECC patterns require tables with IO identifiers like:\n• table_name_IO0_suffix\n• table_name_IO1_suffix\n• etc.\n\nPlease select "No, Regular Analysis" instead.');
+                return false;
+            }
+        }
+    });
+});
+</script>
 
 {% endblock %}

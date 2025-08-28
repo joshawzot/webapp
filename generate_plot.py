@@ -590,7 +590,7 @@ def create_exclude_mask(data_shape, exclude_type, exclude_indices):
             
         return mask
             
-                except Exception as e:
+    except Exception as e:
         print(f"Error creating exclude mask: {str(e)}")
         return np.ones(data_shape, dtype=bool)  # Include all data on error
 
@@ -849,11 +849,11 @@ def generate_plot(table_names, database_name, form_data):
                 # Set pattern_file_array to None so we'll load the regular pattern file below
                 pattern_file_array = None
             else:
-            # Auto-detect case: Multiple IO tables (works for both combine and individual analysis)
-            print(f"DEBUG: Auto-detecting ECC subset case - Multiple IO tables with pattern '{state_pattern}' selected")
-            print(f"DEBUG: Table names: {table_names}")
-            print(f"DEBUG: Analysis mode: {analysis_mode}")
-            # Check if this is an ECC subset case by looking at table names
+                # Auto-detect case: Multiple IO tables (works for both combine and individual analysis)
+                print(f"DEBUG: Auto-detecting ECC subset case - Multiple IO tables with pattern '{state_pattern}' selected")
+                print(f"DEBUG: Table names: {table_names}")
+                print(f"DEBUG: Analysis mode: {analysis_mode}")
+                # Check if this is an ECC subset case by looking at table names
             io_numbers = []
             for table_name in table_names:
                 match = re.search(r'IO(\d+)', table_name)
@@ -1478,11 +1478,16 @@ def generate_plot(table_names, database_name, form_data):
                         elif pattern_file_array is not None and hasattr(pattern_file_array, 'shape'):
                             # Regular patterns - replicate for dataset
                             print(f"🔧 SEPARATE DATASETS: Replicating pattern {pattern_file_array.shape} for dataset matrix shape {data_matrix.shape}")
-                            dataset_pattern = replicate_pattern_for_data(pattern_file_array, data_matrix)
-                            exclude_ranges_type = form_data.get('exclude_ranges_type', '')
-                            exclude_ranges = form_data.get('exclude_ranges', [])
-                            groups, stats, selected_groups = get_group_data_from_matrix(
-                                data_matrix, selected_groups, dataset_pattern, exclude_ranges_type, exclude_ranges)
+                            try:
+                                dataset_pattern = replicate_pattern_for_data(pattern_file_array, data_matrix)
+                                print(f"🔧 SEPARATE DATASETS: Successfully replicated pattern to {dataset_pattern.shape}")
+                                exclude_ranges_type = form_data.get('exclude_ranges_type', '')
+                                exclude_ranges = form_data.get('exclude_ranges', [])
+                                groups, stats, selected_groups = get_group_data_from_matrix(
+                                    data_matrix, selected_groups, dataset_pattern, exclude_ranges_type, exclude_ranges)
+                            except Exception as e:
+                                print(f"🚨 SEPARATE DATASETS: Pattern replication failed: {e}")
+                                raise ValueError(f"Dimension Mismatch Error\nThe selected pattern does not match your table dimensions.\n\nYour tables: {', '.join(table_names[:3])} and {len(table_names)-3} more\n\nSelected pattern: {form_data.get('state_pattern', 'unknown')}\n\n💡 How to fix this:\nOption 1: Go back and select a pattern that matches your table dimensions\nOption 2: Select different tables that match the chosen pattern\nOption 3: Use \"1D pattern\" instead of \"predefined pattern\" for dimension-independent analysis\n\nTechnical Details:\n{str(e)}")
                         else:
                             raise Exception(f"Pattern not properly loaded for separate_datasets analysis mode: {pattern_file_array}")
                     else:
@@ -1503,7 +1508,7 @@ def generate_plot(table_names, database_name, form_data):
                         if form_data.get('ecc_pattern_mode') == 'normal':
                             raise ValueError(f"Dimension validation failed: Cannot use pattern '{state_pattern}' with the selected tables. This often occurs when trying to use a pattern with different dimensions than your data. For 2048x32 tables in combine mode, the combined data shape will be (2048, 128). Please select a compatible pattern or use individual analysis mode.")
                         else:
-                        raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
+                            raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                     # For regular patterns (not ECC special patterns), use individual table processing
                     exclude_ranges_type = form_data.get('exclude_ranges_type', '')
                     exclude_ranges = form_data.get('exclude_ranges', [])
@@ -1613,15 +1618,21 @@ def generate_plot(table_names, database_name, form_data):
                         if form_data.get('ecc_pattern_mode') == 'normal':
                             raise ValueError(f"Dimension validation failed: Cannot use pattern '{state_pattern}' with the selected tables. This often occurs when trying to use a pattern with different dimensions than your data. For 2048x32 tables in combine mode, the combined data shape will be (2048, 128). Please select a compatible pattern or use individual analysis mode.")
                         else:
-                        raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
+                            raise Exception(f"Pattern file array not loaded for predefined pattern: {state_pattern}")
                     # Handle pattern replication for separate_datasets mode
                     if analysis_mode == 'separate_datasets':
                         # Skip replication for ECC special patterns (they're handled separately)
                         if isinstance(pattern_file_array, str):
                             pattern_to_use = pattern_file_array
                         else:
-                            dataset_pattern = replicate_pattern_for_data(pattern_file_array, data_matrix)
-                            pattern_to_use = dataset_pattern
+                            print(f"🔧 SEPARATE DATASETS: Replicating pattern {pattern_file_array.shape} for dataset matrix shape {data_matrix.shape}")
+                            try:
+                                dataset_pattern = replicate_pattern_for_data(pattern_file_array, data_matrix)
+                                print(f"🔧 SEPARATE DATASETS: Successfully replicated pattern to {dataset_pattern.shape}")
+                                pattern_to_use = dataset_pattern
+                            except Exception as e:
+                                print(f"🚨 SEPARATE DATASETS: Pattern replication failed: {e}")
+                                raise ValueError(f"Dimension Mismatch Error\nThe selected pattern does not match your table dimensions.\n\nYour tables: {', '.join(table_names[:3])} and {len(table_names)-3} more\n\nSelected pattern: {form_data.get('state_pattern', 'unknown')}\n\n💡 How to fix this:\nOption 1: Go back and select a pattern that matches your table dimensions\nOption 2: Select different tables that match the chosen pattern\nOption 3: Use \"1D pattern\" instead of \"predefined pattern\" for dimension-independent analysis\n\nTechnical Details:\n{str(e)}")
                     else:
                         pattern_to_use = pattern_file_array
                     
@@ -2130,12 +2141,12 @@ def get_group_data_from_matrix(data_matrix, selected_groups, pattern_file_array,
             
             # Ensure pattern matches data dimensions
     if pattern_file_array.shape != data_np.shape:
-                print(f"🔧 ECC PATTERN: Pattern shape mismatch - pattern {pattern_file_array.shape} vs data {data_np.shape}")
-                # Try to replicate pattern if needed
-                if pattern_file_array.shape[1] < data_np.shape[1]:
-                    replications = data_np.shape[1] // pattern_file_array.shape[1]
-                    pattern_file_array = np.tile(pattern_file_array, (1, replications))
-                    print(f"🔧 ECC PATTERN: Replicated pattern to {pattern_file_array.shape}")
+        print(f"🔧 ECC PATTERN: Pattern shape mismatch - pattern {pattern_file_array.shape} vs data {data_np.shape}")
+        # Try to replicate pattern if needed
+        if pattern_file_array.shape[1] < data_np.shape[1]:
+            replications = data_np.shape[1] // pattern_file_array.shape[1]
+            pattern_file_array = np.tile(pattern_file_array, (1, replications))
+            print(f"🔧 ECC PATTERN: Replicated pattern to {pattern_file_array.shape}")
         
         # Now use the pattern to group data (fall through to regular processing)
         print(f"🔧 ECC PATTERN: Using constructed pattern shape {pattern_file_array.shape} for grouping")

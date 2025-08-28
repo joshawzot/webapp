@@ -781,3 +781,26 @@
 [I 2025-08-26 17:03:12.767 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
 [W 2025-08-26 17:03:21.863 ServerApp] WebSocket ping timeout after 119987 ms.
 [I 2025-08-26 17:03:26.865 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[W 2025-08-27 10:01:10.212 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.25ms referer=http://192.168.68.215:3000/
+[W 2025-08-27 10:01:10.362 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 1.54ms referer=http://192.168.68.215:3000/
+[W 2025-08-27 10:01:10.510 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 1.70ms referer=http://192.168.68.215:3000/
+[W 2025-08-27 10:01:27.237 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.77ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
+[I 2025-08-27 10:02:20.455 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:926b3c5b4975439c8b4b878bfaea64de
+[W 2025-08-27 10:02:38.397 NotebookApp] 405 HEAD /notebooks/magnum_calibration_push_and_analysis.ipynb?token=[secret] (192.168.68.251) 1.10ms referer=http://192.168.68.215:3000/
+[W 2025-08-27 10:02:38.545 NotebookApp] 405 HEAD /notebooks/magnum_calibration_push_and_analysis.ipynb (192.168.68.251) 0.75ms referer=http://192.168.68.215:3000/
+[W 2025-08-27 10:02:38.693 NotebookApp] 405 HEAD /tree/magnum_calibration_push_and_analysis.ipynb?token=[secret] (192.168.68.251) 0.96ms referer=http://192.168.68.215:3000/
+[W 2025-08-27 10:02:41.304 ServerApp] Notebook magnum_calibration_push_and_analysis.ipynb is not trusted
+[W 2025-08-27 10:02:41.308 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.73ms referer=http://192.168.68.215:8888/notebooks/magnum_calibration_push_and_analysis.ipynb
+[I 2025-08-27 10:02:42.125 ServerApp] Kernel started: 5ef6b66e-a842-4ecf-a305-50dad41b257b
+[I 2025-08-27 10:02:58.896 ServerApp] Starting buffering for 5ef6b66e-a842-4ecf-a305-50dad41b257b:08c2a02d6458461d8f2d7108c2a564e3
+[I 2025-08-27 10:31:29.346 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-27 10:33:21.530 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-27 10:37:41.374 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-27 13:13:18.721 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-27 13:52:18.803 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-27 13:52:40.670 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-27 13:57:01.207 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-27 14:41:57.560 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-27 16:58:43.708 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
+[I 2025-08-27 16:59:00.477 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+[I 2025-08-27 17:03:21.032 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb

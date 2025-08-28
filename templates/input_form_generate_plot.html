@@ -219,9 +219,42 @@
                 <select class="form-control" name="analysis_mode" id="analysis_mode" onchange="toggleAnalysisModeInfo()">
                     <option value="individual">No Combine Analysis (Individual Tables)</option>
                     <option value="combine">Combine Analysis (Treat All Tables as One Dataset)</option>
+                    <option value="separate_datasets">Separate datasets based on table name</option>
                 </select>
                 <small class="form-text text-muted" id="analysis_mode_info">
                 </small>
+            </div>
+            
+            <!-- Table Name Separator Configuration (Initially Hidden) -->
+            <div id="table_name_separator_section" style="display: none;">
+                <div class="form-group">
+                    <label for="number_of_identifiers">Number of identifiers:</label>
+                    <input type="number" class="form-control" name="number_of_identifiers" id="number_of_identifiers" placeholder="Enter number of identifier sections" min="1" max="10" value="1">
+                    <small class="form-text text-muted">Number of table name sections (split by "_") to use as dataset identifiers.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="identifier_sections">Sections:</label>
+                    <input type="text" class="form-control" name="identifier_sections" id="identifier_sections" placeholder="e.g., 3 or 2,3">
+                    <small class="form-text text-muted">
+                        Specify which sections to use as identifiers:<br>
+                        • <strong>Single section:</strong> 3 (uses section 3)<br>
+                        • <strong>Multiple sections:</strong> 2,3 (combines sections 2 and 3)<br>
+                        • <strong>Example:</strong> For "tsi_220_180c649h_npu9_npy", section 3 = "180c649h"
+                    </small>
+                </div>
+                
+                <!-- Example Display -->
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> How it works:</h6>
+                    <p class="mb-2">Tables will be grouped by the selected identifier sections:</p>
+                    <ul class="mb-0">
+                        <li><strong>Table:</strong> tsi_220_180c649h_npu9_npy</li>
+                        <li><strong>Sections:</strong> ["tsi", "220", "180c649h", "npu9", "npy"]</li>
+                        <li><strong>If you select section 3:</strong> Identifier = "180c649h"</li>
+                        <li><strong>If you select sections 2,3:</strong> Identifier = "220_180c649h"</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="form-group">
@@ -586,6 +619,10 @@
         document.getElementById('analysis_mode').value = 'individual';
         toggleAnalysisModeInfo();
         
+        // Set default table name separator options
+        document.getElementById('number_of_identifiers').value = '1';
+        document.getElementById('identifier_sections').value = '';
+        
         // Set default exclude ranges options
         document.getElementById('exclude_ranges_type').value = '';
         document.getElementById('exclude_ranges_input').value = '';
@@ -853,6 +890,27 @@
                 return;
             }
         }
+
+        // Add validation for table name separator feature
+        const analysisMode = document.getElementById('analysis_mode').value;
+        if (analysisMode === 'separate_datasets') {
+            const identifierSections = document.getElementById('identifier_sections').value.trim();
+            const numberOfIdentifiers = parseInt(document.getElementById('number_of_identifiers').value);
+            
+            if (!identifierSections) {
+                alert('Table Name Separator Error: Please specify which sections to use as identifiers.');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('identifier_sections').focus();
+                return;
+            }
+            
+            if (!validateIdentifierSections(identifierSections, numberOfIdentifiers)) {
+                alert('Table Name Separator Error: Invalid section specification. Use formats like:\n• Single section: 3\n• Multiple sections: 2,3 or 1,3,5\n• Section numbers must be positive integers');
+                event.preventDefault(); // Stop form submission
+                document.getElementById('identifier_sections').focus();
+                return;
+            }
+        }
     });
 
     function updateCustomInput(select, inputId) {
@@ -1047,6 +1105,27 @@
         
         return true;
     }
+    
+    function validateIdentifierSections(input, expectedCount) {
+        // Remove spaces and split by commas
+        const parts = input.replace(/\s/g, '').split(',');
+        
+        // Check if the number of sections matches the expected count
+        if (parts.length !== expectedCount) {
+            return false;
+        }
+        
+        for (const part of parts) {
+            if (part === '') return false; // Empty parts not allowed
+            
+            const num = parseInt(part);
+            if (isNaN(num) || num < 1) {
+                return false; // Section numbers must be positive integers (1-based)
+            }
+        }
+        
+        return true;
+    }
 
     function toggleCustomColumnInput() {
         var columnSelectionType = document.getElementById('column_selection_type').value;
@@ -1062,9 +1141,23 @@
     function toggleAnalysisModeInfo() {
         var analysisMode = document.getElementById('analysis_mode').value;
         var infoElement = document.getElementById('analysis_mode_info');
+        var separatorSection = document.getElementById('table_name_separator_section');
         
         // Clear the info text
         infoElement.innerHTML = '';
+        
+        // Show/hide table name separator configuration
+        if (analysisMode === 'separate_datasets') {
+            separatorSection.style.display = 'block';
+            infoElement.innerHTML = 'Tables will be grouped into separate datasets based on table name identifiers.';
+        } else {
+            separatorSection.style.display = 'none';
+            if (analysisMode === 'individual') {
+                infoElement.innerHTML = 'Each table will be analyzed individually.';
+            } else if (analysisMode === 'combine') {
+                infoElement.innerHTML = 'All selected tables will be treated as one combined dataset.';
+            }
+        }
     }
 
     // Function to toggle exclude ranges input visibility

@@ -930,8 +930,11 @@ def render_plot(database, table_name, plot_function):
                                      linear_output_max=linear_output_max)
 
         except Exception as e:
+            import traceback
             error_message = str(e)
+            full_traceback = traceback.format_exc()
             print(f"Error generating plot: {error_message}")
+            print(f"Full traceback:\n{full_traceback}")
             
             # Check for dimension mismatch errors and provide user-friendly feedback
             if ("pattern_file_array must have the same shape" in error_message or
@@ -4122,6 +4125,7 @@ def get_form_data_generate_plot(form):
             'generate_bitmap_mask', 'bitmap_mask_name', 'apply_bitmap_mask',  # Added bitmap mask fields
             'analysis_type',  # Added analysis type field for column-by-column analysis
             'analysis_mode',  # Added analysis mode field for combine analysis
+            'number_of_identifiers', 'identifier_sections',  # Added table name separator fields
             'column_selection_type', 'custom_column_selection', 'yanCullinan_flag',  # Added column selection fields
             'location_dots_flag', 'location_dots_value',  # Added location dots fields
             'exclude_ranges_type', 'exclude_ranges_input',  # Added exclude ranges fields
@@ -4455,6 +4459,84 @@ def parse_column_selection(selection_str):
     
     # Remove duplicates and sort
     return sorted(list(set(selected_columns)))
+
+def separate_tables_by_name_identifiers(table_names, identifier_sections):
+    """
+    Separate tables into datasets based on identifiers extracted from table names.
+    
+    Args:
+        table_names (list): List of table names
+        identifier_sections (list): List of section indices (1-based) to use as identifiers
+    
+    Returns:
+        dict: Dictionary where keys are dataset identifiers and values are lists of table names
+    
+    Example:
+        table_names = ["tsi_220_180c649h_npu9_npy", "tsi_220_180c649h_npu10_npy", "tsi_221_185c650h_npu9_npy"]
+        identifier_sections = [3]  # Use section 3 (180c649h, 185c650h)
+        Returns: {
+            "180c649h": ["tsi_220_180c649h_npu9_npy", "tsi_220_180c649h_npu10_npy"],
+            "185c650h": ["tsi_221_185c650h_npu9_npy"]
+        }
+    """
+    datasets = {}
+    
+    for table_name in table_names:
+        # Split table name by underscores
+        parts = table_name.split('_')
+        
+        # Extract identifier sections (convert from 1-based to 0-based indexing)
+        identifier_parts = []
+        for section_index in identifier_sections:
+            section_idx = section_index - 1  # Convert to 0-based
+            if 0 <= section_idx < len(parts):
+                identifier_parts.append(parts[section_idx])
+            else:
+                # If section index is out of range, use the table name as fallback
+                print(f"Warning: Section {section_index} not found in table '{table_name}' (has {len(parts)} sections). Using full table name.")
+                identifier_parts = [table_name]
+                break
+        
+        # Create dataset identifier by joining the selected sections
+        dataset_identifier = '_'.join(identifier_parts)
+        
+        # Add table to the appropriate dataset
+        if dataset_identifier not in datasets:
+            datasets[dataset_identifier] = []
+        datasets[dataset_identifier].append(table_name)
+    
+    print(f"🔍 Table name separation results:")
+    print(f"  Input tables: {len(table_names)}")
+    print(f"  Identifier sections: {identifier_sections}")
+    print(f"  Created datasets: {len(datasets)}")
+    for dataset_id, tables in datasets.items():
+        print(f"    '{dataset_id}': {len(tables)} tables - {tables}")
+    
+    return datasets
+
+def parse_identifier_sections(sections_str):
+    """
+    Parse identifier sections string into a list of integers.
+    
+    Examples:
+    - "3" -> [3]
+    - "2,3" -> [2, 3]
+    - "1,3,5" -> [1, 3, 5]
+    """
+    if not sections_str:
+        return []
+    
+    sections = []
+    parts = sections_str.replace(' ', '').split(',')
+    
+    for part in parts:
+        try:
+            sections.append(int(part))
+        except ValueError:
+            print(f"Warning: Invalid section '{part}' in identifier sections")
+            continue
+    
+    return sections
 
 def flatten_sections(array_3d):
     """Flatten 16x16 sections from a 3D array."""

@@ -106,6 +106,7 @@ def show_stats():
         users = set()
         actions = {}
         pages = {}
+        ip_addresses = {}
         
         for line in lines:
             try:
@@ -115,6 +116,7 @@ def show_stats():
                 username = entry.get('username')
                 action = entry.get('action')
                 page = entry.get('page')
+                ip_address = entry.get('ip_address')
                 
                 if username:
                     users.add(username)
@@ -122,6 +124,8 @@ def show_stats():
                     actions[action] = actions.get(action, 0) + 1
                 if page:
                     pages[page] = pages.get(page, 0) + 1
+                if ip_address and ip_address != 'unknown':
+                    ip_addresses[ip_address] = ip_addresses.get(ip_address, 0) + 1
                     
             except json.JSONDecodeError:
                 continue
@@ -145,6 +149,11 @@ def show_stats():
         print(f"\n📄 Pages:")
         for page, count in sorted(pages.items(), key=lambda x: x[1], reverse=True):
             print(f"  {page:25} | {count:5} times")
+        
+        if ip_addresses:
+            print("\n🌐 IP Addresses:")
+            for ip, count in sorted(ip_addresses.items(), key=lambda x: x[1], reverse=True):
+                print(f"  {ip:15} | {count:5} times")
         
         print("=" * 50)
         

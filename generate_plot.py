@@ -1403,7 +1403,10 @@ def generate_plot(table_names, database_name, form_data):
                     data_matrix, selected_groups, number_of_states, table_custom_division, table_custom_division_values)
             elif form_data['state_pattern_type'] == 'predefined':
                 # Special handling for ECC patterns (both 78-table and subset)
-                if pattern_file_array == "SPECIAL_78TABLES" or pattern_file_array == "SPECIAL_ECC_SUBSET":
+                if isinstance(pattern_file_array, str) and pattern_file_array in {
+                    "SPECIAL_78TABLES",
+                    "SPECIAL_ECC_SUBSET",
+                }:
                     # For combine analysis, the pattern was already processed above
                     if analysis_mode == 'combine':
                         # In combine mode, pattern_file_array should already be the processed pattern
@@ -2756,6 +2759,10 @@ def plot_column_data_points_summary(all_column_group_data, all_column_names, sel
         plt.close(fig)
         if 'buf' in locals():
             buf.close()
+
+
+# Use repository-relative paths for every state-pattern lookup.
+from state_patterns import get_pattern_files
 
 def plot_column_average_values_summary(all_column_avg_values, all_column_names, selected_groups):
     """

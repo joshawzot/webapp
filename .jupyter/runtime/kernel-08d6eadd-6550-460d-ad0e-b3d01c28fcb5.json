@@ -1,0 +1,13 @@
+{
+  "shell_port": 62717,
+  "iopub_port": 62718,
+  "stdin_port": 62719,
+  "control_port": 62721,
+  "hb_port": 62720,
+  "ip": "127.0.0.1",
+  "key": "e86db411-cbeb16a3632545ff35ad2d58",
+  "transport": "tcp",
+  "signature_scheme": "hmac-sha256",
+  "kernel_name": "python3",
+  "jupyter_session": "/Users/yucheng/Documents/webapp/notebooks/demo.ipynb"
+}

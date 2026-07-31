@@ -120,7 +120,11 @@ import logging
 UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'uploaded_files'))
 
 # User activity logging setup
-USER_ACTIVITY_LOG_FILE = '/home/admin2/webapp_2/user_activity.log'
+USER_ACTIVITY_LOG_FILE = os.path.join(os.path.dirname(__file__), 'user_activity.log')
+JUPYTER_NOTEBOOK_DIR = os.environ.get(
+    'JUPYTER_NOTEBOOK_DIR',
+    os.path.join(os.path.dirname(__file__), 'notebooks')
+)
 
 def log_user_activity(username, action, details=None, page=None):
     """Log user activity to file with timestamp"""
@@ -4787,7 +4791,7 @@ def notebook_selector():
     """
     Display a page with a list of available notebooks and an option to create a new one.
     """
-    postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
+    postprocess_dir = JUPYTER_NOTEBOOK_DIR
     
     # Check if the directory exists
     if not os.path.exists(postprocess_dir):
@@ -4805,7 +4809,12 @@ def notebook_selector():
         mod_time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mod_time))
         notebook_dates.append(mod_time_str)
     
-    return render_template('notebook_selector.html', notebooks=notebooks, notebook_dates=notebook_dates)
+    return render_template(
+        'notebook_selector.html',
+        notebooks=notebooks,
+        notebook_dates=notebook_dates,
+        notebook_directory=postprocess_dir
+    )
 
 @app.route('/open-notebook/<notebook_name>')
 def open_notebook(notebook_name):
@@ -4818,7 +4827,7 @@ def open_notebook(notebook_name):
         return redirect(url_for('notebook_selector'))
     
     # Ensure the notebook exists
-    postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
+    postprocess_dir = JUPYTER_NOTEBOOK_DIR
     notebook_path = os.path.join(postprocess_dir, notebook_name)
     
     if not os.path.exists(notebook_path) or not notebook_name.endswith('.ipynb'):
@@ -4874,7 +4883,7 @@ def create_notebook():
     if not notebook_name.endswith('.ipynb'):
         notebook_name = f"{notebook_name}.ipynb"
     
-    postprocess_dir = "/home/admin2/agate_mpw5_testing/tests/postprocess"
+    postprocess_dir = JUPYTER_NOTEBOOK_DIR
     notebook_path = os.path.join(postprocess_dir, notebook_name)
     
     # Check if file already exists
@@ -5015,7 +5024,8 @@ def test_machines():
         {'ip': '192.168.68.205', 'user': 'nuc5', 'hostname': 'NUC5'},
         {'ip': '192.168.68.235', 'user': 'tc5', 'hostname': 'TC5'},
         {'ip': '192.168.68.231', 'user': 'tc1', 'hostname': 'TC1'}, 
-        {'ip': '192.168.68.232', 'user': 'tc2', 'hostname': 'TC2'}
+        {'ip': '192.168.68.232', 'user': 'tc2', 'hostname': 'TC2'},
+        {'ip': '192.168.0.207', 'user': 'david', 'hostname': 'davids-MacBook-Air.local'}
     ]
     return render_template('test_machines.html', test_machines=test_machines)
 
@@ -5045,7 +5055,8 @@ def test_ssh_connection():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -5110,7 +5121,8 @@ def execute_ssh_command():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             # Check if command is a cd command, if so update the current directory
@@ -5260,7 +5272,8 @@ def execute_remote_command():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             # Determine which command to run based on the command type
@@ -5352,7 +5365,8 @@ def browse_remote_directory():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             # Build the command to list directories and their content
@@ -5445,7 +5459,8 @@ def tab_completion():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             # Get the token for completion
@@ -5582,7 +5597,8 @@ def list_remote_files():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -5692,7 +5708,8 @@ def get_remote_file():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             password = machine_passwords.get(machine_ip, '')
@@ -5769,7 +5786,8 @@ def save_remote_file():
                 '192.168.68.205': '2222',
                 '192.168.68.235': 'Tc5$$$',
                 '192.168.68.231': 'Tc1$$$', 
-                '192.168.68.232': 'Tc2$$$'
+                '192.168.68.232': 'Tc2$$$',
+                '192.168.0.207': '699747'
             }
             
             password = machine_passwords.get(machine_ip, '')

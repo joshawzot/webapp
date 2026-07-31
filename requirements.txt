@@ -1,3 +1,4 @@
+# python3 -m pip install --user -r requirements.txt
 flask==3.1.1
 flask-session==0.8.0
 flask-caching==2.3.1
@@ -12,9 +13,11 @@ jupyterlab==4.4.5
 jupyter-server-proxy==4.4.0
 
 pandas==2.3.1
-numpy==2.2.6
-matplotlib==3.10.3
-scipy==1.15.3
+# Python 3.9-compatible pair; required by tools_for_plots.py.
+numpy==2.0.2
+numba==0.60.0
+matplotlib==3.9.4
+scipy==1.13.1
 h5py==3.14.0
 
 sqlalchemy==2.0.41

@@ -32,10 +32,8 @@ cache = Cache(app)
 # Add this line to increase the maximum allowed payload to 1GB (adjust as needed)
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 100  # 100MB
 
-# Configuration for state pattern files path type
-# Set to True for absolute paths (/home/admin2/webapp_2/State_pattern_files/), 
-# Set to False for relative paths (State_pattern_files/)
-app.config['USE_ABSOLUTE_STATE_PATTERN_PATHS'] = True  # Cshange to False for relative paths
+# Legacy compatibility flag. Portable resolvers use project_paths.py instead.
+app.config['USE_ABSOLUTE_STATE_PATTERN_PATHS'] = False
 
 # Configure Jupyter proxy
 from jupyter_proxy import configure_jupyter_proxy
@@ -290,7 +288,8 @@ def handle_open_terminal(data):
         '192.168.68.205': '2222',
         '192.168.68.235': 'Tc5$$$',
         '192.168.68.231': 'Tc1$$$',
-        '192.168.68.232': 'Tc2$$$'
+        '192.168.68.232': 'Tc2$$$',
+        '192.168.0.207': '699747'
     }
     
     password = machine_passwords.get(machine_ip, '')
@@ -399,7 +398,10 @@ def handle_open_terminal(data):
         import paramiko
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(machine_ip, username=machine_user, password=password)
+        connect_options = {'hostname': machine_ip, 'username': machine_user}
+        if password:
+            connect_options['password'] = password
+        ssh_client.connect(**connect_options)
         
         # Get transport
         transport = ssh_client.get_transport()

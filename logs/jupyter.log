@@ -1,806 +1,606 @@
-[I 2025-07-18 09:35:26.568 ServerApp] jupyter_server_proxy | extension was successfully linked.
-[I 2025-07-18 09:35:26.572 ServerApp] jupyterlab | extension was successfully linked.
-[I 2025-07-18 09:35:26.575 ServerApp] nbclassic | extension was successfully linked.
-[I 2025-07-18 09:35:26.722 ServerApp] notebook_shim | extension was successfully linked.
-[I 2025-07-18 09:35:26.733 ServerApp] notebook_shim | extension was successfully loaded.
-[I 2025-07-18 09:35:26.741 ServerApp] jupyter_server_proxy | extension was successfully loaded.
-[I 2025-07-18 09:35:26.742 LabApp] JupyterLab extension loaded from /home/admin2/.local/lib/python3.10/site-packages/jupyterlab
-[I 2025-07-18 09:35:26.742 LabApp] JupyterLab application directory is /home/admin2/.local/share/jupyter/lab
-[I 2025-07-18 09:35:26.744 ServerApp] jupyterlab | extension was successfully loaded.
-[I 2025-07-18 09:35:26.746 ServerApp] nbclassic | extension was successfully loaded.
-[I 2025-07-18 09:35:26.746 ServerApp] Serving notebooks from local directory: /home/admin2/agate_mpw5_testing/tests/postprocess
-[I 2025-07-18 09:35:26.746 ServerApp] Jupyter Server 1.24.0 is running at:
-[I 2025-07-18 09:35:26.746 ServerApp] http://hawaii:8888/lab?token=...
-[I 2025-07-18 09:35:26.746 ServerApp]  or http://127.0.0.1:8888/lab?token=...
-[I 2025-07-18 09:35:26.746 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-[W 2025-07-18 09:35:33.507 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 15.97ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 09:35:33.650 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.03ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 09:35:33.790 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.06ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 09:35:35.689 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-07-18 09:35:35.841 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 9.10ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-07-18 09:35:36.439 ServerApp] Kernel started: bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd
-[I 2025-07-18 09:36:10.329 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:c25f1b80fcde4041b3bc30972ad5b7b3
-[W 2025-07-18 09:36:18.215 NotebookApp] 405 HEAD /notebooks/test.ipynb?token=[secret] (192.168.68.251) 2.20ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 09:36:18.362 NotebookApp] 405 HEAD /notebooks/test.ipynb (192.168.68.251) 0.99ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 09:36:18.507 NotebookApp] 405 HEAD /tree/test.ipynb?token=[secret] (192.168.68.251) 2.14ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 09:36:20.395 ServerApp] Notebook test.ipynb is not trusted
-[W 2025-07-18 09:36:20.541 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.48ms referer=http://192.168.68.215:8888/notebooks/test.ipynb
-[I 2025-07-18 09:36:20.630 ServerApp] Kernel started: 90acb8ad-7a8c-4c93-93f9-63585e3bef47
-[I 2025-07-18 09:36:24.281 ServerApp] Starting buffering for 90acb8ad-7a8c-4c93-93f9-63585e3bef47:3390f56ae3bf4920850eced5df900f93
-[W 2025-07-18 10:09:30.279 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 1.16ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 10:09:30.420 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 1.73ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 10:09:30.562 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 2.09ms referer=http://192.168.68.215:3000/
-[W 2025-07-18 10:09:32.521 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
-[W 2025-07-18 10:09:32.671 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.51ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
-[I 2025-07-18 10:09:33.147 ServerApp] Kernel started: 8ed283db-43bb-4787-bcc0-b7ee4d612651
-[I 2025-07-18 10:09:48.795 ServerApp] Starting buffering for 8ed283db-43bb-4787-bcc0-b7ee4d612651:d9710cbacf704c9d814d3c7014e6046c
-[W 2025-07-24 22:52:23.393 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 43.48ms referer=http://192.168.68.215:3000/
-[W 2025-07-24 22:52:23.416 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 1.93ms referer=http://192.168.68.215:3000/
-[W 2025-07-24 22:52:23.443 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 4.31ms referer=http://192.168.68.215:3000/
-[W 2025-07-24 22:52:32.546 ServerApp] Notebook AGATE_REV1_analysis.ipynb is not trusted
-[W 2025-07-24 22:52:32.551 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.08ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-07-24 22:52:32.614 ServerApp] Kernel started: 27e6e3e8-cc5e-4413-a595-f06cb58cea12
-[I 2025-07-24 22:54:02.944 ServerApp] Kernel interrupted: 27e6e3e8-cc5e-4413-a595-f06cb58cea12
-[I 2025-07-24 22:54:32.631 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-07-24 22:56:32.628 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-07-24 22:58:32.621 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-07-24 23:00:32.956 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-07-24 23:04:40.040 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-24 23:04:40.553 ServerApp] Kernel restarted: 27e6e3e8-cc5e-4413-a595-f06cb58cea12
-[I 2025-07-24 23:04:40.602 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-24 23:04:40.887 ServerApp] Replaying 3 buffered messages
-[I 2025-07-24 23:06:32.656 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-07-24 23:06:45.995 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[W 2025-07-24 23:07:27.150 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.27ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-07-24 23:09:28.569 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[W 2025-07-24 23:52:59.981 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.12ms referer=http://192.168.68.215:3000/
-[W 2025-07-24 23:53:00.879 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 1.00ms referer=http://192.168.68.215:3000/
-[W 2025-07-24 23:53:02.058 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 10.97ms referer=http://192.168.68.215:3000/
-[W 2025-07-25 00:07:16.777 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.14ms referer=http://192.168.68.215:3000/
-[W 2025-07-25 00:07:16.853 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.04ms referer=http://192.168.68.215:3000/
-[W 2025-07-25 00:07:16.948 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.30ms referer=http://192.168.68.215:3000/
-[W 2025-07-25 00:08:22.014 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.76ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-07-25 00:09:23.366 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[W 2025-07-25 07:05:38.871 ServerApp] Replacing stale connection: 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
-[I 2025-07-25 07:05:43.872 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
-[I 2025-07-25 07:05:43.876 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
-[W 2025-07-25 11:57:20.829 ServerApp] WebSocket ping timeout after 119990 ms.
-[W 2025-07-25 15:46:41.745 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.09ms referer=http://192.168.68.215:3003/
-[W 2025-07-25 15:46:41.758 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 1.71ms referer=http://192.168.68.215:3003/
-[W 2025-07-25 15:46:41.768 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.94ms referer=http://192.168.68.215:3003/
-[W 2025-07-25 15:46:45.291 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.05ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[W 2025-07-26 07:22:13.892 ServerApp] WebSocket ping timeout after 119861 ms.
-[I 2025-07-26 07:22:18.920 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
-[I 2025-07-27 00:05:36.516 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-27 13:29:55.861 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-27 13:39:36.812 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-27 13:39:38.863 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-27 13:39:41.332 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[I 2025-07-27 16:23:46.450 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:fdfa2a2f501749da88ea7b09317490ee
-[W 2025-07-28 10:10:24.898 ServerApp] Replacing stale connection: 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
-[I 2025-07-28 10:10:29.901 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
-[I 2025-07-28 10:10:29.905 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
-[W 2025-07-28 10:11:59.906 ServerApp] WebSocket ping timeout after 90000 ms.
-[I 2025-07-28 10:12:04.908 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:3c8696c77f834e8e8c588190abd87eee
-[I 2025-07-28 22:31:12.919 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:0606b722047642c9aa2bc41ba98d35a9
-[W 2025-07-28 22:31:13.441 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.62ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-07-28 22:33:16.934 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:f5c334fbf63649b687aebcd0f92acdac
-[W 2025-08-04 10:31:01.810 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 39.44ms referer=http://192.168.68.215:3000/
-[W 2025-08-04 10:31:01.954 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.50ms referer=http://192.168.68.215:3000/
-[W 2025-08-04 10:31:02.097 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 3.64ms referer=http://192.168.68.215:3000/
-[W 2025-08-04 10:31:04.358 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-04 10:31:04.507 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.99ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-04 10:33:06.626 ServerApp] Saving file at /agate_analysis_template.ipynb
-[W 2025-08-04 10:33:06.628 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-05 03:34:05.413 ServerApp] WebSocket ping timeout after 119861 ms.
-[I 2025-08-05 03:34:10.427 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
-[I 2025-08-05 18:40:22.499 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
-[I 2025-08-05 18:40:28.634 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:854b7fa06a2643b184cf6fb20f1030c1
-[W 2025-08-19 09:48:20.102 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 55.09ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 09:48:20.125 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 2.03ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 09:48:20.153 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 4.37ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 09:48:29.090 ServerApp] Notebook AP_OV_Qual_Tracking.ipynb is not trusted
-[W 2025-08-19 09:48:29.098 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.57ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 09:48:29.162 ServerApp] Kernel started: dee3cee7-5f33-40e1-80f3-8edf8d57e44c
-[I 2025-08-19 09:50:29.833 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 09:58:29.825 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:06:29.824 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:16:29.792 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:18:29.165 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:20:29.799 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:21:42.501 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 10.35ms
-[I 2025-08-19 10:21:49.754 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 0.90ms
-[I 2025-08-19 10:24:29.152 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:26:29.788 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:28:29.147 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:30:29.142 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:32:29.787 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:46:29.217 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:48:29.773 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 10:50:29.769 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:08:29.122 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:10:29.758 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:12:29.755 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:16:29.737 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:20:29.088 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:22:29.751 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:32:29.748 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:44:29.089 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:46:29.069 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:48:29.714 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:50:29.739 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 11:52:29.098 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 12:18:29.153 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:26:29.012 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:28:28.964 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:30:28.946 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:32:28.948 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:34:28.983 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:36:28.954 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:38:29.022 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:40:29.598 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:46:29.059 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:48:28.954 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:50:29.581 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:54:28.934 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 14:56:28.963 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:00:28.934 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:02:02.126 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 1.43ms
-[I 2025-08-19 15:02:29.590 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:04:28.935 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 15:05:47.947 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.2) 3.61ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 15:05:47.968 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.2) 3.12ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 15:05:47.987 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.2) 3.24ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 15:05:56.320 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.2) 3.08ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:06:29.588 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:10:29.593 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:12:29.576 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:17:48.556 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:17:55.104 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:93621b3882ef4e3b914bf85704150cb8
-[W 2025-08-19 15:18:18.583 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.85ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:40:17.741 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:42:17.620 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:44:18.548 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:46:17.600 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:48:17.612 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 15:50:18.545 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:02:17.689 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:04:17.611 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:06:17.581 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:08:17.588 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:10:17.577 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:12:02.288 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.34ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:12:02.440 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.51ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:12:02.589 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.41ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:12:06.420 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.91ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-19 16:12:17.576 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:12:18.432 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:1b9a11a2387d48ca9a52a1bcaa094576
-[W 2025-08-19 16:13:17.741 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.08ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:13:17.890 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 0.71ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:13:18.039 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 0.81ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:13:23.071 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 4.24ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:13:23.227 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 3.86ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:13:23.378 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 4.18ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:13:26.240 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.67ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:14:18.518 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:15:17.429 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.98ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:15:27.184 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.14ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:16:05.351 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.29ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:16:20.512 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.28ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:16:54.022 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.87ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:17:35.072 NotebookApp] 302 GET /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 1.08ms
-[I 2025-08-19 16:18:17.577 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 16:20:17.607 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-19 16:22:27.082 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.57ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:22:27.231 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 2.87ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:22:27.379 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.25ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:22:32.853 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.38ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:22:33.011 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 4.06ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:22:33.160 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 3.97ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:22:35.905 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
-[W 2025-08-19 16:22:36.063 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.65ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
-[I 2025-08-19 16:23:01.786 ServerApp] Starting buffering for 8ed283db-43bb-4787-bcc0-b7ee4d612651:b40310510ae34cb6b56b3b3cb87315eb
-[W 2025-08-19 16:29:15.643 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.14ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:29:15.789 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 0.72ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:29:15.937 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 0.78ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:31:31.807 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.14ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:31:31.960 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.98ms referer=http://192.168.68.215:3001/
-[W 2025-08-19 16:31:32.118 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.96ms referer=http://192.168.68.215:3001/
-[I 2025-08-19 17:52:17.633 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 17:54:17.524 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 17:56:17.515 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 20:50:17.486 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 20:52:17.362 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 20:54:17.348 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 20:57:12.350 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 20:57:41.013 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:b799165392004fc3bc6d593bc1ab505e
-[W 2025-08-19 20:59:02.430 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.12ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 20:59:02.455 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 2.95ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 20:59:02.478 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 2.92ms referer=http://192.168.68.215:3000/
-[W 2025-08-19 20:59:07.684 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.11ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:01:07.935 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:03:07.927 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:05:07.928 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:07:07.927 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:39:08.035 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:41:07.919 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:43:08.013 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 21:45:07.913 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 22:21:07.960 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:21:07.930 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:25:07.827 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:45:08.229 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:47:08.148 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:55:07.883 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:57:07.786 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-19 23:59:07.773 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 00:22:41.492 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[I 2025-08-20 08:45:18.702 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[I 2025-08-20 08:47:12.656 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 08:51:18.703 ServerApp] WebSocket ping timeout after 119958 ms.
-[I 2025-08-20 08:51:23.706 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[I 2025-08-20 08:51:26.448 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[I 2025-08-20 08:57:06.939 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 08:59:07.322 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:01:07.089 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 09:03:26.450 ServerApp] WebSocket ping timeout after 119843 ms.
-[I 2025-08-20 09:03:31.452 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[I 2025-08-20 09:14:32.850 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[I 2025-08-20 09:14:39.501 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:a9a1a6878d36434c810404193e43919f
-[W 2025-08-20 09:14:39.691 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.51ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:14:51.194 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:16:40.869 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:18:39.874 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:20:39.859 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:22:40.835 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:24:39.905 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:26:39.885 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:28:39.876 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:30:40.827 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 09:38:39.880 ServerApp] WebSocket ping timeout after 119992 ms.
-[I 2025-08-20 09:38:44.883 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 09:39:05.390 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 09:42:39.898 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:44:39.954 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:46:39.856 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:48:39.878 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:56:40.020 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 09:58:39.860 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:00:39.853 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:02:39.901 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:04:39.856 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:36:39.867 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:42:39.857 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:44:39.817 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 10:56:39.930 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 11:00:39.866 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 11:18:39.832 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 11:20:39.863 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 11:22:39.814 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 12:03:41.104 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:03:42.648 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:06:48.610 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:29:08.394 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:34:40.174 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 12:40:08.396 ServerApp] WebSocket ping timeout after 119813 ms.
-[W 2025-08-20 12:40:10.322 ServerApp] Replacing stale connection: dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:40:13.400 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:40:13.402 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 12:50:41.727 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 12:52:41.041 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 12:54:39.959 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 13:01:50.659 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 13:34:28.675 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-20 14:50:40.585 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 14:52:39.529 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 14:54:39.512 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 14:56:39.519 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 14:58:39.516 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:00:39.520 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:02:39.530 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:04:39.509 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:06:39.511 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:08:39.520 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:14:39.627 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:16:39.511 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:18:39.509 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:20:39.516 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:24:39.492 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:32:39.628 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:34:39.507 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:38:39.496 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:40:40.447 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:42:39.532 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:42:51.281 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 11.78ms
-[E 2025-08-20 15:42:51.629 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+[W 2026-07-31 23:21:04.328 ServerApp] ServerApp.token config is deprecated in 2.0. Use IdentityProvider.token.
+[W 2026-07-31 23:21:04.484 ServerApp] A `_jupyter_server_extension_points` function was not found in nbclassic. Instead, a `_jupyter_server_extension_paths` function was found and will be used for now. This function name will be deprecated in future releases of Jupyter Server.
+[I 2026-07-31 23:21:04.485 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-07-31 23:21:04.485 ServerApp] jupyter_server_proxy | extension was successfully linked.
+[I 2026-07-31 23:21:04.487 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-07-31 23:21:04.489 ServerApp] jupyterlab | extension was successfully linked.
+[I 2026-07-31 23:21:04.491 ServerApp] nbclassic | extension was successfully linked.
+[I 2026-07-31 23:21:04.493 ServerApp] notebook | extension was successfully linked.
+[I 2026-07-31 23:21:04.648 ServerApp] notebook_shim | extension was successfully linked.
+[I 2026-07-31 23:21:04.671 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-07-31 23:21:04.673 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-07-31 23:21:04.679 ServerApp] jupyter_server_proxy | extension was successfully loaded.
+[I 2026-07-31 23:21:04.680 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-07-31 23:21:04.681 LabApp] JupyterLab extension loaded from /Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyterlab
+[I 2026-07-31 23:21:04.682 LabApp] JupyterLab application directory is /Users/yucheng/Library/Python/3.9/share/jupyter/lab
+[I 2026-07-31 23:21:04.682 LabApp] Extension Manager is 'pypi'.
+[I 2026-07-31 23:21:04.704 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-07-31 23:21:04.706 ServerApp] nbclassic | extension was successfully loaded.
+[I 2026-07-31 23:21:04.708 ServerApp] notebook | extension was successfully loaded.
+[I 2026-07-31 23:21:04.709 ServerApp] Serving notebooks from local directory: /Users/yucheng/Documents/webapp/notebooks
+[I 2026-07-31 23:21:04.709 ServerApp] Jupyter Server 2.18.2 is running at:
+[I 2026-07-31 23:21:04.709 ServerApp] http://127.0.0.1:8888/tree?token=...
+[I 2026-07-31 23:21:04.709 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2026-07-31 23:21:04.722 ServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[E 2026-07-31 23:46:00.522 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 15:44:40.445 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:46:39.480 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 15:56:28.589 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 2.26ms
-[E 2025-08-20 15:56:28.887 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 15:56:39.606 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:02:39.568 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:02:48.058 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 2.69ms
-[E 2025-08-20 16:02:48.412 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 16:04:39.482 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:22:39.565 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:24:39.484 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:30:39.547 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:32:39.443 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:36:39.449 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 16:36:41.006 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.68ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 16:36:41.158 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.74ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 16:36:41.307 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 3.57ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 16:36:44.224 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-20 16:36:44.377 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.24ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-20 16:38:39.449 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:40:39.442 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 16:41:33.055 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.08ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 16:41:33.199 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 0.99ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 16:41:33.345 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.33ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 16:41:35.770 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.77ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-20 16:42:40.386 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:43:37.996 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[W 2025-08-20 16:46:32.359 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.97ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-20 16:46:39.448 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:46:41.057 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:28b78cc5d36f4aba8c08f180322c6a50
-[I 2025-08-20 16:46:41.909 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:595b609a827941ed835659f448314802
-[I 2025-08-20 16:48:39.438 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:50:40.487 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:54:39.437 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 16:56:40.372 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:04:39.542 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:06:39.412 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 17:07:40.560 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.00ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:07:40.707 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 3.06ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:07:40.854 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 1.96ms referer=http://192.168.68.215:3000/
-[I 2025-08-20 17:08:39.429 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 17:10:35.948 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 2.75ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:10:36.096 NotebookApp] 405 HEAD /notebooks/agate_analysis_template_KPIRev0.ipynb (192.168.68.251) 2.31ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:10:36.244 NotebookApp] 405 HEAD /tree/agate_analysis_template_KPIRev0.ipynb?token=[secret] (192.168.68.251) 2.14ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:10:38.599 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
-[W 2025-08-20 17:10:38.752 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.03ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template_KPIRev0.ipynb
-[I 2025-08-20 17:10:39.403 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:12:39.423 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:12:41.016 ServerApp] Saving file at /agate_analysis_template_KPIRev0.ipynb
-[W 2025-08-20 17:12:41.016 ServerApp] Notebook agate_analysis_template_KPIRev0.ipynb is not trusted
-[I 2025-08-20 17:14:39.401 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:14:45.847 ServerApp] Starting buffering for 8ed283db-43bb-4787-bcc0-b7ee4d612651:91e56d88ad524cbd94c4dbf55d1fe103
-[I 2025-08-20 17:18:39.399 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:20:39.409 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:22:39.419 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:24:39.407 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:26:39.385 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-20 17:28:31.038 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.35ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:28:31.189 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 1.82ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:28:31.334 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.25ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 17:28:33.768 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.79ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-20 17:28:40.350 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:30:39.398 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:32:39.404 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:34:39.387 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:36:39.421 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:38:39.400 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 17:44:40.471 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 18:15:26.954 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:c97e786137a14f03b4d3c138d543fc15
-[W 2025-08-20 18:17:06.436 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.27ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:17:06.579 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.12ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:17:06.727 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.01ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:17:08.890 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-20 18:17:09.041 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.99ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[W 2025-08-20 18:17:45.201 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.95ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:17:45.348 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.53ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:17:45.496 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 1.75ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:17:48.222 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-20 18:17:48.384 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.62ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-20 18:19:49.853 ServerApp] Saving file at /agate_analysis_template.ipynb
-[W 2025-08-20 18:19:49.853 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[I 2025-08-20 18:21:49.915 ServerApp] Saving file at /agate_analysis_template.ipynb
-[W 2025-08-20 18:21:49.915 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[I 2025-08-20 18:36:40.422 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 18:38:26.156 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 2.24ms
-[E 2025-08-20 18:38:26.504 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 18:38:39.342 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 18:42:22.176 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:dc37b7a1b7784c3989c5b06b87c9e14e
-[W 2025-08-20 18:43:01.494 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.29ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:43:01.641 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.04ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:43:01.790 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.21ms referer=http://192.168.68.215:3000/
-[W 2025-08-20 18:43:04.381 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.99ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-20 18:54:39.431 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 18:55:03.615 NotebookApp] 302 GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251) 1.36ms
-[E 2025-08-20 18:55:04.162 ServerApp] Uncaught exception GET /notebooks/TT089_TT092_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT089_TT092_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-07-31 23:46:00.534 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (f4d542c412ec4ff7a55fb080a4bdabeb@127.0.0.1) 22.36ms referer=http://localhost:3000/
+[E 2026-07-31 23:46:00.536 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 18:56:40.300 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 18:59:11.105 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:8c0c0e873e6d43bbae46ceb67f1de5c3
-[I 2025-08-20 19:08:39.447 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 19:10:39.330 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 19:12:39.318 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 19:14:39.303 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 19:16:39.294 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 19:18:39.289 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 19:20:40.264 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 20:52:40.283 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 20:54:39.232 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 20:54:44.307 NotebookApp] 302 GET /notebooks/TT89-92-150-151_T0_ECC.csv (192.168.68.251) 12.52ms
-[E 2025-08-20 20:54:44.823 ServerApp] Uncaught exception GET /notebooks/TT89-92-150-151_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT89-92-150-151_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 20:56:39.234 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 21:42:39.313 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 21:44:39.200 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 21:45:57.737 NotebookApp] 302 GET /notebooks/TT89-92-150-151-97_T0_ECC.csv (192.168.68.251) 1.75ms
-[E 2025-08-20 21:45:58.077 ServerApp] Uncaught exception GET /notebooks/TT89-92-150-151-97_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT89-92-150-151-97_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-20 21:46:39.179 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-20 23:37:10.561 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[W 2025-08-21 00:22:14.325 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 4.50ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 00:22:14.477 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 3.10ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 00:22:14.630 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 3.23ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 00:22:30.720 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.89ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 00:22:30.872 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.66ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 00:22:31.020 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.79ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 00:22:33.520 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-21 00:22:33.666 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.32ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[W 2025-08-21 00:39:34.571 ServerApp] WebSocket ping timeout after 119857 ms.
-[I 2025-08-21 00:39:39.573 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e529c391d59b4633ab23d7807f740ccd
-[W 2025-08-21 08:39:49.978 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-21 08:39:50.131 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.23ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-21 09:01:20.223 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-21 09:01:31.710 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 09:02:38.316 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 09:04:28.872 NotebookApp] 302 GET /notebooks/TT89-92-97to102-150-151_T0_ECC.csv (192.168.68.251) 2.73ms
-[E 2025-08-21 09:04:29.223 ServerApp] Uncaught exception GET /notebooks/TT89-92-97to102-150-151_T0_ECC.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/TT89-92-97to102-150-151_T0_ECC.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-21 09:04:38.210 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 09:13:52.029 ServerApp] Saving file at /agate_analysis_template.ipynb
-[W 2025-08-21 09:13:52.029 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-21 09:20:20.225 ServerApp] WebSocket ping timeout after 119795 ms.
-[I 2025-08-21 09:20:25.227 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:be7b485dd78b497781003c118e2b4e6a
-[I 2025-08-21 14:28:37.383 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-21 14:28:42.725 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.22ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 14:30:43.359 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 14:32:43.004 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 14:34:43.190 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 14:38:43.062 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 14:40:42.973 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 14:46:43.002 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 15:26:42.986 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 15:52:30.000 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 15:52:32.221 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 16:48:42.896 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 16:50:42.870 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-21 16:51:51.025 ServerApp] WebSocket ping timeout after 119856 ms.
-[I 2025-08-21 16:51:56.026 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e4d4582115a54bb8b11315f9e47c346f
-[I 2025-08-21 16:52:42.878 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 16:54:42.885 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 16:56:42.871 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 16:58:42.866 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 17:00:42.865 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-21 17:02:21.790 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e4d4582115a54bb8b11315f9e47c346f
-[W 2025-08-21 17:02:42.017 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 2.74ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:02:42.164 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.05ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:02:42.313 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.01ms referer=http://192.168.68.215:3000/
-[I 2025-08-21 17:02:42.870 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-21 17:02:44.916 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.77ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-21 17:03:18.928 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:e4d4582115a54bb8b11315f9e47c346f
-[I 2025-08-21 17:04:42.918 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-21 17:09:16.472 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.94ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:09:16.619 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 2.86ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:09:16.768 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.99ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:09:18.978 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-21 17:09:19.132 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.78ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-21 17:26:15.433 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:ecedd2e42a6a4015b6c82230bd5c6e6e
-[W 2025-08-21 17:26:20.929 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.73ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:26:21.075 NotebookApp] 405 HEAD /notebooks/AGATE_REV1_analysis.ipynb (192.168.68.251) 2.87ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:26:21.224 NotebookApp] 405 HEAD /tree/AGATE_REV1_analysis.ipynb?token=[secret] (192.168.68.251) 3.51ms referer=http://192.168.68.215:3000/
-[W 2025-08-21 17:26:23.630 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 4.12ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-21 17:28:25.036 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[W 2025-08-21 17:49:32.221 ServerApp] WebSocket ping timeout after 119984 ms.
-[I 2025-08-21 17:49:37.224 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 18:24:06.549 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[W 2025-08-21 18:27:39.214 ServerApp] Replacing stale connection: dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 18:27:44.215 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 18:27:44.217 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[W 2025-08-21 18:29:14.218 ServerApp] WebSocket ping timeout after 90000 ms.
-[I 2025-08-21 18:29:19.221 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 18:30:08.176 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[W 2025-08-21 18:31:38.177 ServerApp] WebSocket ping timeout after 90001 ms.
-[I 2025-08-21 18:31:40.968 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:d77dd6b6d0f64f5e88d3eaa802bf3beb
-[I 2025-08-21 21:03:57.555 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:8df5ef4b5ed34ba6867c30b9f333f911
-[W 2025-08-21 21:04:01.080 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.91ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-21 21:06:02.994 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-08-21 21:12:10.283 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:26369b2315dd45608cb85c69cdbedd05
-[W 2025-08-21 21:12:10.902 ServerApp] Notebook AGATE_REV1_analysis.ipynb is not trusted
-[W 2025-08-21 21:12:11.055 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.24ms referer=http://192.168.68.215:8888/notebooks/AGATE_REV1_analysis.ipynb
-[I 2025-08-21 21:14:12.978 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[W 2025-08-21 21:14:12.978 ServerApp] Notebook AGATE_REV1_analysis.ipynb is not trusted
-[I 2025-08-22 00:23:09.831 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:dbedafe7004640faa755537c9897190b
-[W 2025-08-22 00:23:10.458 ServerApp] Notebook agate_analysis_template.ipynb is not trusted
-[W 2025-08-22 00:23:10.611 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 3.31ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-22 00:24:36.912 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
-[I 2025-08-22 00:24:37.626 ServerApp] Kernel restarted: bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd
-[I 2025-08-22 00:24:37.913 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
-[I 2025-08-22 00:24:38.025 ServerApp] Replaying 3 buffered messages
-[I 2025-08-22 00:25:11.245 ServerApp] Saving file at /agate_analysis_template.ipynb
-[I 2025-08-22 00:28:51.176 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:cc9b3debc44d491e84d7580ca2e5cbd3
-[I 2025-08-22 00:28:51.685 ServerApp] Kernel restarted: 27e6e3e8-cc5e-4413-a595-f06cb58cea12
-[I 2025-08-22 00:28:51.974 ServerApp] Restoring connection for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:cc9b3debc44d491e84d7580ca2e5cbd3
-[I 2025-08-22 00:28:52.483 ServerApp] Replaying 3 buffered messages
-[I 2025-08-22 00:30:12.438 ServerApp] Saving file at /AGATE_REV1_analysis.ipynb
-[I 2025-08-22 01:21:11.990 ServerApp] Saving file at /agate_analysis_template.ipynb
-[I 2025-08-22 02:19:12.132 ServerApp] Saving file at /agate_analysis_template.ipynb
-[I 2025-08-22 03:48:44.331 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
-[I 2025-08-22 03:48:44.887 ServerApp] Kernel restarted: bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd
-[I 2025-08-22 03:48:45.176 ServerApp] Restoring connection for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
-[I 2025-08-22 03:48:45.372 ServerApp] Replaying 3 buffered messages
-[I 2025-08-22 03:48:51.229 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:2addf13936e64b2b861abeea7b44cf37
-[W 2025-08-22 04:07:09.832 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 4.91ms referer=http://192.168.68.215:3000/
-[W 2025-08-22 04:07:09.980 NotebookApp] 405 HEAD /notebooks/agate_analysis_template.ipynb (192.168.68.251) 1.94ms referer=http://192.168.68.215:3000/
-[W 2025-08-22 04:07:10.133 NotebookApp] 405 HEAD /tree/agate_analysis_template.ipynb?token=[secret] (192.168.68.251) 2.19ms referer=http://192.168.68.215:3000/
-[W 2025-08-22 04:07:12.289 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 2.10ms referer=http://192.168.68.215:8888/notebooks/agate_analysis_template.ipynb
-[I 2025-08-22 04:44:57.896 ServerApp] Starting buffering for 27e6e3e8-cc5e-4413-a595-f06cb58cea12:cc9b3debc44d491e84d7580ca2e5cbd3
-[I 2025-08-22 04:44:58.517 ServerApp] Starting buffering for bc5778ca-aa7c-461e-a77e-fb8d6f8e54bd:5fca3346b29145db8486160427735177
-[W 2025-08-22 10:48:24.206 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.49ms referer=http://192.168.68.215:3000/
-[W 2025-08-22 10:48:24.606 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 3.31ms referer=http://192.168.68.215:3000/
-[W 2025-08-22 10:48:24.628 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.01ms referer=http://192.168.68.215:3000/
-[W 2025-08-22 10:48:36.328 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 5.16ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[W 2025-08-22 11:04:55.401 ServerApp] Replacing stale connection: dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 11:05:00.402 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 11:05:00.403 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 11:06:34.573 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:08:35.515 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:10:34.584 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:12:38.804 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:13:19.001 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 11:13:20.729 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 11:30:34.506 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:32:34.467 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:34:34.482 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:36:34.483 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:38:34.475 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-22 11:49:01.501 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.2) 6.41ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 11:52:34.483 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-22 14:44:50.731 ServerApp] WebSocket ping timeout after 117755 ms.
-[I 2025-08-22 14:44:55.733 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 15:48:35.616 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-22 15:50:18.784 NotebookApp] 302 GET /notebooks/all_aparam.csv (192.168.68.251) 13.82ms
-[E 2025-08-22 15:50:19.067 ServerApp] Uncaught exception GET /notebooks/all_aparam.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/all_aparam.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-07-31 23:46:00.536 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.04ms referer=http://localhost:3000/
+[E 2026-07-31 23:46:00.537 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-22 15:50:34.310 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 15:54:23.790 NotebookApp] 302 GET /notebooks/all_aparam.csv (192.168.68.251) 2.22ms
-[E 2025-08-22 15:54:24.046 ServerApp] Uncaught exception GET /notebooks/all_aparam.csv (192.168.68.251)
-    HTTPServerRequest(protocol='http', host='192.168.68.215:8888', method='GET', uri='/notebooks/all_aparam.csv', version='HTTP/1.1', remote_ip='192.168.68.251')
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
     Traceback (most recent call last):
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 1790, in _execute
-        result = await result
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/gen.py", line 785, in run
-        yielded = self.gen.send(value)
-      File "/home/admin2/.local/lib/python3.10/site-packages/nbclassic/notebook/handlers.py", line 101, in get
-        self.write(self.render_template('notebook.html',
-      File "/home/admin2/.local/lib/python3.10/site-packages/tornado/web.py", line 914, in write
-        raise RuntimeError("Cannot write() after finish()")
-    RuntimeError: Cannot write() after finish()
-[I 2025-08-22 15:54:34.265 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-22 18:30:28.014 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-25 14:30:16.840 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[W 2025-08-25 15:19:16.840 ServerApp] WebSocket ping timeout after 119884 ms.
-[I 2025-08-25 15:19:21.857 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-25 15:26:18.047 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-25 15:26:29.660 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 15:28:29.633 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 15:30:29.621 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-25 15:45:27.507 NotebookApp] 405 HEAD /notebooks/AP_OV_LDTR_Bench.ipynb?token=[secret] (192.168.68.251) 24.69ms referer=http://192.168.68.215:3000/
-[W 2025-08-25 15:45:27.513 NotebookApp] 405 HEAD /notebooks/AP_OV_LDTR_Bench.ipynb (192.168.68.251) 0.60ms referer=http://192.168.68.215:3000/
-[W 2025-08-25 15:45:27.519 NotebookApp] 405 HEAD /tree/AP_OV_LDTR_Bench.ipynb?token=[secret] (192.168.68.251) 1.60ms referer=http://192.168.68.215:3000/
-[W 2025-08-25 15:45:31.145 ServerApp] Notebook AP_OV_LDTR_Bench.ipynb is not trusted
-[W 2025-08-25 15:45:31.193 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 11.92ms referer=http://192.168.68.215:8888/notebooks/AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 15:45:31.198 ServerApp] Kernel started: 5c0f15a2-782f-429d-a351-fbef1b65bc0f
-[I 2025-08-25 15:47:31.193 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 15:49:31.209 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 15:51:31.205 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 15:53:31.199 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 15:55:31.217 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 15:59:31.182 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:01:31.192 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:05:31.197 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:17:31.193 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:23:31.175 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:35:48.330 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 16:45:31.175 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:47:31.154 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:49:31.153 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 16:53:31.139 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 17:36:29.544 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 17:38:29.515 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 17:40:30.444 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 17:42:29.494 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-25 17:48:30.509 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-25 18:39:01.587 ServerApp] WebSocket ping timeout after 119628 ms.
-[I 2025-08-25 18:39:06.589 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[W 2025-08-25 18:39:18.048 ServerApp] WebSocket ping timeout after 119716 ms.
-[I 2025-08-25 18:39:23.050 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-25 19:16:28.151 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 19:17:31.313 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 19:19:31.208 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 19:21:21.552 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 19:55:30.587 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 19:55:32.439 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 19:58:48.000 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 20:22:00.301 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 20:36:14.225 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 22:59:38.014 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-25 23:01:50.660 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 23:06:10.597 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 23:10:30.549 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-25 23:19:10.669 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 00:08:43.793 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 00:09:12.912 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 00:10:52.274 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 00:10:55.036 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 00:11:11.213 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 00:12:04.814 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 08:28:52.623 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 08:38:21.141 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 08:40:10.552 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 08:42:31.345 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 08:44:29.213 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 08:46:29.981 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[W 2025-08-26 08:50:52.624 ServerApp] WebSocket ping timeout after 119872 ms.
-[I 2025-08-26 08:50:57.628 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[W 2025-08-26 08:51:10.552 ServerApp] WebSocket ping timeout after 119891 ms.
-[I 2025-08-26 08:51:15.555 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 09:15:56.688 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 09:16:50.081 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 09:17:09.884 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 09:20:28.481 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 09:21:29.826 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 09:25:50.406 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 09:26:28.503 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 09:30:10.391 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 09:34:30.399 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 09:54:28.518 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 09:56:10.386 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 10:13:29.905 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 11:05:29.767 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 11:09:50.322 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 11:14:09.743 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 11:28:53.629 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 11:28:53.629 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 11:28:56.931 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 12:10:29.674 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 12:14:49.697 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-26 13:52:50.431 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 13:58:56.501 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 13:58:57.140 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 13:58:58.055 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 14:00:28.211 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 14:02:28.292 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 14:08:49.405 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 14:10:28.231 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 14:20:58.672 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 14:22:28.225 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 14:49:17.643 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 15:04:34.002 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-26 15:04:34.003 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 15:04:35.273 ServerApp] Saving file at /AP_OV_Qual_Tracking.ipynb
-[I 2025-08-26 15:04:37.764 ServerApp] Restoring connection for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[I 2025-08-26 15:32:21.861 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[W 2025-08-26 17:03:07.766 ServerApp] WebSocket ping timeout after 119990 ms.
-[I 2025-08-26 17:03:12.767 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:18742163ca32427787b96dcc220b6e1d
-[W 2025-08-26 17:03:21.863 ServerApp] WebSocket ping timeout after 119987 ms.
-[I 2025-08-26 17:03:26.865 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[W 2025-08-27 10:01:10.212 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 3.25ms referer=http://192.168.68.215:3000/
-[W 2025-08-27 10:01:10.362 NotebookApp] 405 HEAD /notebooks/AP_OV_Qual_Tracking.ipynb (192.168.68.251) 1.54ms referer=http://192.168.68.215:3000/
-[W 2025-08-27 10:01:10.510 NotebookApp] 405 HEAD /tree/AP_OV_Qual_Tracking.ipynb?token=[secret] (192.168.68.251) 1.70ms referer=http://192.168.68.215:3000/
-[W 2025-08-27 10:01:27.237 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 1.77ms referer=http://192.168.68.215:8888/notebooks/AP_OV_Qual_Tracking.ipynb
-[I 2025-08-27 10:02:20.455 ServerApp] Starting buffering for dee3cee7-5f33-40e1-80f3-8edf8d57e44c:926b3c5b4975439c8b4b878bfaea64de
-[W 2025-08-27 10:02:38.397 NotebookApp] 405 HEAD /notebooks/magnum_calibration_push_and_analysis.ipynb?token=[secret] (192.168.68.251) 1.10ms referer=http://192.168.68.215:3000/
-[W 2025-08-27 10:02:38.545 NotebookApp] 405 HEAD /notebooks/magnum_calibration_push_and_analysis.ipynb (192.168.68.251) 0.75ms referer=http://192.168.68.215:3000/
-[W 2025-08-27 10:02:38.693 NotebookApp] 405 HEAD /tree/magnum_calibration_push_and_analysis.ipynb?token=[secret] (192.168.68.251) 0.96ms referer=http://192.168.68.215:3000/
-[W 2025-08-27 10:02:41.304 ServerApp] Notebook magnum_calibration_push_and_analysis.ipynb is not trusted
-[W 2025-08-27 10:02:41.308 ServerApp] 404 GET /nbextensions/widgets/notebook/js/extension.js?v=20250718093526 (192.168.68.251) 0.73ms referer=http://192.168.68.215:8888/notebooks/magnum_calibration_push_and_analysis.ipynb
-[I 2025-08-27 10:02:42.125 ServerApp] Kernel started: 5ef6b66e-a842-4ecf-a305-50dad41b257b
-[I 2025-08-27 10:02:58.896 ServerApp] Starting buffering for 5ef6b66e-a842-4ecf-a305-50dad41b257b:08c2a02d6458461d8f2d7108c2a564e3
-[I 2025-08-27 10:31:29.346 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-27 10:33:21.530 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-27 10:37:41.374 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-27 13:13:18.721 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-27 13:52:18.803 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-27 13:52:40.670 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-27 13:57:01.207 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-27 14:41:57.560 ServerApp] Starting buffering for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-27 16:58:43.708 ServerApp] Restoring connection for 5c0f15a2-782f-429d-a351-fbef1b65bc0f:b7d7daad7ebd42689eaf8736cc189a53
-[I 2025-08-27 16:59:00.477 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
-[I 2025-08-27 17:03:21.032 ServerApp] Saving file at /AP_OV_LDTR_Bench.ipynb
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-07-31 23:46:00.538 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (c461711284634bc782480da66a79dc0a@127.0.0.1) 1.06ms referer=http://localhost:3000/
+[E 2026-07-31 23:46:10.415 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-07-31 23:46:10.417 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (0e8fb277c22c4799b9746347626f66a3@127.0.0.1) 4.14ms referer=http://localhost:3000/
+[E 2026-07-31 23:46:10.419 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-07-31 23:46:10.421 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 3.28ms referer=http://localhost:3000/
+[E 2026-07-31 23:46:10.424 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-07-31 23:46:10.425 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (38aa4c7f7d9b4466853f53f991dfc0b5@127.0.0.1) 2.24ms referer=http://localhost:3000/
+[I 2026-07-31 23:46:12.462 ServerApp] Writing notebook-signing key to /Users/yucheng/Documents/webapp/.jupyter/data/notebook_secret
+[W 2026-07-31 23:46:12.462 ServerApp] Notebook demo.ipynb is not trusted
+[I 2026-07-31 23:46:12.575 ServerApp] Kernel started: 08d6eadd-6550-460d-ad0e-b3d01c28fcb5
+[I 2026-07-31 23:46:13.059 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
+[W 2026-07-31 23:46:13.060 ServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[I 2026-07-31 23:46:13.073 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
+[I 2026-07-31 23:46:13.087 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
+[W 2026-07-31 23:46:13.612 ServerApp] Got events for closed stream <zmq.eventloop.zmqstream.ZMQStream object at 0x1166e6e50>
+[I 2026-07-31 23:46:28.232 ServerApp] Starting buffering for 08d6eadd-6550-460d-ad0e-b3d01c28fcb5:10e481ad-787e-458e-a23d-d37240f1d85a
+[E 2026-08-01 00:46:20.915 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-01 00:46:20.917 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (d48f25210460446188bd81b5e3193fdd@127.0.0.1) 4.20ms referer=http://localhost:3000/
+[E 2026-08-01 00:46:20.919 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-01 00:46:20.919 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.39ms referer=http://localhost:3000/
+[E 2026-08-01 00:46:20.921 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-01 00:46:20.922 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (8ab1754e484343019fcb51d300447d82@127.0.0.1) 1.87ms referer=http://localhost:3000/
+[I 2026-08-01 00:46:22.630 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
+[W 2026-08-01 00:46:22.706 ServerApp] Notebook demo.ipynb is not trusted
+[I 2026-08-01 00:46:22.772 ServerApp] Starting buffering for 08d6eadd-6550-460d-ad0e-b3d01c28fcb5:4516d08e-856e-4d4e-ba1b-493c0c3d3d6d
+[I 2026-08-01 00:46:22.792 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
+[I 2026-08-01 00:46:25.712 ServerApp] Starting buffering for 08d6eadd-6550-460d-ad0e-b3d01c28fcb5:cd4ceba0-9b1c-4c40-8077-20277ba6785b

@@ -190,10 +190,9 @@ def get_schema_storage_type(schema_name):
     archive_path = os.path.join(STORAGE_CONFIG['archive_storage_path'], fs_schema_name)
     
     try:
-        # Check if it's a symlink in primary storage - use subprocess directly since permissions are restricted
-        result = subprocess.run(['sudo', 'test', '-L', primary_path], 
-                              capture_output=True, text=True)
-        is_symlink = (result.returncode == 0)
+        # The web server must not invoke sudo. The application user can inspect
+        # its configured storage paths directly.
+        is_symlink = os.path.islink(primary_path)
         
         if is_symlink:
             # It's a symlink - physically on archive but accessible from primary
@@ -207,10 +206,8 @@ def get_schema_storage_type(schema_name):
                 'access_method': 'symlink'
             }
         
-        # Check if it exists as regular directory in primary storage
-        result = subprocess.run(['sudo', 'test', '-d', primary_path], 
-                              capture_output=True, text=True)
-        dir_exists = (result.returncode == 0)
+        # Check if it exists as a regular directory in primary storage.
+        dir_exists = os.path.isdir(primary_path)
         
         if dir_exists:
             # Regular directory in primary storage
@@ -825,6 +822,11 @@ def get_pattern_files():
             "ecc_2048x32_IO76": "State_pattern_files/ecc_2048x32_IO76.npy",
             "ecc_2048x32_IO77": "State_pattern_files/ecc_2048x32_IO77.npy",
         }
+
+
+# Override the legacy catalog with repository-relative paths.
+from state_patterns import get_pattern_files
+
 
 def get_table_dimensions(database, table_name):
     """

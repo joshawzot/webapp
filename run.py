@@ -53,7 +53,13 @@ def run_flask(port):
 from flask_socketio import SocketIO
 
 # Initialize SocketIO
-socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*", logger=True, engineio_logger=True)
+socketio = SocketIO(
+    app,
+    async_mode='gevent',
+    cors_allowed_origins="*",
+    logger=True,
+    engineio_logger=True
+)
 
 # Store active SSH connections - using machine-specific identifiers
 active_ssh_sessions = {}
@@ -784,8 +790,8 @@ from route_handlers import *
 
 # If we're running the script directly, start the server with SocketIO
 if __name__ == '__main__':
-    import eventlet
-    eventlet.monkey_patch()
+    #import eventlet
+    #eventlet.monkey_patch()
     
     # Run the app on multiple ports (3000-3007)
     import threading
@@ -818,11 +824,12 @@ if __name__ == '__main__':
 else:
     # WSGI entry point - this is used by Gunicorn
     # We need to make sure Gunicorn can work with SocketIO
-    from eventlet import wsgi
-    import eventlet
+    #from eventlet import wsgi
+    #import eventlet
+    from gevent import pywsgi
     
     # Ensure eventlet is properly initialized
-    eventlet.monkey_patch()
+    #eventlet.monkey_patch()
     
     def run_with_socketio(port):
         """Run the server with SocketIO support"""

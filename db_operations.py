@@ -275,12 +275,16 @@ def create_connection(database=None):
         elif 'error' not in storage_info:
             print(f"MySQL data stored on: {storage_info['primary_storage']['disk_device']} at {storage_info['actual_storage_path']}")
         
-        connection = mysql.connector.connect(
-            host=DB_CONFIG['DB_HOST'],
-            user=DB_CONFIG['DB_USER'],
-            password=DB_CONFIG['MYSQL_PASSWORD_RAW'],
-            database=database
-        )
+        connect_kwargs = {
+            'host': DB_CONFIG['DB_HOST'],
+            'user': DB_CONFIG['DB_USER'],
+            'password': DB_CONFIG['MYSQL_PASSWORD_RAW'],
+            'database': database
+        }
+        if DB_CONFIG.get('RDS_PORT') is not None:
+            connect_kwargs['port'] = DB_CONFIG['RDS_PORT']
+
+        connection = mysql.connector.connect(**connect_kwargs)
         print(f"Successfully connected to database: {database}")
         return connection
     except Exception as conn_error:
@@ -326,7 +330,8 @@ def close_connection():
 from sqlalchemy import create_engine
 
 def create_db_engine(db_name):
-    engine_url = f"mysql+mysqlconnector://{DB_CONFIG['DB_USER']}:{DB_CONFIG['MYSQL_PASSWORD']}@{DB_CONFIG['DB_HOST']}/{db_name}"
+    port_segment = f":{DB_CONFIG['RDS_PORT']}" if DB_CONFIG.get('RDS_PORT') is not None else ''
+    engine_url = f"mysql+mysqlconnector://{DB_CONFIG['DB_USER']}:{DB_CONFIG['MYSQL_PASSWORD']}@{DB_CONFIG['DB_HOST']}{port_segment}/{db_name}"
     engine = create_engine(
         engine_url,
         pool_size=10,  # Maximum number of connections to keep in the pool

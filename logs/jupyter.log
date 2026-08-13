@@ -1,28 +1,28 @@
-[W 2026-07-31 23:21:04.328 ServerApp] ServerApp.token config is deprecated in 2.0. Use IdentityProvider.token.
-[W 2026-07-31 23:21:04.484 ServerApp] A `_jupyter_server_extension_points` function was not found in nbclassic. Instead, a `_jupyter_server_extension_paths` function was found and will be used for now. This function name will be deprecated in future releases of Jupyter Server.
-[I 2026-07-31 23:21:04.485 ServerApp] jupyter_lsp | extension was successfully linked.
-[I 2026-07-31 23:21:04.485 ServerApp] jupyter_server_proxy | extension was successfully linked.
-[I 2026-07-31 23:21:04.487 ServerApp] jupyter_server_terminals | extension was successfully linked.
-[I 2026-07-31 23:21:04.489 ServerApp] jupyterlab | extension was successfully linked.
-[I 2026-07-31 23:21:04.491 ServerApp] nbclassic | extension was successfully linked.
-[I 2026-07-31 23:21:04.493 ServerApp] notebook | extension was successfully linked.
-[I 2026-07-31 23:21:04.648 ServerApp] notebook_shim | extension was successfully linked.
-[I 2026-07-31 23:21:04.671 ServerApp] notebook_shim | extension was successfully loaded.
-[I 2026-07-31 23:21:04.673 ServerApp] jupyter_lsp | extension was successfully loaded.
-[I 2026-07-31 23:21:04.679 ServerApp] jupyter_server_proxy | extension was successfully loaded.
-[I 2026-07-31 23:21:04.680 ServerApp] jupyter_server_terminals | extension was successfully loaded.
-[I 2026-07-31 23:21:04.681 LabApp] JupyterLab extension loaded from /Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyterlab
-[I 2026-07-31 23:21:04.682 LabApp] JupyterLab application directory is /Users/yucheng/Library/Python/3.9/share/jupyter/lab
-[I 2026-07-31 23:21:04.682 LabApp] Extension Manager is 'pypi'.
-[I 2026-07-31 23:21:04.704 ServerApp] jupyterlab | extension was successfully loaded.
-[I 2026-07-31 23:21:04.706 ServerApp] nbclassic | extension was successfully loaded.
-[I 2026-07-31 23:21:04.708 ServerApp] notebook | extension was successfully loaded.
-[I 2026-07-31 23:21:04.709 ServerApp] Serving notebooks from local directory: /Users/yucheng/Documents/webapp/notebooks
-[I 2026-07-31 23:21:04.709 ServerApp] Jupyter Server 2.18.2 is running at:
-[I 2026-07-31 23:21:04.709 ServerApp] http://127.0.0.1:8888/tree?token=...
-[I 2026-07-31 23:21:04.709 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-[I 2026-07-31 23:21:04.722 ServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
-[E 2026-07-31 23:46:00.522 ServerApp] Uncaught exception in write_error
+[W 2026-08-01 09:39:26.161 ServerApp] ServerApp.token config is deprecated in 2.0. Use IdentityProvider.token.
+[W 2026-08-01 09:39:26.340 ServerApp] A `_jupyter_server_extension_points` function was not found in nbclassic. Instead, a `_jupyter_server_extension_paths` function was found and will be used for now. This function name will be deprecated in future releases of Jupyter Server.
+[I 2026-08-01 09:39:26.341 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-08-01 09:39:26.341 ServerApp] jupyter_server_proxy | extension was successfully linked.
+[I 2026-08-01 09:39:26.343 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-08-01 09:39:26.345 ServerApp] jupyterlab | extension was successfully linked.
+[I 2026-08-01 09:39:26.347 ServerApp] nbclassic | extension was successfully linked.
+[I 2026-08-01 09:39:26.349 ServerApp] notebook | extension was successfully linked.
+[I 2026-08-01 09:39:26.524 ServerApp] notebook_shim | extension was successfully linked.
+[I 2026-08-01 09:39:26.548 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-08-01 09:39:26.549 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-08-01 09:39:26.556 ServerApp] jupyter_server_proxy | extension was successfully loaded.
+[I 2026-08-01 09:39:26.556 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-08-01 09:39:26.559 LabApp] JupyterLab extension loaded from /Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyterlab
+[I 2026-08-01 09:39:26.559 LabApp] JupyterLab application directory is /Users/yucheng/Library/Python/3.9/share/jupyter/lab
+[I 2026-08-01 09:39:26.559 LabApp] Extension Manager is 'pypi'.
+[I 2026-08-01 09:39:26.587 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-08-01 09:39:26.590 ServerApp] nbclassic | extension was successfully loaded.
+[I 2026-08-01 09:39:26.592 ServerApp] notebook | extension was successfully loaded.
+[I 2026-08-01 09:39:26.593 ServerApp] Serving notebooks from local directory: /Users/yucheng/Documents/webapp/notebooks
+[I 2026-08-01 09:39:26.593 ServerApp] Jupyter Server 2.18.2 is running at:
+[I 2026-08-01 09:39:26.593 ServerApp] http://127.0.0.1:8888/tree?token=...
+[I 2026-08-01 09:39:26.593 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2026-08-01 09:39:26.608 ServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[E 2026-08-01 09:39:36.897 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
         result = method(*self.path_args, **self.path_kwargs)
@@ -84,8 +84,8 @@
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
         return getattr(obj, attribute)
     jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-07-31 23:46:00.534 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (f4d542c412ec4ff7a55fb080a4bdabeb@127.0.0.1) 22.36ms referer=http://localhost:3000/
-[E 2026-07-31 23:46:00.536 ServerApp] Uncaught exception in write_error
+[W 2026-08-01 09:39:36.909 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (8c141a6bb096496e9e143ee68cd6c87e@127.0.0.1) 19.03ms referer=http://localhost:3000/
+[E 2026-08-01 09:39:36.911 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
         result = method(*self.path_args, **self.path_kwargs)
@@ -147,8 +147,8 @@
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
         return getattr(obj, attribute)
     jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-07-31 23:46:00.536 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.04ms referer=http://localhost:3000/
-[E 2026-07-31 23:46:00.537 ServerApp] Uncaught exception in write_error
+[W 2026-08-01 09:39:36.911 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.01ms referer=http://localhost:3000/
+[E 2026-08-01 09:39:36.913 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
         result = method(*self.path_args, **self.path_kwargs)
@@ -210,207 +210,16 @@
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
         return getattr(obj, attribute)
     jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-07-31 23:46:00.538 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (c461711284634bc782480da66a79dc0a@127.0.0.1) 1.06ms referer=http://localhost:3000/
-[E 2026-07-31 23:46:10.415 ServerApp] Uncaught exception in write_error
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
-        result = method(*self.path_args, **self.path_kwargs)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
-        raise HTTPError(405)
-    tornado.web.HTTPError: HTTP 405: Method Not Allowed
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
-        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
-        return self._load_template(name, globals)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
-        template = self.loader.load(self, name, self.make_globals(globals))
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
-        source, filename, uptodate = self.get_source(environment, name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
-        raise TemplateNotFound(
-    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
-        html = self.render_template("%s.html" % status_code, **ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
-        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
-        return cast("Template", super().get_template(name))  # type:ignore[misc]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
-        return self.settings["jinja2_env"].get_template(name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
-        return self._load_template(name, globals)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
-        template = self.loader.load(self, name, self.make_globals(globals))
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
-        source, filename, uptodate = self.get_source(environment, name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
-        raise TemplateNotFound(
-    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
-        self.write_error(status_code, **kwargs)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
-        html = self.render_template("error.html", **ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
-        return template.render(**ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
-        self.environment.handle_exception()
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
-        raise rewrite_traceback_stack(source=source)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
-        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
-        return getattr(obj, attribute)
-    jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-07-31 23:46:10.417 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (0e8fb277c22c4799b9746347626f66a3@127.0.0.1) 4.14ms referer=http://localhost:3000/
-[E 2026-07-31 23:46:10.419 ServerApp] Uncaught exception in write_error
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
-        result = method(*self.path_args, **self.path_kwargs)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
-        raise HTTPError(405)
-    tornado.web.HTTPError: HTTP 405: Method Not Allowed
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
-        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
-        return self._load_template(name, globals)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
-        template = self.loader.load(self, name, self.make_globals(globals))
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
-        source, filename, uptodate = self.get_source(environment, name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
-        raise TemplateNotFound(
-    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
-        html = self.render_template("%s.html" % status_code, **ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
-        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
-        return cast("Template", super().get_template(name))  # type:ignore[misc]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
-        return self.settings["jinja2_env"].get_template(name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
-        return self._load_template(name, globals)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
-        template = self.loader.load(self, name, self.make_globals(globals))
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
-        source, filename, uptodate = self.get_source(environment, name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
-        raise TemplateNotFound(
-    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
-        self.write_error(status_code, **kwargs)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
-        html = self.render_template("error.html", **ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
-        return template.render(**ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
-        self.environment.handle_exception()
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
-        raise rewrite_traceback_stack(source=source)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
-        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
-        return getattr(obj, attribute)
-    jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-07-31 23:46:10.421 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 3.28ms referer=http://localhost:3000/
-[E 2026-07-31 23:46:10.424 ServerApp] Uncaught exception in write_error
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
-        result = method(*self.path_args, **self.path_kwargs)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
-        raise HTTPError(405)
-    tornado.web.HTTPError: HTTP 405: Method Not Allowed
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
-        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
-        return self._load_template(name, globals)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
-        template = self.loader.load(self, name, self.make_globals(globals))
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
-        source, filename, uptodate = self.get_source(environment, name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
-        raise TemplateNotFound(
-    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
-        html = self.render_template("%s.html" % status_code, **ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
-        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
-        return cast("Template", super().get_template(name))  # type:ignore[misc]
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
-        return self.settings["jinja2_env"].get_template(name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
-        return self._load_template(name, globals)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
-        template = self.loader.load(self, name, self.make_globals(globals))
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
-        source, filename, uptodate = self.get_source(environment, name)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
-        raise TemplateNotFound(
-    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
-    
-    During handling of the above exception, another exception occurred:
-    
-    Traceback (most recent call last):
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
-        self.write_error(status_code, **kwargs)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
-        html = self.render_template("error.html", **ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
-        return template.render(**ns)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
-        self.environment.handle_exception()
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
-        raise rewrite_traceback_stack(source=source)
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
-        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
-      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
-        return getattr(obj, attribute)
-    jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-07-31 23:46:10.425 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (38aa4c7f7d9b4466853f53f991dfc0b5@127.0.0.1) 2.24ms referer=http://localhost:3000/
-[I 2026-07-31 23:46:12.462 ServerApp] Writing notebook-signing key to /Users/yucheng/Documents/webapp/.jupyter/data/notebook_secret
-[W 2026-07-31 23:46:12.462 ServerApp] Notebook demo.ipynb is not trusted
-[I 2026-07-31 23:46:12.575 ServerApp] Kernel started: 08d6eadd-6550-460d-ad0e-b3d01c28fcb5
-[I 2026-07-31 23:46:13.059 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
-[W 2026-07-31 23:46:13.060 ServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+[W 2026-08-01 09:39:36.913 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (28174681475b4f9981c2a85da3e11b74@127.0.0.1) 1.02ms referer=http://localhost:3000/
+[W 2026-08-01 09:39:38.541 ServerApp] Notebook demo.ipynb is not trusted
+[I 2026-08-01 09:39:38.647 ServerApp] Kernel started: 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e
+[I 2026-08-01 09:39:38.992 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[W 2026-08-01 09:39:38.993 ServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
     Setting websocket_ping_timeout=30000
-[I 2026-07-31 23:46:13.073 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
-[I 2026-07-31 23:46:13.087 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
-[W 2026-07-31 23:46:13.612 ServerApp] Got events for closed stream <zmq.eventloop.zmqstream.ZMQStream object at 0x1166e6e50>
-[I 2026-07-31 23:46:28.232 ServerApp] Starting buffering for 08d6eadd-6550-460d-ad0e-b3d01c28fcb5:10e481ad-787e-458e-a23d-d37240f1d85a
-[E 2026-08-01 00:46:20.915 ServerApp] Uncaught exception in write_error
+[I 2026-08-01 09:39:39.006 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[I 2026-08-01 09:39:39.020 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[I 2026-08-01 09:39:49.683 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:45459dcf-744f-4db8-b49e-4005adba0846
+[E 2026-08-01 10:43:30.779 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
         result = method(*self.path_args, **self.path_kwargs)
@@ -472,8 +281,8 @@
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
         return getattr(obj, attribute)
     jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-08-01 00:46:20.917 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (d48f25210460446188bd81b5e3193fdd@127.0.0.1) 4.20ms referer=http://localhost:3000/
-[E 2026-08-01 00:46:20.919 ServerApp] Uncaught exception in write_error
+[W 2026-08-01 10:43:30.781 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (ece6fe708ee942c283688ce844b80211@127.0.0.1) 4.25ms referer=http://localhost:3000/
+[E 2026-08-01 10:43:30.782 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
         result = method(*self.path_args, **self.path_kwargs)
@@ -535,8 +344,8 @@
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
         return getattr(obj, attribute)
     jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-08-01 00:46:20.919 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.39ms referer=http://localhost:3000/
-[E 2026-08-01 00:46:20.921 ServerApp] Uncaught exception in write_error
+[W 2026-08-01 10:43:30.783 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.59ms referer=http://localhost:3000/
+[E 2026-08-01 10:43:30.785 ServerApp] Uncaught exception in write_error
     Traceback (most recent call last):
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
         result = method(*self.path_args, **self.path_kwargs)
@@ -598,9 +407,588 @@
       File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
         return getattr(obj, attribute)
     jinja2.exceptions.UndefinedError: 'page_config' is undefined
-[W 2026-08-01 00:46:20.922 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (8ab1754e484343019fcb51d300447d82@127.0.0.1) 1.87ms referer=http://localhost:3000/
-[I 2026-08-01 00:46:22.630 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
-[W 2026-08-01 00:46:22.706 ServerApp] Notebook demo.ipynb is not trusted
-[I 2026-08-01 00:46:22.772 ServerApp] Starting buffering for 08d6eadd-6550-460d-ad0e-b3d01c28fcb5:4516d08e-856e-4d4e-ba1b-493c0c3d3d6d
-[I 2026-08-01 00:46:22.792 ServerApp] Connecting to kernel 08d6eadd-6550-460d-ad0e-b3d01c28fcb5.
-[I 2026-08-01 00:46:25.712 ServerApp] Starting buffering for 08d6eadd-6550-460d-ad0e-b3d01c28fcb5:cd4ceba0-9b1c-4c40-8077-20277ba6785b
+[W 2026-08-01 10:43:30.786 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (0693b556b5244a9aa6563a526262dc73@127.0.0.1) 2.11ms referer=http://localhost:3000/
+[E 2026-08-03 17:30:25.213 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-03 17:30:25.215 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (85ebd96b5833496691f0a6ca345b61a9@127.0.0.1) 8.23ms referer=http://localhost:3002/
+[E 2026-08-03 17:30:25.218 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-03 17:30:25.218 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 2.29ms referer=http://localhost:3002/
+[E 2026-08-03 17:30:25.220 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-03 17:30:25.220 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (e9b976e1ce7b431e8e3031578828d105@127.0.0.1) 1.20ms referer=http://localhost:3002/
+[I 2026-08-03 17:30:27.342 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[W 2026-08-03 17:30:27.409 ServerApp] Notebook demo.ipynb is not trusted
+[I 2026-08-03 17:30:27.461 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:4cfe174b-e471-4920-9eac-f555152e57dd
+[I 2026-08-03 17:30:27.483 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[I 2026-08-03 17:31:21.667 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:8fa622fc-85cb-4110-9273-75efb126f11a
+[E 2026-08-04 10:26:13.078 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-04 10:26:13.082 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (b8f01c5d888a4efda13f22ec6e694e7d@127.0.0.1) 11.14ms referer=http://localhost:3002/
+[E 2026-08-04 10:26:13.084 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-04 10:26:13.084 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.33ms referer=http://localhost:3002/
+[E 2026-08-04 10:26:13.086 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-04 10:26:13.086 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (c0ab26a50d1e430fa6ccacc1b885fed0@127.0.0.1) 1.32ms referer=http://localhost:3002/
+[I 2026-08-04 10:26:14.355 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[W 2026-08-04 10:26:14.419 ServerApp] Notebook demo.ipynb is not trusted
+[I 2026-08-04 10:26:14.448 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:f8ccda65-ec72-44ec-b111-db395a153a9b
+[I 2026-08-04 10:26:14.485 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[I 2026-08-04 10:26:29.787 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:68e00a1f-6f91-4dae-9754-bdd8e68d35ae
+[E 2026-08-04 14:04:31.824 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-04 14:04:31.825 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb?token=[secret] (574d2e0e42424d1db6c54f8d19cc2f1e@127.0.0.1) 6.65ms referer=http://localhost:3002/
+[E 2026-08-04 14:04:31.827 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-04 14:04:31.827 JupyterNotebookApp] 405 HEAD /notebooks/demo.ipynb (@127.0.0.1) 1.03ms referer=http://localhost:3002/
+[E 2026-08-04 14:04:31.829 ServerApp] Uncaught exception in write_error
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1878, in _execute
+        result = method(*self.path_args, **self.path_kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 273, in _unimplemented_method
+        raise HTTPError(405)
+    tornado.web.HTTPError: HTTP 405: Method Not Allowed
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 30, in get_template
+        template = cast("Template", self.settings[env].get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search path: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 744, in write_error
+        html = self.render_template("%s.html" % status_code, **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 94, in render_template
+        template = cast("Template", self.get_template(name))  # type:ignore[attr-defined]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 33, in get_template
+        return cast("Template", super().get_template(name))  # type:ignore[misc]
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 666, in get_template
+        return self.settings["jinja2_env"].get_template(name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1016, in get_template
+        return self._load_template(name, globals)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 975, in _load_template
+        template = self.loader.load(self, name, self.make_globals(globals))
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 126, in load
+        source, filename, uptodate = self.get_source(environment, name)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 209, in get_source
+        raise TemplateNotFound(
+    jinja2.exceptions.TemplateNotFound: '405.html' not found in search paths: '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server', '/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/templates'
+    
+    During handling of the above exception, another exception occurred:
+    
+    Traceback (most recent call last):
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/tornado/web.py", line 1380, in send_error
+        self.write_error(status_code, **kwargs)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/base/handlers.py", line 746, in write_error
+        html = self.render_template("error.html", **ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jupyter_server/extension/handler.py", line 99, in render_template
+        return template.render(**ns)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1295, in render
+        self.environment.handle_exception()
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 942, in handle_exception
+        raise rewrite_traceback_stack(source=source)
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/notebook/templates/error.html", line 1, in top-level template code
+        <!doctype html><html><head><meta charset="utf-8"><title>{% block title %}{{page_title | e}}{% endblock %}</title>{% block favicon %}<link rel="shortcut icon" type="image/x-icon" href="/static/favicons/favicon.ico">{% endblock %}<script defer="defer" src="{{page_config.fullStaticUrl}}/main.58cb79c84cf80ba7b6ed.js?v=58cb79c84cf80ba7b6ed"></script></head><body class="jp-ThemedContainer">{% block stylesheet %}<style>/* disable initial hide */
+      File "/Users/yucheng/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 490, in getattr
+        return getattr(obj, attribute)
+    jinja2.exceptions.UndefinedError: 'page_config' is undefined
+[W 2026-08-04 14:04:31.829 JupyterNotebookApp] 405 HEAD /tree/demo.ipynb?token=[secret] (2f18ddedc09f44f48a5d35a31f175579@127.0.0.1) 1.01ms referer=http://localhost:3002/
+[I 2026-08-04 14:04:36.055 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[W 2026-08-04 14:04:36.111 ServerApp] Notebook demo.ipynb is not trusted
+[I 2026-08-04 14:04:36.157 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:36975c02-3865-4c24-b344-d0d8bef2e393
+[I 2026-08-04 14:04:36.174 ServerApp] Connecting to kernel 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e.
+[I 2026-08-04 14:06:36.146 ServerApp] Saving file at /demo.ipynb
+[I 2026-08-04 14:10:04.513 ServerApp] Starting buffering for 4c8cfadc-a608-4465-ad87-9f1c38ad4b1e:43464282-5015-4570-bd2a-5b11568dbde0
+[IPKernelApp] WARNING | Parent appears to have exited, shutting down.

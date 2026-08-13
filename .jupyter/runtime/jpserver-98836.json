@@ -2,12 +2,12 @@
   "base_url": "/",
   "hostname": "127.0.0.1",
   "password": false,
-  "pid": 81029,
+  "pid": 98836,
   "port": 8888,
   "root_dir": "/Users/yucheng/Documents/webapp/notebooks",
   "secure": false,
   "sock": "",
-  "token": "xThmdSBtDJpwfgtgJC8qEJd_jjGAfTVBXofExHZB0vI",
+  "token": "D2_F-FnIvIAgFYc4_kE8ChthYyOY6Xg_6NCzmgYUYyw",
   "url": "http://127.0.0.1:8888/",
   "version": "2.18.2"
 }

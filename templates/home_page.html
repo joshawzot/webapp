@@ -26,19 +26,14 @@
 
     <!-- Action Buttons Section -->
     <div class="mb-3">
-        <a href="/create-db" class="btn btn-info">Create New Folder</a>
-        <!-- Add Merge Folders button -->
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#mergeFoldersModal">
-            Merge Folders
-        </button>
         <!-- Jupyter Notebook Button -->
         <a href="{{ url_for('notebook_selector') }}" class="btn btn-success">
-            <i class="fas fa-book-open"></i> rwb analysis (notebook)
+            <i class="fas fa-book-open"></i> Metadata analysis (jupyternotebook)
         </a>
         
         <!-- RWB Analysis GUI Options -->
                     <a href="{{ url_for('interactive_rwb_analysis') }}" class="btn btn-primary">
-                <i class="fas fa-chart-line"></i> RWB Analysis (GUI)
+                <i class="fas fa-chart-line"></i> Metadata analysis (GUI)
             </a>
         <!-- Test Machines SSH Button -->
         <a href="{{ url_for('test_machines') }}" class="btn btn-warning">
@@ -57,18 +52,11 @@
     <!-- Recent Visits Section -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">bitmap analysis</h5>
-            <span class="badge badge-info">Last 10 visits</span>
+            <span class="badge badge-info">Last 10 visited Schemas</span>
         </div>
         <div class="card-body p-0">
             {% if recent_visits %}
                 <table class="table table-hover mb-0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Folder Name</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
                     <tbody>
                         {% for visit in recent_visits %}
                             <tr>
@@ -76,7 +64,7 @@
                                 <td>
                                     <form action="/list-tables" method="post" class="d-inline">
                                         <input type="hidden" name="database" value="{{ visit.folder_name }}">
-                                        <button type="submit" class="btn btn-sm btn-primary">Open</button>
+                                        <button type="submit" class="btn btn-sm btn-primary">Bitmap analysis</button>
                                     </form>
                                 </td>
                             </tr>
@@ -124,7 +112,7 @@
             <div class="row custom-row">
                 <div class="col">
                     <p></p>
-                    <input type="text" id="databaseFilter" class="form-control" placeholder="Filter database names on the fly">
+                    <input type="text" id="databaseFilter" class="form-control" placeholder="Filter schema names on the fly">
                 </div>
             </div>
             <!-- First set of filter fields with "AND" logic -->
@@ -155,12 +143,24 @@
         </form>
     </div>
 
+    <section class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Schema manipulation</h5>
+        </div>
+        <div class="card-body">
+            <a href="/create-db" class="btn btn-info">Create New Schema</a>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#mergeFoldersModal">
+                Merge Schemas
+            </button>
+        </div>
+    </section>
+
     <!-- Merge Folders Modal -->
     <div class="modal fade" id="mergeFoldersModal" tabindex="-1" role="dialog" aria-labelledby="mergeFoldersModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="mergeFoldersModalLabel">Merge Folders</h5>
+                    <h5 class="modal-title" id="mergeFoldersModalLabel">Merge Schemas</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
